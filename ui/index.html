@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Preflop Ranges MTT</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<div id="app">
+
+  <!-- ── HEADER ── -->
+  <header>
+    <div class="header-left">
+      <button class="btn-home" onclick="PreflopAPI.navigate('launcher')">← Início</button>
+      <span class="app-title">♠ PREFLOP</span>
+    </div>
+
+    <div class="hdr-control">
+      <label for="stackSlider">Stack</label>
+      <input type="range" id="stackSlider" min="10" max="100" value="35" step="1" />
+      <div class="stack-display"><span id="stackValue">35</span><span class="bb-label">bb</span></div>
+    </div>
+
+    <div class="hdr-control">
+      <label>Jogadores</label>
+      <div class="count-pill">
+        <button class="count-btn" id="countMinus">−</button>
+        <span id="countValue">9</span>
+        <button class="count-btn" id="countPlus">+</button>
+      </div>
+    </div>
+
+    <button id="resetBtn" class="btn-reset" title="Recomeçar">↺</button>
+  </header>
+
+  <main>
+
+    <!-- Pickers -->
+    <div class="pickers">
+      <div class="picker-row">
+        <span class="picker-label">Posição</span>
+        <button class="pos-arrow" id="posArrowLeft" title="Posição anterior">←</button>
+        <div class="pos-pills" id="posPills"></div>
+        <button class="pos-arrow" id="posArrowRight" title="Próxima posição">→</button>
+      </div>
+
+      <div class="picker-row">
+        <span class="picker-label">Situação</span>
+        <div class="scen-pills" id="scenPills">
+          <button class="scen-pill scen-rfi"     data-scen="RFI">🟢 Eu abro (RFI)</button>
+          <button class="scen-pill scen-vs-rfi"  data-scen="vs_RFI">🔴 Vilão abriu</button>
+          <button class="scen-pill scen-vs-3bet" data-scen="vs_3bet">🔵 Vilão 3-betou</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Placeholder inicial -->
+    <div id="gridPlaceholder" class="grid-placeholder">
+      <div class="placeholder-cards">🂡 🂮 🂻 🂺</div>
+      <div class="placeholder-title">Escolha sua posição</div>
+      <div class="placeholder-sub">Clique numa posição acima pra ver o range.</div>
+    </div>
+
+    <!-- Grade -->
+    <div id="gridWrap" class="grid-wrap hidden">
+      <div id="scenarioLabel" class="scenario-label"></div>
+
+      <div class="grid-col-labels">
+        <div class="grid-corner"></div>
+        <div class="rank-label">A</div><div class="rank-label">K</div>
+        <div class="rank-label">Q</div><div class="rank-label">J</div>
+        <div class="rank-label">T</div><div class="rank-label">9</div>
+        <div class="rank-label">8</div><div class="rank-label">7</div>
+        <div class="rank-label">6</div><div class="rank-label">5</div>
+        <div class="rank-label">4</div><div class="rank-label">3</div>
+        <div class="rank-label">2</div>
+      </div>
+
+      <div class="grid-with-row-labels">
+        <div id="gridRowLabels" class="grid-row-labels"></div>
+        <div id="handGrid" class="hand-grid"></div>
+      </div>
+
+      <div id="legend" class="legend"></div>
+    </div>
+
+  </main>
+</div>
+
+<div id="tooltip" class="tooltip hidden"></div>
+
+<script src="shared/api.js"></script>
+<script src="shared/core.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

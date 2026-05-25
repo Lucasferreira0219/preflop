@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"/>
+  <title>Preflop MTT</title>
+  <link rel="stylesheet" href="launcher.css"/>
+</head>
+<body>
+<div id="app">
+
+  <div class="logo-area">
+    <div class="logo-suit">♠</div>
+    <div class="logo-text">
+      <div class="logo-title">PREFLOP MTT</div>
+      <div class="logo-sub">Treinamento de Ranges</div>
+    </div>
+  </div>
+
+  <div class="cards-row">
+
+    <button class="mode-card mode-sim" onclick="launch('sim')">
+      <div class="mc-icon">🎯</div>
+      <div class="mc-title">Simulador</div>
+      <div class="mc-desc">Pratique decisões com mãos aleatórias e acompanhe sua evolução</div>
+      <div class="mc-arrow">→</div>
+    </button>
+
+    <button class="mode-card mode-main" onclick="launch('main')">
+      <div class="mc-icon">📖</div>
+      <div class="mc-title">Consulta</div>
+      <div class="mc-desc">Visualize ranges completos por posição, cenário e profundidade de stack</div>
+      <div class="mc-arrow">→</div>
+    </button>
+
+  </div>
+
+</div>
+<script src="shared/api.js"></script>
+<script src="launcher.js"></script>
+</body>
+</html>

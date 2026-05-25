@@ -1,0 +1,132 @@
+{
+  "stack": "20bb",
+  "positions": {
+    "UTG": {
+      "RFI": ["AA", "KK", "QQ", "JJ", "TT", "99", "88", "77", "66", "AKs", "AQs", "AJs", "ATs", "A9s", "A8s", "KQs", "AKo", "AQo"],
+      "vs_3bet": {
+        "MP": { "4bet": ["AA", "KK", "QQ", "JJ", "TT", "99", "88", "77", "66", "AKs", "AQs", "AJs", "ATs", "A9s", "A8s", "KQs", "AKo", "AQo"], "call": [], "fold": [] },
+        "HJ": { "4bet": ["AA", "KK", "QQ", "JJ", "TT", "99", "88", "77", "66", "AKs", "AQs", "AJs", "ATs", "A9s", "A8s", "KQs", "AKo", "AQo"], "call": [], "fold": [] },
+        "CO": { "4bet": ["AA", "KK", "QQ", "JJ", "TT", "99", "88", "77", "66", "AKs", "AQs", "AJs", "ATs", "A9s", "A8s", "KQs", "AKo", "AQo"], "call": [], "fold": [] },
+        "BTN": { "4bet": ["AA", "KK", "QQ", "JJ", "TT", "99", "88", "77", "66", "AKs", "AQs", "AJs", "ATs", "A9s", "A8s", "KQs", "AKo", "AQo"], "call": [], "fold": [] },
+        "SB": { "4bet": ["AA", "KK", "QQ", "JJ", "TT", "99", "88", "77", "66", "AKs", "AQs", "AJs", "ATs", "A9s", "A8s", "KQs", "AKo", "AQo"], "call": [], "fold": [] },
+        "BB": { "4bet": ["AA", "KK", "QQ", "JJ", "TT", "99", "88", "77", "66", "AKs", "AQs", "AJs", "ATs", "A9s", "A8s", "KQs", "AKo", "AQo"], "call": [], "fold": [] }
+      }
+    },
+    "UTG1": {
+      "RFI": ["AA", "KK", "QQ", "JJ", "TT", "99", "88", "77", "66", "AKs", "AQs", "AJs", "ATs", "A9s", "A8s", "KQs", "KJs", "AKo", "AQo"],
+      "vs_3bet": {
+        "MP": { "4bet": ["AA", "KK", "QQ", "JJ", "TT", "99", "88", "77", "66", "AKs", "AQs", "AJs", "ATs", "A9s", "A8s", "KQs", "KJs", "AKo", "AQo"], "call": [], "fold": [] },
+        "HJ": { "4bet": ["AA", "KK", "QQ", "JJ", "TT", "99", "88", "77", "66", "AKs", "AQs", "AJs", "ATs", "A9s", "A8s", "KQs", "KJs", "AKo", "AQo"], "call": [], "fold": [] },
+        "CO": { "4bet": ["AA", "KK", "QQ", "JJ", "TT", "99", "88", "77", "66", "AKs", "AQs", "AJs", "ATs", "A9s", "A8s", "KQs", "KJs", "AKo", "AQo"], "call": [], "fold": [] },
+        "BTN": { "4bet": ["AA", "KK", "QQ", "JJ", "TT", "99", "88", "77", "66", "AKs", "AQs", "AJs", "ATs", "A9s", "A8s", "KQs", "KJs", "AKo", "AQo"], "call": [], "fold": [] },
+        "SB": { "4bet": ["AA", "KK", "QQ", "JJ", "TT", "99", "88", "77", "66", "AKs", "AQs", "AJs", "ATs", "A9s", "A8s", "KQs", "KJs", "AKo", "AQo"], "call": [], "fold": [] },
+        "BB": { "4bet": ["AA", "KK", "QQ", "JJ", "TT", "99", "88", "77", "66", "AKs", "AQs", "AJs", "ATs", "A9s", "A8s", "KQs", "KJs", "AKo", "AQo"], "call": [], "fold": [] }
+      },
+      "vs_RFI": {
+        "UTG": { "3bet": ["AA", "KK", "QQ", "JJ", "TT", "AKs", "AQs", "A5s", "A4s", "AKo", "AQo"], "call": [], "fold": ["99", "88", "77", "66", "55", "44", "33", "22", "AJs", "ATs", "A9s", "A8s", "A7s", "A6s", "A3s", "A2s", "KQs", "KJs", "QJs", "JTs", "AJo", "ATo"] }
+      }
+    },
+    "UTG2": {
+      "RFI": ["AA", "KK", "QQ", "JJ", "TT", "99", "88", "77", "66", "55", "AKs", "AQs", "AJs", "ATs", "A9s", "A8s", "A7s", "KQs", "KJs", "QJs", "AKo", "AQo", "AJo"],
+      "vs_3bet": {
+        "MP": { "4bet": ["AA", "KK", "QQ", "JJ", "TT", "99", "88", "77", "66", "55", "AKs", "AQs", "AJs", "ATs", "A9s", "A8s", "A7s", "KQs", "KJs", "QJs", "AKo", "AQo", "AJo"], "call": [], "fold": [] },
+        "HJ": { "4bet": ["AA", "KK", "QQ", "JJ", "TT", "99", "88", "77", "66", "55", "AKs", "AQs", "AJs", "ATs", "A9s", "A8s", "A7s", "KQs", "KJs", "QJs", "AKo", "AQo", "AJo"], "call": [], "fold": [] },
+        "CO": { "4bet": ["AA", "KK", "QQ", "JJ", "TT", "99", "88", "77", "66", "55", "AKs", "AQs", "AJs", "ATs", "A9s", "A8s", "A7s", "KQs", "KJs", "QJs", "AKo", "AQo", "AJo"], "call": [], "fold": [] },
+        "BTN": { "4bet": ["AA", "KK", "QQ", "JJ", "TT", "99", "88", "77", "66", "55", "AKs", "AQs", "AJs", "ATs", "A9s", "A8s", "A7s", "KQs", "KJs", "QJs", "AKo", "AQo", "AJo"], "call": [], "fold": [] },
+        "SB": { "4bet": ["AA", "KK", "QQ", "JJ", "TT", "99", "88", "77", "66", "55", "AKs", "AQs", "AJs", "ATs", "A9s", "A8s", "A7s", "KQs", "KJs", "QJs", "AKo", "AQo", "AJo"], "call": [], "fold": [] },
+        "BB": { "4bet": ["AA", "KK", "QQ", "JJ", "TT", "99", "88", "77", "66", "55", "AKs", "AQs", "AJs", "ATs", "A9s", "A8s", "A7s", "KQs", "KJs", "QJs", "AKo", "AQo", "AJo"], "call": [], "fold": [] }
+      },
+      "vs_RFI": {
+        "UTG": { "3bet": ["AA", "KK", "QQ", "JJ", "TT", "AKs", "AQs", "A5s", "A4s", "AKo", "AQo"], "call": [], "fold": ["99", "88", "77", "66", "55", "44", "33", "22", "AJs", "ATs", "A9s", "A8s", "A7s", "A6s", "A3s", "A2s", "KQs", "KJs", "QJs", "AJo", "ATo"] },
+        "UTG1": { "3bet": ["AA", "KK", "QQ", "JJ", "TT", "AKs", "AQs", "A5s", "A4s", "AKo", "AQo"], "call": [], "fold": ["99", "88", "77", "66", "55", "44", "33", "22", "AJs", "ATs", "A9s", "A8s", "A7s", "A6s", "A3s", "A2s", "KQs", "KJs", "QJs", "AJo", "ATo"] }
+      }
+    },
+    "MP": {
+      "RFI": ["AA", "KK", "QQ", "JJ", "TT", "99", "88", "77", "66", "55", "AKs", "AQs", "AJs", "ATs", "A9s", "A8s", "A7s", "A6s", "KQs", "KJs", "KTs", "QJs", "JTs", "AKo", "AQo", "AJo"],
+      "vs_3bet": {
+        "HJ": { "4bet": ["AA", "KK", "QQ", "JJ", "TT", "99", "88", "77", "66", "55", "AKs", "AQs", "AJs", "ATs", "A9s", "A8s", "A7s", "A6s", "KQs", "KJs", "KTs", "QJs", "JTs", "AKo", "AQo", "AJo"], "call": [], "fold": [] },
+        "CO": { "4bet": ["AA", "KK", "QQ", "JJ", "TT", "99", "88", "77", "66", "55", "AKs", "AQs", "AJs", "ATs", "A9s", "A8s", "A7s", "A6s", "KQs", "KJs", "KTs", "QJs", "JTs", "AKo", "AQo", "AJo"], "call": [], "fold": [] },
+        "BTN": { "4bet": ["AA", "KK", "QQ", "JJ", "TT", "99", "88", "77", "66", "55", "AKs", "AQs", "AJs", "ATs", "A9s", "A8s", "A7s", "A6s", "KQs", "KJs", "KTs", "QJs", "JTs", "AKo", "AQo", "AJo"], "call": [], "fold": [] },
+        "SB": { "4bet": ["AA", "KK", "QQ", "JJ", "TT", "99", "88", "77", "66", "55", "AKs", "AQs", "AJs", "ATs", "A9s", "A8s", "A7s", "A6s", "KQs", "KJs", "KTs", "QJs", "JTs", "AKo", "AQo", "AJo"], "call": [], "fold": [] },
+        "BB": { "4bet": ["AA", "KK", "QQ", "JJ", "TT", "99", "88", "77", "66", "55", "AKs", "AQs", "AJs", "ATs", "A9s", "A8s", "A7s", "A6s", "KQs", "KJs", "KTs", "QJs", "JTs", "AKo", "AQo", "AJo"], "call": [], "fold": [] }
+      },
+      "vs_RFI": {
+        "UTG": { "3bet": ["AA", "KK", "QQ", "JJ", "TT", "AKs", "AQs", "A5s", "A4s", "AKo", "AQo"], "call": [], "fold": ["99", "88", "77", "66", "55", "44", "33", "22", "AJs", "ATs", "A9s", "A8s", "A7s", "A6s", "A3s", "A2s", "KQs", "KJs", "KTs", "QJs", "JTs", "AJo", "ATo"] },
+        "UTG1": { "3bet": ["AA", "KK", "QQ", "JJ", "TT", "AKs", "AQs", "A5s", "A4s", "AKo", "AQo"], "call": [], "fold": ["99", "88", "77", "66", "55", "44", "33", "22", "AJs", "ATs", "A9s", "A8s", "A7s", "A6s", "A3s", "A2s", "KQs", "KJs", "KTs", "QJs", "JTs", "AJo", "ATo"] },
+        "UTG2": { "3bet": ["AA", "KK", "QQ", "JJ", "TT", "AKs", "AQs", "A5s", "A4s", "AKo", "AQo"], "call": [], "fold": ["99", "88", "77", "66", "55", "44", "33", "22", "AJs", "ATs", "A9s", "A8s", "A7s", "A6s", "A3s", "A2s", "KQs", "KJs", "KTs", "QJs", "JTs", "AJo", "ATo"] }
+      }
+    },
+    "HJ": {
+      "RFI": ["AA", "KK", "QQ", "JJ", "TT", "99", "88", "77", "66", "55", "44", "AKs", "AQs", "AJs", "ATs", "A9s", "A8s", "A7s", "A6s", "A5s", "KQs", "KJs", "KTs", "K9s", "QJs", "QTs", "JTs", "T9s", "98s", "AKo", "AQo", "AJo", "ATo", "KQo"],
+      "vs_3bet": {
+        "CO": { "4bet": ["AA", "KK", "QQ", "JJ", "TT", "99", "88", "77", "66", "55", "44", "AKs", "AQs", "AJs", "ATs", "A9s", "A8s", "A7s", "A6s", "A5s", "KQs", "KJs", "KTs", "K9s", "QJs", "QTs", "JTs", "T9s", "98s", "AKo", "AQo", "AJo", "ATo", "KQo"], "call": [], "fold": [] },
+        "BTN": { "4bet": ["AA", "KK", "QQ", "JJ", "TT", "99", "88", "77", "66", "55", "44", "AKs", "AQs", "AJs", "ATs", "A9s", "A8s", "A7s", "A6s", "A5s", "KQs", "KJs", "KTs", "K9s", "QJs", "QTs", "JTs", "T9s", "98s", "AKo", "AQo", "AJo", "ATo", "KQo"], "call": [], "fold": [] },
+        "SB": { "4bet": ["AA", "KK", "QQ", "JJ", "TT", "99", "88", "77", "66", "55", "44", "AKs", "AQs", "AJs", "ATs", "A9s", "A8s", "A7s", "A6s", "A5s", "KQs", "KJs", "KTs", "K9s", "QJs", "QTs", "JTs", "T9s", "98s", "AKo", "AQo", "AJo", "ATo", "KQo"], "call": [], "fold": [] },
+        "BB": { "4bet": ["AA", "KK", "QQ", "JJ", "TT", "99", "88", "77", "66", "55", "44", "AKs", "AQs", "AJs", "ATs", "A9s", "A8s", "A7s", "A6s", "A5s", "KQs", "KJs", "KTs", "K9s", "QJs", "QTs", "JTs", "T9s", "98s", "AKo", "AQo", "AJo", "ATo", "KQo"], "call": [], "fold": [] }
+      },
+      "vs_RFI": {
+        "UTG": { "3bet": ["AA", "KK", "QQ", "JJ", "TT", "AKs", "AQs", "A5s", "A4s", "AKo", "AQo"], "call": [], "fold": ["99", "88", "77", "66", "55", "44", "33", "22", "AJs", "ATs", "A9s", "A8s", "A7s", "A6s", "A3s", "A2s", "KQs", "KJs", "KTs", "QJs", "QTs", "JTs", "T9s", "AJo", "ATo", "KQo"] },
+        "UTG1": { "3bet": ["AA", "KK", "QQ", "JJ", "TT", "AKs", "AQs", "A5s", "A4s", "AKo", "AQo"], "call": [], "fold": ["99", "88", "77", "66", "55", "44", "33", "22", "AJs", "ATs", "A9s", "A8s", "A7s", "A6s", "A3s", "A2s", "KQs", "KJs", "KTs", "QJs", "QTs", "JTs", "T9s", "AJo", "ATo", "KQo"] },
+        "UTG2": { "3bet": ["AA", "KK", "QQ", "JJ", "TT", "AKs", "AQs", "AJs", "A5s", "A4s", "AKo", "AQo"], "call": [], "fold": ["99", "88", "77", "66", "55", "44", "33", "22", "ATs", "A9s", "A8s", "A7s", "A6s", "A3s", "A2s", "KQs", "KJs", "KTs", "QJs", "QTs", "JTs", "T9s", "AJo", "ATo", "KQo"] },
+        "MP": { "3bet": ["AA", "KK", "QQ", "JJ", "TT", "AKs", "AQs", "AJs", "A5s", "A4s", "AKo", "AQo"], "call": [], "fold": ["99", "88", "77", "66", "55", "44", "33", "22", "ATs", "A9s", "A8s", "A7s", "A6s", "A3s", "A2s", "KQs", "KJs", "KTs", "QJs", "QTs", "JTs", "T9s", "AJo", "ATo", "KQo"] }
+      }
+    },
+    "CO": {
+      "RFI": ["AA", "KK", "QQ", "JJ", "TT", "99", "88", "77", "66", "55", "44", "33", "AKs", "AQs", "AJs", "ATs", "A9s", "A8s", "A7s", "A6s", "A5s", "A4s", "A3s", "A2s", "KQs", "KJs", "KTs", "K9s", "K8s", "QJs", "QTs", "Q9s", "JTs", "J9s", "T9s", "T8s", "98s", "87s", "AKo", "AQo", "AJo", "ATo", "A9o", "KQo", "KJo", "QJo"],
+      "vs_3bet": {
+        "BTN": { "4bet": ["AA", "KK", "QQ", "JJ", "TT", "99", "88", "77", "66", "55", "44", "33", "AKs", "AQs", "AJs", "ATs", "A9s", "A8s", "A7s", "A6s", "A5s", "A4s", "A3s", "A2s", "KQs", "KJs", "KTs", "K9s", "K8s", "QJs", "QTs", "Q9s", "JTs", "J9s", "T9s", "T8s", "98s", "87s", "AKo", "AQo", "AJo", "ATo", "A9o", "KQo", "KJo", "QJo"], "call": [], "fold": [] },
+        "SB": { "4bet": ["AA", "KK", "QQ", "JJ", "TT", "99", "88", "77", "66", "55", "44", "33", "AKs", "AQs", "AJs", "ATs", "A9s", "A8s", "A7s", "A6s", "A5s", "A4s", "A3s", "A2s", "KQs", "KJs", "KTs", "K9s", "K8s", "QJs", "QTs", "Q9s", "JTs", "J9s", "T9s", "T8s", "98s", "87s", "AKo", "AQo", "AJo", "ATo", "A9o", "KQo", "KJo", "QJo"], "call": [], "fold": [] },
+        "BB": { "4bet": ["AA", "KK", "QQ", "JJ", "TT", "99", "88", "77", "66", "55", "44", "33", "AKs", "AQs", "AJs", "ATs", "A9s", "A8s", "A7s", "A6s", "A5s", "A4s", "A3s", "A2s", "KQs", "KJs", "KTs", "K9s", "K8s", "QJs", "QTs", "Q9s", "JTs", "J9s", "T9s", "T8s", "98s", "87s", "AKo", "AQo", "AJo", "ATo", "A9o", "KQo", "KJo", "QJo"], "call": [], "fold": [] }
+      },
+      "vs_RFI": {
+        "UTG": { "3bet": ["AA", "KK", "QQ", "JJ", "TT", "AKs", "AQs", "A5s", "A4s", "AKo", "AQo"], "call": [], "fold": ["99", "88", "77", "66", "55", "44", "33", "22", "AJs", "ATs", "A9s", "A8s", "A7s", "A6s", "A3s", "A2s", "KQs", "KJs", "KTs", "QJs", "QTs", "JTs", "T9s", "AJo", "ATo", "A9o", "KQo", "KJo"] },
+        "UTG1": { "3bet": ["AA", "KK", "QQ", "JJ", "TT", "AKs", "AQs", "A5s", "A4s", "AKo", "AQo"], "call": [], "fold": ["99", "88", "77", "66", "55", "44", "33", "22", "AJs", "ATs", "A9s", "A8s", "A7s", "A6s", "A3s", "A2s", "KQs", "KJs", "KTs", "QJs", "QTs", "JTs", "T9s", "AJo", "ATo", "A9o", "KQo", "KJo"] },
+        "UTG2": { "3bet": ["AA", "KK", "QQ", "JJ", "TT", "AKs", "AQs", "AJs", "A5s", "A4s", "AKo", "AQo"], "call": [], "fold": ["99", "88", "77", "66", "55", "44", "33", "22", "ATs", "A9s", "A8s", "A7s", "A6s", "A3s", "A2s", "KQs", "KJs", "KTs", "QJs", "QTs", "JTs", "T9s", "AJo", "ATo", "A9o", "KQo", "KJo"] },
+        "MP": { "3bet": ["AA", "KK", "QQ", "JJ", "TT", "AKs", "AQs", "AJs", "A5s", "A4s", "AKo", "AQo"], "call": [], "fold": ["99", "88", "77", "66", "55", "44", "33", "22", "ATs", "A9s", "A8s", "A7s", "A6s", "A3s", "A2s", "KQs", "KJs", "KTs", "QJs", "QTs", "JTs", "T9s", "AJo", "ATo", "A9o", "KQo", "KJo"] },
+        "HJ": { "3bet": ["AA", "KK", "QQ", "JJ", "TT", "99", "AKs", "AQs", "AJs", "A5s", "A4s", "AKo", "AQo"], "call": [], "fold": ["88", "77", "66", "55", "44", "33", "22", "ATs", "A9s", "A8s", "A7s", "A6s", "A3s", "A2s", "KQs", "KJs", "KTs", "QJs", "QTs", "JTs", "T9s", "AJo", "ATo", "A9o", "KQo", "KJo"] }
+      }
+    },
+    "BTN": {
+      "RFI": ["AA", "KK", "QQ", "JJ", "TT", "99", "88", "77", "66", "55", "44", "33", "22", "AKs", "AQs", "AJs", "ATs", "A9s", "A8s", "A7s", "A6s", "A5s", "A4s", "A3s", "A2s", "KQs", "KJs", "KTs", "K9s", "K8s", "K7s", "K6s", "K5s", "QJs", "QTs", "Q9s", "Q8s", "JTs", "J9s", "J8s", "T9s", "T8s", "98s", "97s", "87s", "86s", "76s", "75s", "65s", "54s", "AKo", "AQo", "AJo", "ATo", "A9o", "A8o", "KQo", "KJo", "KTo", "QJo", "QTo", "JTo"],
+      "vs_3bet": {
+        "SB": { "4bet": ["AA", "KK", "QQ", "JJ", "TT", "99", "88", "77", "66", "55", "44", "33", "22", "AKs", "AQs", "AJs", "ATs", "A9s", "A8s", "A7s", "A6s", "A5s", "A4s", "A3s", "A2s", "KQs", "KJs", "KTs", "K9s", "K8s", "K7s", "K6s", "K5s", "QJs", "QTs", "Q9s", "Q8s", "JTs", "J9s", "J8s", "T9s", "T8s", "98s", "97s", "87s", "86s", "76s", "75s", "65s", "54s", "AKo", "AQo", "AJo", "ATo", "A9o", "A8o", "KQo", "KJo", "KTo", "QJo", "QTo", "JTo"], "call": [], "fold": [] },
+        "BB": { "4bet": ["AA", "KK", "QQ", "JJ", "TT", "99", "88", "77", "66", "55", "44", "33", "22", "AKs", "AQs", "AJs", "ATs", "A9s", "A8s", "A7s", "A6s", "A5s", "A4s", "A3s", "A2s", "KQs", "KJs", "KTs", "K9s", "K8s", "K7s", "K6s", "K5s", "QJs", "QTs", "Q9s", "Q8s", "JTs", "J9s", "J8s", "T9s", "T8s", "98s", "97s", "87s", "86s", "76s", "75s", "65s", "54s", "AKo", "AQo", "AJo", "ATo", "A9o", "A8o", "KQo", "KJo", "KTo", "QJo", "QTo", "JTo"], "call": [], "fold": [] }
+      },
+      "vs_RFI": {
+        "UTG": { "3bet": ["AA", "KK", "QQ", "JJ", "TT", "AKs", "AQs", "A5s", "A4s", "AKo", "AQo"], "call": [], "fold": ["99", "88", "77", "66", "55", "44", "33", "22", "AJs", "ATs", "A9s", "A8s", "A7s", "A6s", "A3s", "A2s", "KQs", "KJs", "KTs", "QJs", "QTs", "JTs", "T9s", "AJo", "ATo", "A9o", "A8o", "KQo", "KJo", "KTo"] },
+        "UTG1": { "3bet": ["AA", "KK", "QQ", "JJ", "TT", "AKs", "AQs", "A5s", "A4s", "AKo", "AQo"], "call": [], "fold": ["99", "88", "77", "66", "55", "44", "33", "22", "AJs", "ATs", "A9s", "A8s", "A7s", "A6s", "A3s", "A2s", "KQs", "KJs", "KTs", "QJs", "QTs", "JTs", "T9s", "AJo", "ATo", "A9o", "A8o", "KQo", "KJo", "KTo"] },
+        "UTG2": { "3bet": ["AA", "KK", "QQ", "JJ", "TT", "AKs", "AQs", "AJs", "A5s", "A4s", "AKo", "AQo"], "call": [], "fold": ["99", "88", "77", "66", "55", "44", "33", "22", "ATs", "A9s", "A8s", "A7s", "A6s", "A3s", "A2s", "KQs", "KJs", "KTs", "QJs", "QTs", "JTs", "T9s", "AJo", "ATo", "A9o", "A8o", "KQo", "KJo", "KTo"] },
+        "MP": { "3bet": ["AA", "KK", "QQ", "JJ", "TT", "AKs", "AQs", "AJs", "A5s", "A4s", "AKo", "AQo"], "call": [], "fold": ["99", "88", "77", "66", "55", "44", "33", "22", "ATs", "A9s", "A8s", "A7s", "A6s", "A3s", "A2s", "KQs", "KJs", "KTs", "QJs", "QTs", "JTs", "T9s", "AJo", "ATo", "A9o", "A8o", "KQo", "KJo", "KTo"] },
+        "HJ": { "3bet": ["AA", "KK", "QQ", "JJ", "TT", "99", "AKs", "AQs", "AJs", "A5s", "A4s", "AKo", "AQo"], "call": [], "fold": ["88", "77", "66", "55", "44", "33", "22", "ATs", "A9s", "A8s", "A7s", "A6s", "A3s", "A2s", "KQs", "KJs", "KTs", "QJs", "QTs", "JTs", "T9s", "AJo", "ATo", "A9o", "A8o", "KQo", "KJo", "KTo"] },
+        "CO": { "3bet": ["AA", "KK", "QQ", "JJ", "TT", "99", "AKs", "AQs", "AJs", "ATs", "A5s", "A4s", "A3s", "KQs", "AKo", "AQo", "AJo"], "call": [], "fold": ["88", "77", "66", "55", "44", "33", "22", "A9s", "A8s", "A7s", "A6s", "A2s", "KJs", "KTs", "QJs", "QTs", "JTs", "T9s", "ATo", "A9o", "A8o", "KQo", "KJo", "KTo"] }
+      }
+    },
+    "SB": {
+      "RFI": ["AA", "KK", "QQ", "JJ", "TT", "99", "88", "77", "66", "55", "44", "33", "22", "AKs", "AQs", "AJs", "ATs", "A9s", "A8s", "A7s", "A6s", "A5s", "A4s", "A3s", "A2s", "KQs", "KJs", "KTs", "K9s", "K8s", "K7s", "QJs", "QTs", "Q9s", "JTs", "J9s", "T9s", "T8s", "98s", "87s", "76s", "65s", "54s", "AKo", "AQo", "AJo", "ATo", "A9o", "A8o", "KQo", "KJo", "KTo", "QJo", "JTo"],
+      "vs_3bet": {
+        "BB": { "4bet": ["AA", "KK", "QQ", "JJ", "TT", "99", "88", "77", "66", "55", "44", "33", "22", "AKs", "AQs", "AJs", "ATs", "A9s", "A8s", "A7s", "A6s", "A5s", "A4s", "A3s", "A2s", "KQs", "KJs", "KTs", "K9s", "K8s", "K7s", "QJs", "QTs", "Q9s", "JTs", "J9s", "T9s", "T8s", "98s", "87s", "76s", "65s", "54s", "AKo", "AQo", "AJo", "ATo", "A9o", "A8o", "KQo", "KJo", "KTo", "QJo", "JTo"], "call": [], "fold": [] }
+      },
+      "vs_RFI": {
+        "UTG": { "3bet": ["AA", "KK", "QQ", "JJ", "TT", "AKs", "AQs", "AJs", "A5s", "A4s", "AKo", "AQo"], "call": [], "fold": ["99", "88", "77", "66", "55", "44", "33", "22", "ATs", "A9s", "A8s", "A7s", "A6s", "A3s", "A2s", "KQs", "KJs", "KTs", "QJs", "QTs", "JTs", "T9s", "98s", "87s", "AJo", "ATo", "KQo"] },
+        "UTG1": { "3bet": ["AA", "KK", "QQ", "JJ", "TT", "AKs", "AQs", "AJs", "A5s", "A4s", "AKo", "AQo"], "call": [], "fold": ["99", "88", "77", "66", "55", "44", "33", "22", "ATs", "A9s", "A8s", "A7s", "A6s", "A3s", "A2s", "KQs", "KJs", "KTs", "QJs", "QTs", "JTs", "T9s", "98s", "87s", "AJo", "ATo", "KQo"] },
+        "UTG2": { "3bet": ["AA", "KK", "QQ", "JJ", "TT", "AKs", "AQs", "AJs", "ATs", "A5s", "A4s", "AKo", "AQo"], "call": [], "fold": ["99", "88", "77", "66", "55", "44", "33", "22", "A9s", "A8s", "A7s", "A6s", "A3s", "A2s", "KQs", "KJs", "KTs", "QJs", "QTs", "JTs", "T9s", "98s", "AJo", "ATo", "KQo"] },
+        "MP": { "3bet": ["AA", "KK", "QQ", "JJ", "TT", "AKs", "AQs", "AJs", "ATs", "A5s", "A4s", "AKo", "AQo"], "call": [], "fold": ["99", "88", "77", "66", "55", "44", "33", "22", "A9s", "A8s", "A7s", "A6s", "A3s", "A2s", "KQs", "KJs", "KTs", "QJs", "QTs", "JTs", "T9s", "98s", "AJo", "ATo", "KQo"] },
+        "HJ": { "3bet": ["AA", "KK", "QQ", "JJ", "TT", "99", "AKs", "AQs", "AJs", "ATs", "A5s", "A4s", "AKo", "AQo"], "call": [], "fold": ["88", "77", "66", "55", "44", "33", "22", "A9s", "A8s", "A7s", "A6s", "A3s", "A2s", "KQs", "KJs", "KTs", "QJs", "QTs", "JTs", "T9s", "98s", "AJo", "ATo", "KQo"] },
+        "CO": { "3bet": ["AA", "KK", "QQ", "JJ", "TT", "99", "AKs", "AQs", "AJs", "ATs", "A9s", "A5s", "A4s", "A3s", "KQs", "AKo", "AQo", "AJo"], "call": [], "fold": ["88", "77", "66", "55", "44", "33", "22", "A8s", "A7s", "A6s", "A2s", "KJs", "KTs", "QJs", "QTs", "JTs", "T9s", "98s", "ATo", "KQo"] },
+        "BTN": { "3bet": ["AA", "KK", "QQ", "JJ", "TT", "99", "88", "AKs", "AQs", "AJs", "ATs", "A9s", "A5s", "A4s", "A3s", "KQs", "KJs", "AKo", "AQo", "AJo"], "call": [], "fold": ["77", "66", "55", "44", "33", "22", "A8s", "A7s", "A6s", "A2s", "KTs", "QJs", "QTs", "JTs", "T9s", "98s", "ATo", "KQo"] }
+      }
+    },
+    "BB": {
+      "vs_RFI": {
+        "UTG": { "3bet": ["AA", "KK", "QQ", "JJ", "TT", "AKs", "AQs", "A5s", "A4s", "AKo"], "call": ["99", "88", "77", "66", "55", "44", "33", "22", "AJs", "ATs", "A9s", "A8s", "A7s", "A6s", "A3s", "A2s", "KQs", "KJs", "KTs", "K9s", "QJs", "QTs", "JTs", "T9s", "98s", "87s", "AQo", "AJo", "ATo", "KQo"], "fold": [] },
+        "UTG1": { "3bet": ["AA", "KK", "QQ", "JJ", "TT", "AKs", "AQs", "A5s", "A4s", "AKo"], "call": ["99", "88", "77", "66", "55", "44", "33", "22", "AJs", "ATs", "A9s", "A8s", "A7s", "A6s", "A3s", "A2s", "KQs", "KJs", "KTs", "K9s", "QJs", "QTs", "JTs", "T9s", "98s", "87s", "AQo", "AJo", "ATo", "KQo"], "fold": [] },
+        "UTG2": { "3bet": ["AA", "KK", "QQ", "JJ", "TT", "AKs", "AQs", "AJs", "A5s", "A4s", "AKo", "AQo"], "call": ["99", "88", "77", "66", "55", "44", "33", "22", "ATs", "A9s", "A8s", "A7s", "A6s", "A3s", "A2s", "KQs", "KJs", "KTs", "K9s", "QJs", "QTs", "JTs", "T9s", "98s", "87s", "AJo", "ATo", "KQo"], "fold": [] },
+        "MP": { "3bet": ["AA", "KK", "QQ", "JJ", "TT", "AKs", "AQs", "AJs", "A5s", "A4s", "AKo", "AQo"], "call": ["99", "88", "77", "66", "55", "44", "33", "22", "ATs", "A9s", "A8s", "A7s", "A6s", "A3s", "A2s", "KQs", "KJs", "KTs", "K9s", "QJs", "QTs", "JTs", "T9s", "98s", "87s", "AJo", "ATo", "KQo"], "fold": [] },
+        "HJ": { "3bet": ["AA", "KK", "QQ", "JJ", "TT", "99", "AKs", "AQs", "AJs", "A5s", "A4s", "AKo", "AQo"], "call": ["88", "77", "66", "55", "44", "33", "22", "ATs", "A9s", "A8s", "A7s", "A6s", "A3s", "A2s", "KQs", "KJs", "KTs", "K9s", "QJs", "QTs", "JTs", "T9s", "98s", "87s", "AJo", "ATo", "KQo"], "fold": [] },
+        "CO": { "3bet": ["AA", "KK", "QQ", "JJ", "TT", "99", "AKs", "AQs", "AJs", "ATs", "A5s", "A4s", "A3s", "KQs", "AKo", "AQo", "AJo"], "call": ["88", "77", "66", "55", "44", "33", "22", "A9s", "A8s", "A7s", "A6s", "A2s", "KJs", "KTs", "K9s", "QJs", "QTs", "JTs", "T9s", "98s", "87s", "ATo", "KQo"], "fold": [] },
+        "BTN": { "3bet": ["AA", "KK", "QQ", "JJ", "TT", "99", "88", "AKs", "AQs", "AJs", "ATs", "A5s", "A4s", "A3s", "KQs", "AKo", "AQo", "AJo"], "call": ["77", "66", "55", "44", "33", "22", "A9s", "A8s", "A7s", "A6s", "A2s", "KJs", "KTs", "K9s", "QJs", "QTs", "JTs", "T9s", "98s", "87s", "76s", "ATo", "KQo"], "fold": [] },
+        "SB": { "3bet": ["AA", "KK", "QQ", "JJ", "TT", "99", "88", "77", "AKs", "AQs", "AJs", "ATs", "A9s", "A5s", "A4s", "A3s", "KQs", "KJs", "AKo", "AQo", "AJo", "ATo"], "call": ["66", "55", "44", "33", "22", "A8s", "A7s", "A6s", "A2s", "KTs", "K9s", "QJs", "QTs", "JTs", "T9s", "98s", "87s", "76s", "KQo", "KJo"], "fold": [] }
+      }
+    }
+  }
+}

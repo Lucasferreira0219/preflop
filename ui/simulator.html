@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"/>
+  <title>Simulador Preflop MTT</title>
+  <link rel="stylesheet" href="simulator.css"/>
+</head>
+<body>
+<div id="app">
+
+  <!-- HEADER -->
+  <header>
+    <div class="header-left">
+      <button class="btn-home" onclick="goHome()">← Início</button>
+      <span class="app-title">♠ SIMULADOR PREFLOP</span>
+      <span class="app-sub">MTT</span>
+    </div>
+    <div class="stats-bar">
+      <div class="stat-item">
+        <span class="stat-val" id="statTotal">0</span>
+        <span class="stat-label">mãos</span>
+      </div>
+      <div class="stat-sep">|</div>
+      <div class="stat-item correct">
+        <span class="stat-val" id="statCorrect">0</span>
+        <span class="stat-label">certas</span>
+      </div>
+      <div class="stat-sep">|</div>
+      <div class="stat-item wrong">
+        <span class="stat-val" id="statWrong">0</span>
+        <span class="stat-label">erradas</span>
+      </div>
+      <div class="stat-sep">|</div>
+      <div class="stat-item pct">
+        <span class="stat-val" id="statPct">—</span>
+        <span class="stat-label">precisão</span>
+      </div>
+      <div class="stat-sep">|</div>
+      <div class="stat-item streak" title="Sequência de acertos consecutivos">
+        <span class="stat-val" id="statStreak">0</span>
+        <span class="stat-label">🔥 streak</span>
+      </div>
+    </div>
+    <div class="header-actions">
+      <div class="stack-ctrl">
+        <label>Stack:</label>
+        <select id="stackSelect">
+          <option value="0">Aleatório</option>
+          <option value="20">20bb</option>
+          <option value="35" selected>35bb</option>
+          <option value="50">50bb</option>
+          <option value="100">100bb</option>
+        </select>
+      </div>
+      <button id="resetBtn" class="btn-ghost">↺ Resetar</button>
+      <button id="analyticsBtn" class="btn-ghost btn-analytics">📊 Análise</button>
+    </div>
+  </header>
+
+  <!-- MAIN -->
+  <main>
+
+    <!-- TELA: pergunta -->
+    <div id="screenQuestion" class="screen screen-question">
+
+      <div class="situation-row">
+        <div class="sit-chip" id="sitStack"></div>
+        <div class="sit-chip sit-pos" id="sitPos"></div>
+        <div class="sit-chip sit-scenario" id="sitScenario"></div>
+      </div>
+
+      <div class="sim-table-wrap">
+        <svg id="simTable"></svg>
+      </div>
+
+      <div class="question-prompt">Qual é a sua ação?</div>
+
+      <div class="action-btns" id="actionBtns"></div>
+
+    </div>
+
+    <!-- TELA: resultado -->
+    <div id="screenResult" class="screen hidden">
+
+      <div class="result-badge" id="resultBadge"></div>
+      <div class="result-hand" id="resultHand"></div>
+      <div class="result-msg"  id="resultMsg"></div>
+
+      <div class="result-grid-wrap">
+        <div class="result-grid-title">Range completo para esta situação:</div>
+        <div id="resultGrid" class="result-grid"></div>
+        <div id="resultLegend" class="result-legend"></div>
+      </div>
+
+      <button id="nextBtn" class="btn-next">
+        Próxima mão →
+        <span class="key-hint">espaço</span>
+      </button>
+
+    </div>
+
+    <!-- TELA: análise -->
+    <div id="screenAnalytics" class="screen screen-analytics hidden">
+
+      <div class="an-header">
+        <button id="backBtn" class="btn-ghost">← Voltar</button>
+        <span class="an-title">Análise de Desempenho</span>
+        <span class="an-range-info" id="anRangeInfo"></span>
+      </div>
+
+      <!-- Filtro de período -->
+      <div class="an-filters">
+        <label class="an-filter-label">Período:</label>
+        <div class="an-preset-group" id="anPresetGroup">
+          <button class="an-preset active" data-preset="all">Tudo</button>
+          <button class="an-preset" data-preset="today">Hoje</button>
+          <button class="an-preset" data-preset="7">7 dias</button>
+          <button class="an-preset" data-preset="30">30 dias</button>
+          <button class="an-preset" data-preset="custom">Personalizado</button>
+        </div>
+        <div class="an-dates hidden" id="anDates">
+          <input type="date" id="anFrom" class="an-date-input"/>
+          <span class="an-dates-sep">→</span>
+          <input type="date" id="anTo" class="an-date-input"/>
+          <button id="anApply" class="btn-ghost an-apply">Aplicar</button>
+        </div>
+      </div>
+
+      <!-- Cards de resumo -->
+      <div class="an-summary" id="anSummary"></div>
+
+      <!-- Card de melhora (últimos 7 dias vs 7 anteriores) -->
+      <div class="an-section an-improvement-section" id="improvementSection">
+        <div class="an-section-title">📈 Evolução — últimos 7 dias vs 7 anteriores</div>
+        <div id="improvementBody" class="improvement-body"></div>
+      </div>
+
+      <!-- Histórico diário -->
+      <div class="an-section" id="dailySection">
+        <div class="an-section-title">📅 Precisão por dia</div>
+        <div id="chartDaily" class="chart-daily"></div>
+      </div>
+
+      <div class="an-section">
+        <div class="an-section-title">📍 Por Posição</div>
+        <div id="chartPosition" class="chart-bars"></div>
+      </div>
+
+      <div class="an-section">
+        <div class="an-section-title">🎯 Por Cenário</div>
+        <div id="chartScenario" class="chart-bars"></div>
+      </div>
+
+      <div class="an-section" id="stackSection">
+        <div class="an-section-title">💰 Por Stack Depth</div>
+        <div id="chartStack" class="chart-bars"></div>
+      </div>
+
+      <div class="an-section" id="topHandsSection">
+        <div class="an-section-title">❌ Mãos mais erradas</div>
+        <div id="chartHands" class="chart-bars"></div>
+      </div>
+
+      <div class="an-section" id="mistakesSection">
+        <div class="an-section-title">📋 Últimos erros</div>
+        <div id="mistakesTable" class="mistakes-table-wrap"></div>
+      </div>
+
+    </div>
+
+  </main>
+</div>
+
+<script src="shared/api.js"></script>
+<script src="shared/core.js"></script>
+<script src="simulator.js"></script>
+</body>
+</html>

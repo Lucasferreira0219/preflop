@@ -1,0 +1,39 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+.pytest_cache/
+.venv/
+venv/
+env/
+
+# Banco de dados local (dados pessoais — não compartilhar)
+data/preflop.db
+data/preflop.db-journal
+data/preflop.db-wal
+data/preflop.db-shm
+data/user_stats.json
+
+# Build / dist
+build/
+dist/
+*.spec
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# Claude Code
+.claude/
+.claude-cache/
+
+# Logs / temp
+*.log
+.tmp/
