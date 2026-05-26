@@ -4,7 +4,7 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Simulador Preflop MTT</title>
-  <link rel="stylesheet" href="simulator.css?v=1779770200"/>
+  <link rel="stylesheet" href="simulator.css?v=1779832000"/>
 </head>
 <body>
 
@@ -25,7 +25,7 @@
 
 <div id="app">
 
-  <!-- HEADER 56px -->
+  <!-- HEADER 48px -->
   <header>
     <div class="header-brand">
       <span class="header-suit">♠</span>
@@ -82,7 +82,7 @@
     </div>
   </div>
 
-  <!-- STATS BAR 36px -->
+  <!-- STATS BAR -->
   <div class="stats-bar">
     <div class="stat-pill stat-pct">
       <span class="stat-pill-icon">✓</span>
@@ -96,7 +96,6 @@
       <span class="stat-pill-icon stat-icon-total">#</span>
       <span class="stat-val" id="statTotal">0</span>
     </div>
-    <!-- Hidden stats kept for JS compatibility -->
     <span id="statCorrect" class="stat-hidden">0</span>
     <span id="statWrong"   class="stat-hidden">0</span>
   </div>
@@ -107,62 +106,79 @@
     <!-- TELA: pergunta -->
     <div id="screenQuestion" class="screen screen-question">
 
-      <!-- Chips de contexto -->
-      <div class="situation-row">
-        <div class="sit-chip" id="sitStack"></div>
-        <div class="sit-chip sit-pos" id="sitPos"></div>
-        <div class="sit-chip sit-scenario" id="sitScenario"></div>
-      </div>
+      <!-- Card central de decisão -->
+      <div class="decision-card">
 
-      <!-- Mesa SVG -->
-      <div class="table-area">
-        <svg id="simTable" class="sim-table"></svg>
-      </div>
+        <!-- Linha de contexto: stack · posição · situação -->
+        <div class="dc-context">
+          <span class="dc-chip dc-stack" id="sitStack"></span>
+          <span class="dc-sep">·</span>
+          <span class="dc-chip dc-pos" id="sitPos"></span>
+          <span class="dc-sep">·</span>
+          <span class="dc-chip dc-scen" id="sitScenario"></span>
+        </div>
 
-      <!-- Cartas do herói -->
-      <div class="hero-cards-display" id="heroCardsDisplay">
-        <div class="hero-card" id="hCard1">
-          <div class="hc-tl">
-            <span class="hc-rank" id="hRank1"></span>
-            <span class="hc-suit-sm" id="hSuit1"></span>
+        <!-- Mini tira de posições (gerada por JS via renderPosStrip) -->
+        <div class="pos-strip" id="posStrip"></div>
+
+        <!-- Cartas do herói -->
+        <div class="hero-cards-display" id="heroCardsDisplay">
+          <div class="hero-card" id="hCard1">
+            <div class="hc-tl">
+              <span class="hc-rank" id="hRank1"></span>
+              <span class="hc-suit-sm" id="hSuit1"></span>
+            </div>
+            <div class="hc-center" id="hCenterSuit1"></div>
+            <div class="hc-br">
+              <span class="hc-rank" id="hRank1b"></span>
+              <span class="hc-suit-sm" id="hSuit1b"></span>
+            </div>
           </div>
-          <div class="hc-center" id="hCenterSuit1"></div>
-          <div class="hc-br">
-            <span class="hc-rank" id="hRank1b"></span>
-            <span class="hc-suit-sm" id="hSuit1b"></span>
+          <div class="hero-card" id="hCard2">
+            <div class="hc-tl">
+              <span class="hc-rank" id="hRank2"></span>
+              <span class="hc-suit-sm" id="hSuit2"></span>
+            </div>
+            <div class="hc-center" id="hCenterSuit2"></div>
+            <div class="hc-br">
+              <span class="hc-rank" id="hRank2b"></span>
+              <span class="hc-suit-sm" id="hSuit2b"></span>
+            </div>
           </div>
         </div>
-        <div class="hero-card" id="hCard2">
-          <div class="hc-tl">
-            <span class="hc-rank" id="hRank2"></span>
-            <span class="hc-suit-sm" id="hSuit2"></span>
-          </div>
-          <div class="hc-center" id="hCenterSuit2"></div>
-          <div class="hc-br">
-            <span class="hc-rank" id="hRank2b"></span>
-            <span class="hc-suit-sm" id="hSuit2b"></span>
-          </div>
-        </div>
+
+        <div class="dc-prompt">Qual é a sua ação?</div>
       </div>
 
-      <!-- Área de ação -->
-      <div class="question-footer">
-        <div class="question-prompt">Qual é a sua ação?</div>
+      <!-- Botões em fluxo natural, logo abaixo do card -->
+      <div class="action-area">
         <div class="action-btns" id="actionBtns"></div>
       </div>
+
+      <!-- SVG oculto — mantido para compatibilidade com renderSimTable() -->
+      <svg id="simTable" style="display:none" aria-hidden="true"></svg>
 
     </div>
 
     <!-- TELA: resultado -->
     <div id="screenResult" class="screen hidden">
 
-      <div class="result-badge" id="resultBadge"></div>
-      <div class="result-hand" id="resultHand"></div>
-      <div class="result-msg"  id="resultMsg"></div>
+      <!-- Card de veredicto compacto -->
+      <div class="result-verdict-card">
+        <div class="result-badge" id="resultBadge"></div>
+        <div class="result-hand" id="resultHand"></div>
+        <div class="result-msg"  id="resultMsg"></div>
+      </div>
+
+      <!-- Explicação rica (colapsada por padrão) -->
       <div class="result-explain" id="resultExplain"></div>
 
-      <div class="result-grid-wrap">
-        <div class="result-grid-title">Range completo para esta situação:</div>
+      <!-- Resumo de range (sempre visível) -->
+      <div class="result-range-summary" id="resultRangeSummary"></div>
+
+      <!-- Toggle + range matrix colapsável -->
+      <button class="result-range-toggle" id="rangeToggleBtn">Ver range completo ▾</button>
+      <div class="result-grid-wrap hidden" id="resultGridWrap">
         <div id="resultGrid" class="result-grid"></div>
         <div id="resultLegend" class="result-legend"></div>
       </div>
@@ -254,7 +270,7 @@
 <script>window._BASE = /^\/preflop(?=\/|$)/.test(location.pathname) ? "/preflop" : "";</script>
 <script src="shared/api.js?v=4"></script>
 <script src="shared/core.js?v=4"></script>
-<script src="simulator.js?v=10"></script>
+<script src="simulator.js?v=12"></script>
 <script>
 function openDrawer(){document.getElementById('drawer').classList.add('open');document.getElementById('drawer-overlay').classList.add('open');}
 function closeDrawer(){document.getElementById('drawer').classList.remove('open');document.getElementById('drawer-overlay').classList.remove('open');}

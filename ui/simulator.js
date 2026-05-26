@@ -78,11 +78,11 @@ const currentMode  = (window.PreflopAPI && PreflopAPI.getMode) ? PreflopAPI.getM
 const stackOptions = (window.PreflopAPI && PreflopAPI.stacksForMode) ? PreflopAPI.stacksForMode(currentMode) : [20,35,50,100];
 
 // Preferências persistidas
-const PREFS_KEY = 'preflop.simulator.prefs.v1';
-const _defaultStack = String(stackOptions[Math.min(1, stackOptions.length-1)]);
+const PREFS_KEY = 'preflop.simulator.prefs.v2'; // bumped: reseta stack default para Aleatório
+const _defaultStack = '0'; // 0 = Aleatório
 const prefs = Object.assign({ stack: _defaultStack, focusPos: '', focusScenario: '' }, C.lsGet(PREFS_KEY, {}));
-// Se o stack salvo não pertence ao modo atual, reseta
-if (!stackOptions.includes(parseInt(prefs.stack))) {
+// 0 = Aleatório é válido; só reseta se for stack desconhecido no modo atual
+if (parseInt(prefs.stack) !== 0 && !stackOptions.includes(parseInt(prefs.stack))) {
   prefs.stack = _defaultStack;
 }
 
@@ -149,13 +149,17 @@ const el = {
   sitScenario: document.getElementById('sitScenario'),
   actionBtns:  document.getElementById('actionBtns'),
 
-  resultBadge: document.getElementById('resultBadge'),
-  resultHand:  document.getElementById('resultHand'),
-  resultMsg:   document.getElementById('resultMsg'),
-  resultGrid:  document.getElementById('resultGrid'),
-  resultLegend:document.getElementById('resultLegend'),
-  resultExplain:document.getElementById('resultExplain'),
-  nextBtn:     document.getElementById('nextBtn'),
+  resultBadge:        document.getElementById('resultBadge'),
+  resultHand:         document.getElementById('resultHand'),
+  resultMsg:          document.getElementById('resultMsg'),
+  resultGrid:         document.getElementById('resultGrid'),
+  resultLegend:       document.getElementById('resultLegend'),
+  resultExplain:      document.getElementById('resultExplain'),
+  resultRangeSummary: document.getElementById('resultRangeSummary'),
+  rangeToggleBtn:     document.getElementById('rangeToggleBtn'),
+  resultGridWrap:     document.getElementById('resultGridWrap'),
+  posStrip:           document.getElementById('posStrip'),
+  nextBtn:            document.getElementById('nextBtn'),
 
   focusBtn:           document.getElementById('focusBtn'),
   focusPanel:         document.getElementById('focusPanel'),
@@ -222,6 +226,15 @@ function init() {
   el.resetBtn.addEventListener('click', resetStats);
   el.analyticsBtn.addEventListener('click', openAnalytics);
   el.backBtn.addEventListener('click', () => showScreen('question'));
+
+  if (el.rangeToggleBtn) {
+    el.rangeToggleBtn.addEventListener('click', () => {
+      const isOpen = !el.resultGridWrap.classList.contains('hidden');
+      el.resultGridWrap.classList.toggle('hidden', isOpen);
+      el.rangeToggleBtn.textContent = isOpen ? 'Ver range completo ▾' : 'Ocultar range ▴';
+      el.rangeToggleBtn.classList.toggle('open', !isOpen);
+    });
+  }
 
   // Focus panel toggle
   el.focusBtn.addEventListener('click', () => {
@@ -319,8 +332,8 @@ function renderQuestion(q) {
   // Exibe cartas grandes em HTML (acima da mesa)
   displayHeroCards(c1, c2);
 
-  // Mesa CSS (visível) + SVG oculto (compatibilidade)
-  renderCSSTable(q.pos, q.villain_pos || null);
+  // Mini tira de posições + SVG oculto (compatibilidade)
+  renderPosStrip(q.pos, q.villain_pos || null);
   renderSimTable(q.pos, q.villain_pos || null, q.scenario, null, q.stack);
 
   const actions = getActions(q);
@@ -479,7 +492,42 @@ function showResult(res, userAction) {
     el.resultExplain.style.display = html ? '' : 'none';
   }
 
+  // Renderiza grid (hidden inicialmente) e resumo de range
   renderResultGrid(res.buckets, currentQuestion.hand);
+  renderRangeSummary(res.buckets);
+
+  // Fecha range grid no início de cada nova mão
+  if (el.resultGridWrap)   el.resultGridWrap.classList.add('hidden');
+  if (el.rangeToggleBtn)   el.rangeToggleBtn.textContent = 'Ver range completo ▾';
+  if (el.rangeToggleBtn)   el.rangeToggleBtn.classList.remove('open');
+}
+
+function renderRangeSummary(buckets) {
+  if (!el.resultRangeSummary) return;
+  const lookup = C.buildLookup(buckets);
+  const counts = {};
+  Object.values(lookup).forEach(a => counts[a] = (counts[a] || 0) + 1);
+  const foldCount = 169 - Object.values(counts).reduce((s, n) => s + n, 0);
+  if (foldCount > 0) counts['fold'] = foldCount;
+
+  const order = ['rfi','raise','3bet','4bet','shove','call','fold'];
+  const shown = new Set();
+  let html = '';
+  order.forEach(act => {
+    const n = counts[act] || 0;
+    if (n <= 0) return;
+    const key = act === 'raise' ? 'rfi' : act;
+    if (shown.has(key)) return;
+    shown.add(key);
+    const pct = Math.round(n / 169 * 100);
+    const color = C.ACTION_COLOR[act] || '#555';
+    const name  = C.ACTION_NAME[act] || act;
+    html += `<span class="rrs-pill">
+      <span class="rrs-dot" style="background:${color}"></span>
+      ${name} <span class="rrs-pct">${pct}%</span>
+    </span>`;
+  });
+  el.resultRangeSummary.innerHTML = html;
 }
 
 // ── Mini grade no resultado ───────────────────────────────────────────────────
@@ -604,6 +652,28 @@ function showScreen(name) {
   el.screenResult.classList.toggle('hidden',     name !== 'result');
   el.screenAnalytics.classList.toggle('hidden',  name !== 'analytics');
   document.querySelector('main').classList.toggle('analytics-mode', name === 'analytics');
+}
+
+// ── Mini tira de posições ────────────────────────────────────────────────────
+
+function renderPosStrip(heroPos, villainPos) {
+  if (!el.posStrip) return;
+  const positions = C.POSITIONS_BY_COUNT[9];
+  el.posStrip.innerHTML = '';
+  positions.forEach((pos, i) => {
+    if (i > 0) {
+      const sep = document.createElement('span');
+      sep.className = 'ps-sep';
+      sep.textContent = '·';
+      el.posStrip.appendChild(sep);
+    }
+    const span = document.createElement('span');
+    span.className = 'ps-pos';
+    if (pos === heroPos)   span.classList.add('ps-hero');
+    if (pos === villainPos) span.classList.add('ps-villain');
+    span.textContent = C.POS_LABEL[pos] || pos;
+    el.posStrip.appendChild(span);
+  });
 }
 
 // ── Mesa de posições (via core compartilhado) ────────────────────────────────
