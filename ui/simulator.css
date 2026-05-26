@@ -212,16 +212,94 @@ header {
   font-size: 12px; color: var(--accent2); font-weight: 600;
 }
 
-/* ── RESULT EXPLAIN ── */
+/* ── RESULT EXPLAIN (rich, 5 seções) ── */
 .result-explain {
-  margin: 0 16px 10px;
-  padding: 10px 14px;
-  background: rgba(79,195,247,0.07);
-  border: 1px solid rgba(79,195,247,0.2);
-  border-radius: var(--r12);
-  font-size: 13px; color: var(--accent2);
-  line-height: 1.5;
+  width: 100%;
+  display: flex; flex-direction: column; gap: 10px;
 }
+
+.explain-section {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--r12);
+  padding: 12px 14px;
+}
+
+.explain-title {
+  font-size: 11px; font-weight: 800;
+  color: var(--muted); letter-spacing: 0.8px;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+.explain-body {
+  font-size: 13px; color: var(--text);
+  line-height: 1.55;
+}
+
+/* Ação correta — badge grande colorido */
+.explain-action { align-items: flex-start; }
+.explain-action-badge {
+  display: inline-block;
+  padding: 7px 16px; border-radius: 20px;
+  font-size: 15px; font-weight: 900;
+  letter-spacing: 0.6px; color: #fff;
+  margin-bottom: 8px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.4);
+}
+
+/* Listas (erros comuns) */
+.explain-list {
+  list-style: none;
+  display: flex; flex-direction: column; gap: 6px;
+}
+.explain-list li {
+  font-size: 12.5px; color: var(--text);
+  line-height: 1.45; padding-left: 16px; position: relative;
+}
+.explain-mistakes li::before {
+  content: '⚠'; position: absolute; left: 0;
+  color: #ffb74d; font-size: 11px;
+}
+
+/* Chips de mãos-chave */
+.explain-chips { display: flex; flex-wrap: wrap; gap: 5px; }
+.explain-chip {
+  font-size: 12px; font-weight: 700;
+  color: var(--accent2);
+  background: rgba(79,195,247,0.1);
+  border: 1px solid rgba(79,195,247,0.3);
+  border-radius: 6px; padding: 3px 8px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Flag de spot derivado */
+.explain-flag {
+  display: inline-block; margin-top: 8px;
+  font-size: 11px; font-weight: 700;
+  color: #ffcc80;
+  background: rgba(255,152,0,0.12);
+  border: 1px solid rgba(255,152,0,0.3);
+  border-radius: 6px; padding: 3px 8px;
+}
+
+/* Contexto da fase */
+.explain-phase {
+  background: rgba(129,212,250,0.06);
+  border-color: rgba(129,212,250,0.22);
+}
+.explain-phase .explain-title { color: var(--accent2); }
+.explain-rp {
+  font-size: 10px; font-weight: 700; color: #fbbf24;
+  background: rgba(245,158,11,0.12); border-radius: 10px;
+  padding: 1px 7px; margin-left: 4px; letter-spacing: 0.3px;
+}
+.explain-icm {
+  margin-top: 8px; font-size: 12px; color: var(--muted);
+  line-height: 1.5; padding-top: 8px;
+  border-top: 1px solid var(--border);
+}
+.explain-icm strong { color: var(--accent2); }
 
 .hamburger {
   background: transparent;
@@ -501,6 +579,16 @@ main {
   color: #f0dcff;
   box-shadow: 0 4px 16px rgba(112,32,160,0.45);
 }
+.action-btn.shove {
+  background: linear-gradient(160deg, #e53935 0%, #c62828 100%);
+  color: #ffe0de;
+  box-shadow: 0 4px 16px rgba(198,40,40,0.5);
+}
+.action-btn.resteal {
+  background: linear-gradient(160deg, #ec407a 0%, #c2185b 100%);
+  color: #ffe0ec;
+  box-shadow: 0 4px 16px rgba(194,24,91,0.5);
+}
 
 /* ── RESULT SCREEN ── */
 #screenResult {
@@ -564,6 +652,7 @@ main {
 .rg-cell.action-rfi, .rg-cell.action-raise   { background: #1b5e20; }
 .rg-cell.action-3bet, .rg-cell.action-threebet { background: #0d47a1; }
 .rg-cell.action-4bet, .rg-cell.action-fourbet  { background: #4a148c; }
+.rg-cell.action-shove { background: #d32f2f; }
 .rg-cell.action-call  { background: #bf360c; }
 .rg-cell.action-fold  { background: var(--surface3); opacity: 0.5; }
 .rg-cell.highlighted  { box-shadow: 0 0 0 2px #fff; z-index: 1; }

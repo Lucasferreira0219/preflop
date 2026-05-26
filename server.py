@@ -17,8 +17,10 @@ from fastapi.staticfiles import StaticFiles
 
 from api import Api
 from simulator_api import SimulatorApi
+from insights_api import InsightsApi
 import api as api_module
 import simulator_engine
+import insights_api as insights_module
 
 
 _BASE      = os.path.dirname(os.path.abspath(__file__))
@@ -27,15 +29,17 @@ RANGES_DIR = os.path.join(_BASE, "ranges")
 
 app = FastAPI(title="Preflop Trainer", version="1.0")
 
-main_api = Api()
-sim_api  = SimulatorApi()
+main_api     = Api()
+sim_api      = SimulatorApi()
+insights_api = InsightsApi()
 
 # Pré-carrega ranges em memória no startup
 @app.on_event("startup")
 def _warm_cache():
     n1 = api_module.warm_cache()
     n2 = simulator_engine.warm_cache()
-    print(f"[startup] Ranges cache: consulta={n1} simulador={n2}")
+    n3 = insights_module.warm_cache()
+    print(f"[startup] Cache: consulta={n1} simulador={n2} insights={n3}")
 
 
 # ── Páginas HTML ─────────────────────────────────────────────────────────────
@@ -104,6 +108,20 @@ async def get_range(request: Request):
     if len(args) < 3:
         raise HTTPException(400, "pos, scenario, stack_bb required")
     return main_api.get_range(*args)
+
+@app.post("/api/list_villains")
+async def list_villains(request: Request):
+    args = await _read_args(request)
+    if len(args) < 2:
+        raise HTTPException(400, "pos, stack_bb required")
+    return main_api.list_villains(*args)
+
+@app.post("/api/get_insights")
+async def get_insights(request: Request):
+    args = await _read_args(request)
+    if len(args) < 2:
+        raise HTTPException(400, "mode, stack required")
+    return insights_api.get_insights(*args)
 
 
 # ── Static files (CSS / JS / ranges) ─────────────────────────────────────────

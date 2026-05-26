@@ -73,6 +73,24 @@
     return _callWeb(method, args);
   }
 
+  // ── Modo: MTT ou SnG (persistido em localStorage) ──────────────────────────
+  const MODE_KEY    = 'preflop_mode';
+  const VALID_MODES = ['mtt', 'sng'];
+  const STACKS_BY_MODE = { mtt: [20, 35, 50, 100], sng: [10, 15, 30, 75] };
+
+  function getMode() {
+    let m = null;
+    try { m = localStorage.getItem(MODE_KEY); } catch (e) {}
+    return VALID_MODES.includes(m) ? m : 'mtt';
+  }
+  function setMode(m) {
+    if (!VALID_MODES.includes(m)) return;
+    try { localStorage.setItem(MODE_KEY, m); } catch (e) {}
+  }
+  function stacksForMode(m) {
+    return STACKS_BY_MODE[m] || STACKS_BY_MODE.mtt;
+  }
+
   // ── Navegação ──────────────────────────────────────────────────────────────
   function navigate(target) {
     if (mode === 'desktop') {
@@ -95,6 +113,9 @@
 
     navigate,
 
+    // Modo MTT/SnG
+    getMode, setMode, stacksForMode,
+
     // Simulador
     new_question:    (...a) => call('new_question',    ...a),
     submit_answer:   (...a) => call('submit_answer',   ...a),
@@ -105,5 +126,7 @@
 
     // Consulta
     get_range:       (...a) => call('get_range',       ...a),
+    list_villains:   (...a) => call('list_villains',   ...a),
+    get_insights:    (...a) => call('get_insights',    ...a),
   };
 })();

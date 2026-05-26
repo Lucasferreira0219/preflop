@@ -50,12 +50,14 @@ const POSITIONS_BY_COUNT = {
 const ACTION_COLOR = {
   raise:'#2e7d32', rfi:'#2e7d32',
   '3bet':'#1565c0', '4bet':'#6a1b9a',
+  shove:'#d32f2f',
   call:'#e65100',  fold:'#37474f',
 };
 
 const ACTION_NAME = {
   raise:'Abrir',  rfi:'Abrir',
   '3bet':'3-Bet', '4bet':'4-Bet',
+  shove:'Shove',
   call:'Call',    fold:'Fold',
 };
 
@@ -74,7 +76,7 @@ function normalizeAction(a) {
 }
 
 function buildLookup(buckets) {
-  const priority = ['4bet','3bet','rfi','raise','call','fold'];
+  const priority = ['4bet','3bet','rfi','raise','shove','call','fold'];
   const lookup = {};
   Object.entries(buckets || {}).forEach(([act, hands]) => {
     const norm = normalizeAction(act);
@@ -101,13 +103,19 @@ function handDescription(hand) {
   return `${r1}-${r2} naipes diferentes`;
 }
 
-function actionDisplayName(action, scenario) {
+function actionDisplayName(action, scenario, stack) {
+  const norm = normalizeAction(action);
+  // Shove vira "Resteal" quando é vs_RFI em short stack jogável (12-18bb)
+  if (norm === 'shove') {
+    if (scenario === 'vs_RFI' && stack != null && stack > 12 && stack <= 18) return 'Resteal';
+    return 'Shove (All-in)';
+  }
   const map = {
     RFI:     { raise:'Abrir (RFI)', rfi:'Abrir (RFI)', fold:'Fold' },
     vs_RFI:  { '3bet':'3-Bet', call:'Call', fold:'Fold' },
     vs_3bet: { '4bet':'4-Bet', call:'Call', fold:'Fold' },
   };
-  return (map[scenario] || {})[normalizeAction(action)] || (map[scenario] || {})[action] || action;
+  return (map[scenario] || {})[norm] || (map[scenario] || {})[action] || action;
 }
 
 // ── SVG helper ───────────────────────────────────────────────────────────────

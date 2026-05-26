@@ -1,0 +1,116 @@
+{
+  "version": 1,
+  "source": "Curado de sng_arq/notes/ (Reg Life SnG)",
+  "glossary": {
+    "RFI": {
+      "term": "RFI (Raise First In)",
+      "definition": "Range usado quando todos foldam até você — você é o primeiro a colocar fichas no pote com um raise."
+    },
+    "3bet": {
+      "term": "3-Bet",
+      "definition": "Re-aumentar o raise de um vilão. Ex: vilão abre pra 3bb, você sobe pra 9bb. É o terceiro 'bet' do jogo (BB → raise → 3-bet)."
+    },
+    "4bet": {
+      "term": "4-Bet",
+      "definition": "Re-aumentar um 3-bet. Em torneio com stacks médios, geralmente vira all-in. Range restrito a mãos premium (KK+, AK)."
+    },
+    "RP": {
+      "term": "Risk Premium (RP)",
+      "definition": "Penalidade em fichas para entrar numa mão por causa do ICM. Quanto maior o RP, mais tight você joga. Bolha de SnG 9-handed tem RP médio 15.2%."
+    },
+    "ICM": {
+      "term": "ICM (Independent Chip Model)",
+      "definition": "Modelo que converte fichas em valor monetário esperado considerando o pay structure do torneio. Sua mão vale diferente em ChipEV vs ICM."
+    },
+    "ChipEV": {
+      "term": "ChipEV",
+      "definition": "Valor esperado em fichas (ignora prêmios). Em Heads-Up vira a referência única — sem mais pay jumps, ICM = 0."
+    },
+    "EV": {
+      "term": "$EV",
+      "definition": "Valor esperado em dinheiro (considera prêmios). É o que você deve maximizar em torneios — não só fichas."
+    },
+    "Resteal": {
+      "term": "Resteal",
+      "definition": "3-bet all-in num short stack (10-15bb) contra um abridor que está tentando roubar blinds. Ferramenta exclusiva de short stack."
+    },
+    "Limp": {
+      "term": "Limp",
+      "definition": "Pagar a big blind sem aumentar. Geralmente erro, exceto em SB Blind War na bolha e em Heads-Up (limp/raise 80/20)."
+    },
+    "FoldEquity": {
+      "term": "Fold Equity",
+      "definition": "Probabilidade do vilão foldar — fonte principal de EV em shoves de short stack. Bet de 50% pot precisa de 33% de fold equity pra ser lucrativo."
+    },
+    "ImpliedOdds": {
+      "term": "Implied Odds",
+      "definition": "Dinheiro que você espera ganhar nos street futuros se acertar a mão. Justifica pagar com pares baixos (22-66) pra setar em deep stack."
+    },
+    "PushFold": {
+      "term": "Push/Fold",
+      "definition": "Estratégia binária de ≤10bb: shove ou fold, sem mix. Em 15-20bb pode misturar mini-raise + shove + fold (fragmentação)."
+    },
+    "BlindWar": {
+      "term": "Blind War",
+      "definition": "Confronto SB vs BB (heads-up forçado pelas blinds). Estratégia diferente do resto: range muito amplo, limps válidos, foco em fold equity."
+    },
+    "Bolha": {
+      "term": "Bolha",
+      "definition": "Fase do torneio próxima ao primeiro pagamento ITM. Erros têm custo extremo, RP máximo. Em SnG 9-handed: ~4 jogadores restantes."
+    },
+    "FragmentacaoRange": {
+      "term": "Fragmentação de Range",
+      "definition": "Dividir o range de open em 3 buckets: mini-raise (premium pra induzir 3-bet), shove direto (mãos médias), fold (fracas). Acontece em 10-20bb."
+    }
+  },
+  "actions": {
+    "rfi": {
+      "name": "Abrir (RFI)",
+      "color": "#2e7d32",
+      "emoji": "🟢",
+      "long_desc": "Você é o primeiro a entrar no pote com um raise. Tamanho padrão: 3x BB em deep stacks (≥30bb), 2.5x em short."
+    },
+    "raise": {
+      "name": "Abrir (RFI)",
+      "color": "#2e7d32",
+      "emoji": "🟢",
+      "long_desc": "Você é o primeiro a entrar no pote com um raise. Tamanho padrão: 3x BB em deep stacks (≥30bb), 2.5x em short."
+    },
+    "3bet": {
+      "name": "3-Bet",
+      "color": "#1565c0",
+      "emoji": "🔵",
+      "long_desc": "Re-aumentar o raise do vilão. Para iniciantes em SnG: restringir a mãos premium (AA-TT, AK, AQ) pra evitar spots pós-flop complicados."
+    },
+    "4bet": {
+      "name": "4-Bet",
+      "color": "#6a1b9a",
+      "emoji": "🟣",
+      "long_desc": "Re-aumentar um 3-bet. Geralmente vira all-in em stacks médios. Range típico: KK+, AKs (e AKo dependendo do spot)."
+    },
+    "shove": {
+      "name": "Shove (All-in)",
+      "color": "#d32f2f",
+      "emoji": "🔴",
+      "long_desc": "All-in pré-flop. Em short stack (≤12bb) é a ação padrão de open. O EV vem de duas fontes: fold equity (vilão folda → você ganha as blinds) e equidade quando ele paga. Sem decisões pós-flop."
+    },
+    "resteal": {
+      "name": "Resteal",
+      "color": "#d81b60",
+      "emoji": "💥",
+      "long_desc": "3-bet all-in contra um vilão que abriu pra roubar (12-18bb). O range largo do open dele + seu short stack tornam -EV pra ele pagar. Funciona melhor contra posições late (CO/BTN), que abrem mais."
+    },
+    "call": {
+      "name": "Call",
+      "color": "#bf360c",
+      "emoji": "🟠",
+      "long_desc": "Pagar a aposta sem aumentar. Em SnG ICM, o call range tende a ser mais seleto que em ChipEV — equidade extra é necessária por causa do RP. Defendendo vs shove de short stack, calle só com equidade real."
+    },
+    "fold": {
+      "name": "Fold",
+      "color": "#37474f",
+      "emoji": "⬛",
+      "long_desc": "Descartar a mão. A maioria das mãos é fold preflop — o jogo lucrativo é seletivo, não loose."
+    }
+  }
+}

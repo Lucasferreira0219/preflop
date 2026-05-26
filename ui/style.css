@@ -172,6 +172,76 @@ header {
 .filter-sep { width: 1px; height: 20px; background: var(--border); flex-shrink: 0; }
 .filter-sep-mobile-break { display: none; }
 
+/* Phase pills (Auto / Early / Middle / Late / Push) */
+.filter-phase { gap: 6px; }
+.phase-pills { display: flex; gap: 4px; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+.phase-pills::-webkit-scrollbar { display: none; }
+.phase-pill {
+  height: 28px; padding: 0 10px;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  color: var(--muted);
+  font-size: 11px; font-weight: 700;
+  cursor: pointer; transition: all 0.15s;
+  white-space: nowrap; flex-shrink: 0;
+}
+.phase-pill:hover { color: var(--text); border-color: var(--border2); }
+.phase-pill[data-phase="auto"].selected {
+  background: rgba(107,112,144,0.2); color: var(--text); border-color: var(--border2);
+}
+.phase-pill[data-phase="early"].selected {
+  background: rgba(67,160,71,0.18); color: #81c784; border-color: rgba(67,160,71,0.5);
+}
+.phase-pill[data-phase="middle"].selected {
+  background: rgba(245,158,11,0.18); color: #fbbf24; border-color: rgba(245,158,11,0.5);
+}
+.phase-pill[data-phase="late"].selected {
+  background: rgba(229,57,53,0.18); color: #ef5350; border-color: rgba(229,57,53,0.5);
+}
+.phase-pill[data-phase="shortstack"].selected {
+  background: rgba(156,39,176,0.18); color: #ba68c8; border-color: rgba(156,39,176,0.5);
+}
+
+/* Mode toggle iOS-style (MTT / SnG) */
+.mode-pills {
+  position: relative;
+  display: flex;
+  width: 132px;
+  background: #0a0a18;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 3px;
+  flex-shrink: 0;
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.4);
+}
+/* Thumb deslizante — destaca o lado ativo */
+.mode-pills::before {
+  content: '';
+  position: absolute;
+  top: 3px; bottom: 3px; left: 3px;
+  width: calc(50% - 3px);
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 100%);
+  border-radius: 999px;
+  box-shadow: 0 2px 12px rgba(79,195,247,0.45);
+  transition: transform 0.32s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 0;
+}
+.mode-pills.is-sng::before { transform: translateX(100%); }
+
+.mode-pill {
+  flex: 1;
+  position: relative; z-index: 1;
+  border: none; background: transparent;
+  padding: 7px 0;
+  font-size: 11px; font-weight: 800; letter-spacing: 1.8px;
+  color: var(--muted); cursor: pointer;
+  transition: color 0.25s;
+  -webkit-tap-highlight-color: transparent;
+}
+.mode-pill:hover:not(.selected) { color: var(--text); }
+.mode-pill.selected { color: #050514; }
+
 /* Stack slider */
 .filter-stack { gap: 10px; }
 .filter-stack input[type="range"] {
@@ -270,24 +340,51 @@ header {
 }
 .pos-pill.inactive { opacity: 0.35; }
 
-/* Scenario pills */
-.filter-scen { gap: 8px; }
-.scen-pills { display: flex; gap: 6px; flex-shrink: 0; }
-.scen-pill {
-  height: 32px; padding: 0 14px;
-  border-radius: 20px;
-  border: 1px solid var(--border);
-  background: transparent;
-  color: var(--muted);
-  font-family: inherit; font-size: 12px; font-weight: 600;
-  cursor: pointer; transition: all 0.15s;
-  white-space: nowrap;
+/* Villain pills — mesmo formato dos pos-pills, mas com cores por cenário derivado */
+.filter-villain { gap: 6px; }
+.villain-pills {
+  display: flex; gap: 5px; flex-wrap: nowrap;
+  overflow-x: auto; scrollbar-width: none;
+  -ms-overflow-style: none;
 }
-.scen-pill:hover { color: var(--text); border-color: var(--border2); }
+.villain-pills::-webkit-scrollbar { display: none; }
 
-.scen-rfi.selected     { background: rgba(67,160,71,0.15); color: #81c784; border-color: rgba(67,160,71,0.5); }
-.scen-vs-rfi.selected  { background: rgba(245,158,11,0.15); color: #fbbf24; border-color: rgba(245,158,11,0.5); }
-.scen-vs-3bet.selected { background: rgba(25,118,210,0.15); color: var(--accent2); border-color: rgba(25,118,210,0.5); }
+.villain-pill {
+  height: 30px; padding: 0 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  color: var(--muted);
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 11px; font-weight: 700;
+  cursor: pointer; transition: all 0.15s;
+  white-space: nowrap; flex-shrink: 0;
+  letter-spacing: 0.5px;
+  position: relative;
+}
+.villain-pill:hover:not(.no-data):not(.inactive) { color: var(--text); border-color: var(--border2); }
+
+/* Estado vazio (sem dados ainda) — clicável mas avisa */
+.villain-pill.no-data { opacity: 0.45; cursor: help; }
+.villain-pill.no-data::after {
+  content: '∅';
+  position: absolute; top: -4px; right: -4px;
+  font-size: 9px; color: var(--muted);
+  background: var(--bg); border-radius: 50%;
+  width: 12px; height: 12px;
+  display: flex; align-items: center; justify-content: center;
+}
+
+/* Inativo: vilão impossível dado o player count (ex: BB se 6-handed sem BB) */
+.villain-pill.inactive { opacity: 0.2; cursor: not-allowed; pointer-events: none; }
+
+/* Cor da pill selecionada varia conforme o cenário derivado */
+.villain-pill.selected.scen-RFI     { background: rgba(67,160,71,0.18); color: #81c784; border-color: rgba(67,160,71,0.6); box-shadow: 0 0 12px rgba(67,160,71,0.25); }
+.villain-pill.selected.scen-vs_RFI  { background: rgba(245,158,11,0.18); color: #fbbf24; border-color: rgba(245,158,11,0.6); box-shadow: 0 0 12px rgba(245,158,11,0.25); }
+.villain-pill.selected.scen-vs_3bet { background: rgba(79,195,247,0.18); color: var(--accent2); border-color: rgba(79,195,247,0.6); box-shadow: 0 0 12px rgba(79,195,247,0.25); }
+
+/* "Ninguém" / NONE pill — visual mais discreto */
+.villain-pill[data-villain="none"] { font-style: italic; }
 
 /* Reset button */
 .btn-reset {
@@ -399,6 +496,7 @@ main {
 .hand-cell.action-raise { background: #2e7d32; }
 .hand-cell.action-3bet  { background: #1565c0; }
 .hand-cell.action-4bet  { background: #6a1b9a; }
+.hand-cell.action-shove { background: #d32f2f; }
 .hand-cell.action-call  { background: #bf360c; }
 .hand-cell.action-fold  { background: var(--surface3); opacity: 0.5; }
 
@@ -427,8 +525,158 @@ main {
 .legend-swatch.action-rfi, .legend-swatch.action-raise { background: #2e7d32; }
 .legend-swatch.action-3bet  { background: #1565c0; }
 .legend-swatch.action-4bet  { background: #6a1b9a; }
+.legend-swatch.action-shove { background: #d32f2f; }
 .legend-swatch.action-call  { background: #bf360c; }
 .legend-swatch.action-fold  { background: var(--surface3); }
+
+/* ── INSIGHTS (cards educacionais abaixo do grid) ── */
+.insights {
+  margin-top: 12px;
+  display: flex; flex-direction: column;
+  gap: 10px;
+}
+.insights.hidden { display: none; }
+
+.insight-card {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--r8);
+  padding: 12px 14px;
+}
+.insight-card h3 {
+  font-size: 11px; font-weight: 800;
+  letter-spacing: 1.5px; text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 8px;
+}
+.insight-card p {
+  font-size: 13px; line-height: 1.5; color: var(--text);
+  margin-bottom: 6px;
+}
+.insight-card p:last-child { margin-bottom: 0; }
+.insight-card strong { color: var(--accent2); font-weight: 700; }
+.insight-card .insight-icm-note {
+  font-size: 12px; color: var(--muted);
+  padding-top: 6px; margin-top: 6px;
+  border-top: 1px dashed var(--border);
+}
+.insight-card .insight-construction-msg {
+  color: #fbbf24; font-style: italic;
+}
+.insight-card .insight-narrative {
+  color: var(--muted);
+}
+
+.insight-list {
+  list-style: none; padding-left: 0; margin: 0;
+}
+.insight-list li {
+  font-size: 13px; line-height: 1.5; color: var(--text);
+  padding: 4px 0;
+  border-bottom: 1px solid var(--border);
+}
+.insight-list li:last-child { border-bottom: none; }
+.insight-list li::before {
+  content: '→ '; color: var(--accent); margin-right: 4px; font-weight: 700;
+}
+
+.insight-mistakes h3  { color: #fbbf24; }
+.insight-phase h3     { color: #81c784; }
+.insight-howto h3     { color: #4fc3f7; }
+.insight-mentality h3 { color: #ce93d8; }
+
+.badge-derived, .badge-source {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 1px 7px;
+  border-radius: 8px;
+  font-size: 9px; font-weight: 800; letter-spacing: 1px;
+  vertical-align: middle;
+}
+.badge-derived {
+  background: rgba(245,158,11,0.18);
+  color: #fbbf24;
+  border: 1px solid rgba(245,158,11,0.4);
+}
+.badge-source {
+  background: rgba(67,160,71,0.18);
+  color: #81c784;
+  border: 1px solid rgba(67,160,71,0.4);
+}
+
+.phase-tag-auto, .phase-tag-explicit {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 7px;
+  border-radius: 8px;
+  font-size: 9px; letter-spacing: 0.5px;
+  vertical-align: middle;
+}
+.phase-tag-auto    { background: rgba(107,112,144,0.25); color: var(--muted); }
+.phase-tag-explicit{ background: rgba(79,195,247,0.18); color: var(--accent2); }
+
+.insight-mismatch {
+  margin-top: 10px;
+  padding: 8px 10px;
+  background: rgba(229,57,53,0.1);
+  border: 1px solid rgba(229,57,53,0.35);
+  border-radius: var(--r8);
+  color: #ef5350;
+  font-size: 12px !important;
+}
+
+.glossary-collapse {
+  cursor: default;
+}
+.glossary-collapse > summary {
+  cursor: pointer;
+  font-size: 11px; font-weight: 800;
+  letter-spacing: 1.5px; text-transform: uppercase;
+  color: var(--accent);
+  list-style: none;
+  user-select: none;
+  padding: 2px 0;
+}
+.glossary-collapse > summary::-webkit-details-marker { display: none; }
+.glossary-collapse[open] > summary { margin-bottom: 10px; }
+.insight-glossary-list {
+  font-size: 13px; line-height: 1.5;
+}
+.insight-glossary-list dt {
+  font-weight: 700; color: var(--accent2);
+  margin-top: 8px;
+}
+.insight-glossary-list dt:first-child { margin-top: 0; }
+.insight-glossary-list dd {
+  color: var(--text); margin-left: 0; margin-bottom: 6px;
+  padding-left: 12px;
+  border-left: 2px solid var(--border);
+}
+
+.scenario-meta {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 8px;
+  background: rgba(79,195,247,0.12);
+  border: 1px solid rgba(79,195,247,0.3);
+  border-radius: 12px;
+  font-size: 10px; font-weight: 700;
+  letter-spacing: 0.5px;
+  color: var(--accent2);
+  vertical-align: middle;
+}
+
+/* Desktop: 3 colunas pros cards principais, glossário full width */
+@media (min-width: 1024px) {
+  .insights {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 12px;
+  }
+  .insights .glossary-collapse {
+    grid-column: 1 / -1;
+  }
+}
 
 /* ── TOOLTIP ── */
 .tooltip {

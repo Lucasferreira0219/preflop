@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Preflop Ranges MTT</title>
-  <link rel="stylesheet" href="style.css?v=6" />
+  <link rel="stylesheet" href="style.css?v=12" />
 </head>
 <body>
 
@@ -36,11 +36,34 @@
 
   <!-- ── FILTER BAR ── -->
   <div class="filter-bar">
+    <div class="filter-group filter-mode">
+      <span class="filter-label">Modo</span>
+      <div class="mode-pills" id="modePills">
+        <button class="mode-pill" data-mode="mtt">MTT</button>
+        <button class="mode-pill" data-mode="sng">SnG</button>
+      </div>
+    </div>
+
+    <div class="filter-sep"></div>
+
     <div class="filter-group filter-stack">
       <span class="filter-label">Stack</span>
       <input type="range" id="stackSlider" min="10" max="100" value="35" step="1" />
       <div class="stack-display">
         <span id="stackValue">35</span><span class="bb-label">bb</span>
+      </div>
+    </div>
+
+    <div class="filter-sep"></div>
+
+    <div class="filter-group filter-phase">
+      <span class="filter-label">Fase</span>
+      <div class="phase-pills" id="phasePills">
+        <button class="phase-pill" data-phase="auto">Auto</button>
+        <button class="phase-pill" data-phase="early">Early</button>
+        <button class="phase-pill" data-phase="middle">Middle</button>
+        <button class="phase-pill" data-phase="late">Late/Bolha</button>
+        <button class="phase-pill" data-phase="shortstack">Push/Fold</button>
       </div>
     </div>
 
@@ -66,13 +89,11 @@
 
     <div class="filter-sep"></div>
 
-    <div class="filter-group filter-scen">
-      <span class="filter-label">Situação</span>
-      <div class="scen-pills" id="scenPills">
-        <button class="scen-pill scen-rfi"     data-scen="RFI">Eu abro</button>
-        <button class="scen-pill scen-vs-rfi"  data-scen="vs_RFI">Vilão abriu</button>
-        <button class="scen-pill scen-vs-3bet" data-scen="vs_3bet">Vilão 3-bet</button>
-      </div>
+    <div class="filter-group filter-villain">
+      <span class="filter-label">Vilão</span>
+      <button class="pos-arrow" id="villainArrowLeft" title="Vilão anterior">←</button>
+      <div class="villain-pills" id="villainPills"></div>
+      <button class="pos-arrow" id="villainArrowRight" title="Próximo vilão">→</button>
     </div>
 
     <button id="resetBtn" class="btn-reset" title="Recomeçar">↺</button>
@@ -110,15 +131,18 @@
       <div id="legend" class="legend"></div>
     </div>
 
+    <!-- Insights educacionais (carregados via /api/get_insights) — sempre visíveis, mesmo sem grid -->
+    <div id="insights" class="insights hidden"></div>
+
   </main>
 </div>
 
 <div id="tooltip" class="tooltip hidden"></div>
 
-<script>window._BASE = "/preflop";</script>
-<script src="shared/api.js"></script>
-<script src="shared/core.js"></script>
-<script src="app.js"></script>
+<script>window._BASE = /^\/preflop(?=\/|$)/.test(location.pathname) ? "/preflop" : "";</script>
+<script src="shared/api.js?v=4"></script>
+<script src="shared/core.js?v=4"></script>
+<script src="app.js?v=6"></script>
 <script>
 function openDrawer(){document.getElementById('drawer').classList.add('open');document.getElementById('drawer-overlay').classList.add('open');}
 function closeDrawer(){document.getElementById('drawer').classList.remove('open');document.getElementById('drawer-overlay').classList.remove('open');}

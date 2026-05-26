@@ -29,31 +29,62 @@ const SEAT_COORDS = [
   { x: 158, y: 322 },  // 8 — baixo-esquerda
 ];
 
-const ACTION_CONFIG = {
-  RFI: [
-    { id:'raise', label:'Abrir (RFI)', cls:'raise', key:'1' },
-    { id:'fold',  label:'Fold',        cls:'fold',  key:'2' },
-  ],
-  vs_RFI: [
-    { id:'3bet',  label:'3-Bet',       cls:'threebet', key:'1' },
-    { id:'call',  label:'Call',        cls:'call',     key:'2' },
-    { id:'fold',  label:'Fold',        cls:'fold',     key:'3' },
-  ],
-  vs_3bet: [
-    { id:'4bet',  label:'4-Bet',       cls:'fourbet',  key:'1' },
-    { id:'call',  label:'Call',        cls:'call',     key:'2' },
-    { id:'fold',  label:'Fold',        cls:'fold',     key:'3' },
-  ],
-};
+// Botões dependem do cenário, stack e modo (push/fold, fragmentação, resteal…).
+function actionMeta(id, scenario) {
+  switch (id) {
+    case 'raise': return { label:'Abrir (RFI)', cls:'raise' };
+    case 'shove': return scenario === 'vs_RFI'
+      ? { label:'Resteal',     cls:'resteal' }
+      : { label:'Shove',       cls:'shove'   };
+    case '3bet':  return { label:'3-Bet', cls:'threebet' };
+    case '4bet':  return { label:'4-Bet', cls:'fourbet'  };
+    case 'call':  return { label:'Call',  cls:'call'     };
+    case 'fold':  return { label:'Fold',  cls:'fold'     };
+  }
+  return { label:id, cls:'fold' };
+}
+
+function mkActions(ids, scenario) {
+  return ids.map((id, i) => {
+    const m = actionMeta(id, scenario);
+    return { id, label:m.label, cls:m.cls, key:String(i + 1) };
+  });
+}
+
+function getActions(q) {
+  const { scenario, stack, mode } = q;
+  const sng = mode === 'sng';
+  if (scenario === 'RFI') {
+    if (sng && stack <= 12) return mkActions(['shove','fold'], scenario);          // push/fold
+    if (sng && stack <= 18) return mkActions(['raise','shove','fold'], scenario);  // fragmentação
+    return mkActions(['raise','fold'], scenario);
+  }
+  if (scenario === 'vs_RFI') {
+    if (sng && stack <= 12) return mkActions(['call','fold'], scenario);           // defendendo vs shove
+    if (sng && stack <= 18) return mkActions(['shove','call','fold'], scenario);   // resteal
+    return mkActions(['3bet','call','fold'], scenario);
+  }
+  if (scenario === 'vs_3bet') return mkActions(['4bet','call','fold'], scenario);
+  return [];
+}
 
 // ── Estado ───────────────────────────────────────────────────────────────────
 
 let currentQuestion = null;
 let currentScreen   = 'question';
 
+// Modo (MTT ou SnG) — lido do localStorage via PreflopAPI
+const currentMode  = (window.PreflopAPI && PreflopAPI.getMode) ? PreflopAPI.getMode() : 'mtt';
+const stackOptions = (window.PreflopAPI && PreflopAPI.stacksForMode) ? PreflopAPI.stacksForMode(currentMode) : [20,35,50,100];
+
 // Preferências persistidas
 const PREFS_KEY = 'preflop.simulator.prefs.v1';
-const prefs = Object.assign({ stack: '35', focusPos: '', focusScenario: '' }, C.lsGet(PREFS_KEY, {}));
+const _defaultStack = String(stackOptions[Math.min(1, stackOptions.length-1)]);
+const prefs = Object.assign({ stack: _defaultStack, focusPos: '', focusScenario: '' }, C.lsGet(PREFS_KEY, {}));
+// Se o stack salvo não pertence ao modo atual, reseta
+if (!stackOptions.includes(parseInt(prefs.stack))) {
+  prefs.stack = _defaultStack;
+}
 
 // ── Histórico de mãos ────────────────────────────────────────────────────────
 const HISTORY_KEY = 'preflop.history.v1';
@@ -162,8 +193,26 @@ let anPreset = 'all'; // 'all' | 'today' | '7' | '30' | 'custom'
 // ── Init ─────────────────────────────────────────────────────────────────────
 
 function init() {
-  // Restaura preferências
-  if (prefs.stack && el.stackSelect) el.stackSelect.value = prefs.stack;
+  // Indica o modo no subtitle do header (MTT ou SnG)
+  const subEl = document.querySelector('.app-sub');
+  if (subEl) subEl.textContent = currentMode.toUpperCase();
+
+  // Popula stackSelect com opções do modo atual
+  if (el.stackSelect) {
+    el.stackSelect.innerHTML = '';
+    if (stackOptions.length > 1) {
+      const opt = document.createElement('option');
+      opt.value = '0'; opt.textContent = 'Aleatório';
+      el.stackSelect.appendChild(opt);
+    }
+    stackOptions.forEach(s => {
+      const opt = document.createElement('option');
+      opt.value = String(s); opt.textContent = s + 'bb';
+      el.stackSelect.appendChild(opt);
+    });
+    el.stackSelect.value = prefs.stack;
+  }
+
   el.stackSelect.addEventListener('change', () => {
     prefs.stack = el.stackSelect.value;
     C.lsSet(PREFS_KEY, prefs);
@@ -243,7 +292,7 @@ function nextQuestion(attempt) {
   const focusPos  = prefs.focusPos  || null;
   const focusScen = prefs.focusScenario || null;
 
-  PreflopAPI.new_question(9, stackVal || null, focusPos, focusScen)
+  PreflopAPI.new_question(9, stackVal || null, focusPos, focusScen, currentMode)
     .then(q => {
       if (!q || q.error) { console.error(q && q.error); return; }
 
@@ -274,7 +323,7 @@ function renderQuestion(q) {
   renderCSSTable(q.pos, q.villain_pos || null);
   renderSimTable(q.pos, q.villain_pos || null, q.scenario, null, q.stack);
 
-  const actions = ACTION_CONFIG[q.scenario] || ACTION_CONFIG.RFI;
+  const actions = getActions(q);
   el.actionBtns.innerHTML = '';
   actions.forEach(a => {
     const btn = document.createElement('button');
@@ -308,38 +357,102 @@ function submitAnswer(action) {
   });
 }
 
-// Gera explicação contextual baseada na ação correta e situação
-function getExplanation(q, correctAction) {
-  const { hand, pos, scenario, stack } = q;
-  const rank1 = hand[0], rank2 = hand[1] || hand[0], type = hand[2] || '';
+// ── Explicação rica (reusa a base de conhecimento da Consulta) ────────────────
 
-  if (scenario === 'RFI') {
-    if (correctAction === 'raise') {
-      if ('AA KK QQ JJ TT'.includes(hand)) return `${hand} é um premium — sempre abre de qualquer posição.`;
-      if (hand.endsWith('s')) return `${hand} suited tem bom equity e playability pós-flop — open é correto.`;
-      return `${hand} tem equity suficiente para abrir de ${pos} a ${stack}bb.`;
-    }
-    return `${hand} está fora do range de abertura de ${pos} a ${stack}bb — muitos jogadores atrás.`;
+function esc(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, c =>
+    ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+}
+
+function pickKeyHands(spot, correct) {
+  if (!spot) return [];
+  const norm = C.normalizeAction(correct);
+  if (norm === '3bet' && spot.key_hands_3bet) return spot.key_hands_3bet;
+  if (norm === 'call' && spot.key_hands_call) return spot.key_hands_call;
+  if (norm === '4bet' && spot.key_hands_4bet) return spot.key_hands_4bet;
+  return spot.key_hands || spot.key_hands_3bet || spot.key_hands_call || spot.key_hands_4bet || [];
+}
+
+function renderRichExplanation(res, q) {
+  const ins      = res.insights || {};
+  const correct  = res.correct_action;
+  const scenario = q.scenario;
+  const stack    = q.stack;
+  const action   = ins.action || {};
+  const spot     = ins.spot;
+  const uni      = ins.universal_derived;
+  const phase    = ins.phase;
+  const out      = [];
+
+  // 1) Ação correta — badge grande + descrição da ação
+  const actName  = action.name || C.actionDisplayName(correct, scenario, stack);
+  const actColor = action.color || C.ACTION_COLOR[C.normalizeAction(correct)] || '#555';
+  const actEmoji = action.emoji ? action.emoji + ' ' : '';
+  out.push(`
+    <div class="explain-section explain-action">
+      <span class="explain-action-badge" style="background:${actColor}">${actEmoji}${esc(actName)}</span>
+      ${action.long_desc ? `<div class="explain-body">${esc(action.long_desc)}</div>` : ''}
+    </div>`);
+
+  // 2) Por que essa ação?
+  const whyBody = (spot && spot.summary) || (uni && uni.summary) || '';
+  let whyFlag = '';
+  if (ins.spot_derived) {
+    whyFlag = `<span class="explain-flag">⚙ Spot derivado dos princípios do PDF</span>`;
+  } else if (ins.scenario_derived) {
+    whyFlag = `<span class="explain-flag">⚙ Range derivado dos princípios do PDF</span>`;
+  }
+  if (whyBody || whyFlag) {
+    out.push(`
+      <div class="explain-section">
+        <div class="explain-title">Por que ${esc(actName)}?</div>
+        ${whyBody ? `<div class="explain-body">${esc(whyBody)}</div>` : ''}
+        ${whyFlag}
+      </div>`);
   }
 
-  if (scenario === 'vs_RFI') {
-    if (correctAction === '3bet') {
-      if ('AA KK QQ'.includes(hand)) return `${hand} é um premium — 3-bet para valor sempre.`;
-      if (hand === 'AKs' || hand === 'AKo') return `AK é forte o suficiente para 3-bet isolado.`;
-      if (hand.includes('5s') || hand.includes('4s') || hand.includes('3s')) return `${hand} é um 3-bet de blocker (Ax bloqueia range de 4-bet do vilão).`;
-      return `${hand} está no range de 3-bet — mistura valor e bluff.`;
-    }
-    if (correctAction === 'call') return `${hand} tem odds implícitas — chama e joga pós-flop em posição.`;
-    return `${hand} não tem equity suficiente para 3-bet ou call vs este abridor — fold é mais EV.`;
+  // 3) Mãos-chave do range
+  const keyHands = pickKeyHands(spot, correct);
+  if (keyHands.length) {
+    out.push(`
+      <div class="explain-section">
+        <div class="explain-title">Mãos-chave do range</div>
+        <div class="explain-chips">${keyHands.map(h => `<span class="explain-chip">${esc(h)}</span>`).join('')}</div>
+      </div>`);
   }
 
-  if (scenario === 'vs_3bet') {
-    if (correctAction === '4bet') return `${hand} é forte o suficiente para 4-bet — joga por stacks.`;
-    if (correctAction === 'call') return `${hand} tem bom equity mas prefere call e jogar pós-flop.`;
-    return `${hand} não está no range de defesa vs 3-bet — fold preserva stack.`;
+  // 4) Erros comuns (spot + por posição), dedupe, top 5
+  const mistakes = [];
+  const seen = new Set();
+  [...((spot && spot.common_mistakes) || []),
+   ...((uni && uni.common_mistakes) || []),
+   ...(ins.position_mistakes || [])].forEach(m => {
+    if (m && !seen.has(m)) { seen.add(m); mistakes.push(m); }
+  });
+  if (mistakes.length) {
+    out.push(`
+      <div class="explain-section">
+        <div class="explain-title">Erros comuns</div>
+        <ul class="explain-list explain-mistakes">
+          ${mistakes.slice(0, 5).map(m => `<li>${esc(m)}</li>`).join('')}
+        </ul>
+      </div>`);
   }
 
-  return '';
+  // 5) Contexto da fase
+  if (phase) {
+    const meta = [];
+    if (phase.rp_avg_pct != null) meta.push(`RP ~${phase.rp_avg_pct}%`);
+    if (ins.open_pct != null)     meta.push(`${ins.open_pct}% open`);
+    out.push(`
+      <div class="explain-section explain-phase">
+        <div class="explain-title">🎯 ${esc(phase.label)}${meta.length ? ` <span class="explain-rp">${esc(meta.join(' · '))}</span>` : ''}</div>
+        ${phase.mentality ? `<div class="explain-body">${esc(phase.mentality)}</div>` : ''}
+        ${spot && spot.icm_note ? `<div class="explain-icm"><strong>ICM:</strong> ${esc(spot.icm_note)}</div>` : ''}
+      </div>`);
+  }
+
+  return out.join('');
 }
 
 function showResult(res, userAction) {
@@ -351,19 +464,19 @@ function showResult(res, userAction) {
 
   el.resultHand.textContent  = currentQuestion.hand + ' — ' + C.handDescription(currentQuestion.hand);
 
-  const correctLabel = C.actionDisplayName(res.correct_action, currentQuestion.scenario);
+  const correctLabel = C.actionDisplayName(res.correct_action, currentQuestion.scenario, currentQuestion.stack);
   if (isCorrect) {
     el.resultMsg.textContent = `Acao correta: ${correctLabel}.`;
   } else {
-    const userLabel = C.actionDisplayName(userAction, currentQuestion.scenario);
+    const userLabel = C.actionDisplayName(userAction, currentQuestion.scenario, currentQuestion.stack);
     el.resultMsg.textContent = `Voce escolheu ${userLabel}, correto seria ${correctLabel}.`;
   }
 
-  // Explicação contextual
-  const explain = getExplanation(currentQuestion, res.correct_action);
+  // Explicação contextual rica (reusa insights do backend)
   if (el.resultExplain) {
-    el.resultExplain.textContent = explain;
-    el.resultExplain.style.display = explain ? '' : 'none';
+    const html = renderRichExplanation(res, currentQuestion);
+    el.resultExplain.innerHTML = html;
+    el.resultExplain.style.display = html ? '' : 'none';
   }
 
   renderResultGrid(res.buckets, currentQuestion.hand);
@@ -393,7 +506,7 @@ function renderResultGrid(buckets, highlightHand) {
   Object.values(lookup).forEach(a => counts[a] = (counts[a] || 0) + 1);
   const foldCount = 169 - Object.values(counts).reduce((s, n) => s + n, 0);
 
-  const order = ['rfi','raise','3bet','4bet','call','fold'];
+  const order = ['rfi','raise','3bet','4bet','shove','call','fold'];
   el.resultLegend.innerHTML = '';
   const shown = new Set();
   order.forEach(act => {
@@ -551,7 +664,7 @@ function onKeyDown(e) {
   const tag = (e.target && e.target.tagName || '').toLowerCase();
   if (tag === 'input' || tag === 'select' || tag === 'textarea') return;
 
-  if (currentScreen === 'question' && /^[1-3]$/.test(e.key)) {
+  if (currentScreen === 'question' && /^[1-4]$/.test(e.key)) {
     const all = document.querySelectorAll('.action-btn');
     const btn = all[parseInt(e.key) - 1];
     if (btn && !btn.disabled) { e.preventDefault(); btn.click(); }
@@ -691,8 +804,8 @@ function renderAnalytics(data, improv) {
               <td>${C.POS_LABEL[m.pos] || m.pos}</td>
               <td>${C.SCENARIO_SHORT[m.scenario] || m.scenario}</td>
               <td>${m.stack}bb</td>
-              <td class="mt-wrong">${C.actionDisplayName(m.answered, m.scenario)}</td>
-              <td class="mt-right">${C.actionDisplayName(m.correct, m.scenario)}</td>
+              <td class="mt-wrong">${C.actionDisplayName(m.answered, m.scenario, m.stack)}</td>
+              <td class="mt-right">${C.actionDisplayName(m.correct, m.scenario, m.stack)}</td>
             </tr>`).join('')}
         </tbody>
       </table>`;
@@ -831,8 +944,8 @@ function renderHistory() {
     })();
     const okCls  = h.ok ? 'hist-ok' : 'hist-wrong';
     const badge  = h.ok ? '✓' : '✗';
-    const userLbl    = C.actionDisplayName(h.user,    h.scenario);
-    const correctLbl = C.actionDisplayName(h.correct, h.scenario);
+    const userLbl    = C.actionDisplayName(h.user,    h.scenario, h.stack);
+    const correctLbl = C.actionDisplayName(h.correct, h.scenario, h.stack);
     const detail = h.ok
       ? `<span class="hist-action-ok">${userLbl}</span>`
       : `<span class="hist-action-wrong">${userLbl}</span> → <span class="hist-action-ok">${correctLbl}</span>`;

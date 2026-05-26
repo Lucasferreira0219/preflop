@@ -178,6 +178,30 @@ body::before {
   font-size: 10px; color: var(--dim); letter-spacing: 4px; text-transform: uppercase; font-weight: 600;
 }
 
+.mode-toggle {
+  display: flex; gap: 4px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 4px;
+  animation: revealUp 0.5s cubic-bezier(0.4,0,0.2,1) 0.05s both;
+}
+.mode-tab {
+  flex: 1; min-width: 78px;
+  padding: 9px 18px;
+  border: none; background: transparent;
+  color: var(--muted); cursor: pointer;
+  font-size: 12px; font-weight: 800; letter-spacing: 2.5px;
+  border-radius: 999px;
+  transition: color 0.18s, background 0.18s;
+}
+.mode-tab:hover { color: var(--text); }
+.mode-tab.active {
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 100%);
+  color: #050514;
+  box-shadow: 0 4px 14px rgba(79,195,247,0.32);
+}
+
 .cards-row {
   display: flex; flex-direction: column;
   gap: 12px; width: 100%; max-width: 400px;

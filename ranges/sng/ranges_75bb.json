@@ -1,0 +1,2396 @@
+{
+  "stack": "75bb",
+  "mode": "sng",
+  "source": "Reg Life SnG — Ranges de Open Raise + Ranges vs Open Raise (Early Game, ICM ligado, 9-handed, 1500 fichas)",
+  "_notes": "Early game SnG = ~75bb. Spots originais do PDF: 3 vs_RFI (UTG1/UTG2 vs UTG, CO vs MP/HJ, BTN vs CO). Demais spots são DERIVADOS dos princípios do PDF (ver _derived_spots). vs_3bet usa heurística universal pra iniciantes (4-Bet só KK+/AKs, call seleto QQ-TT/AKo/AQs).",
+  "_target_pct": {
+    "UTG": 13,
+    "UTG1": 13,
+    "UTG2": 13,
+    "MP": 16,
+    "HJ": 25,
+    "CO": 33,
+    "BTN": 50,
+    "SB": 36
+  },
+  "positions": {
+    "UTG": {
+      "RFI": [
+        "AA",
+        "KK",
+        "QQ",
+        "JJ",
+        "TT",
+        "99",
+        "88",
+        "77",
+        "AKs",
+        "AQs",
+        "AJs",
+        "ATs",
+        "A9s",
+        "A8s",
+        "A7s",
+        "A6s",
+        "A5s",
+        "A4s",
+        "A3s",
+        "A2s",
+        "KQs",
+        "KJs",
+        "KTs",
+        "QJs",
+        "QTs",
+        "JTs",
+        "T9s",
+        "AKo",
+        "AQo",
+        "AJo",
+        "KQo"
+      ],
+      "vs_RFI": {},
+      "vs_3bet": {
+        "UTG1": {
+          "4bet": [
+            "KK",
+            "AA",
+            "AKs"
+          ],
+          "call": [
+            "QQ",
+            "JJ",
+            "AKo",
+            "AQs"
+          ]
+        },
+        "UTG2": {
+          "4bet": [
+            "KK",
+            "AA",
+            "AKs"
+          ],
+          "call": [
+            "QQ",
+            "JJ",
+            "AKo",
+            "AQs"
+          ]
+        },
+        "MP": {
+          "4bet": [
+            "KK",
+            "AA",
+            "AKs"
+          ],
+          "call": [
+            "QQ",
+            "JJ",
+            "AKo",
+            "AQs"
+          ]
+        },
+        "HJ": {
+          "4bet": [
+            "KK",
+            "AA",
+            "AKs"
+          ],
+          "call": [
+            "QQ",
+            "JJ",
+            "AKo",
+            "AQs"
+          ]
+        },
+        "CO": {
+          "4bet": [
+            "KK",
+            "AA",
+            "AKs"
+          ],
+          "call": [
+            "QQ",
+            "JJ",
+            "AKo",
+            "AQs"
+          ]
+        },
+        "BTN": {
+          "4bet": [
+            "KK",
+            "AA",
+            "AKs"
+          ],
+          "call": [
+            "QQ",
+            "JJ",
+            "AKo",
+            "AQs"
+          ]
+        },
+        "SB": {
+          "4bet": [
+            "KK",
+            "AA",
+            "AKs"
+          ],
+          "call": [
+            "QQ",
+            "JJ",
+            "AKo",
+            "AQs"
+          ]
+        },
+        "BB": {
+          "4bet": [
+            "KK",
+            "AA",
+            "AKs"
+          ],
+          "call": [
+            "QQ",
+            "JJ",
+            "AKo",
+            "AQs"
+          ]
+        }
+      }
+    },
+    "UTG1": {
+      "RFI": [
+        "AA",
+        "KK",
+        "QQ",
+        "JJ",
+        "TT",
+        "99",
+        "88",
+        "77",
+        "AKs",
+        "AQs",
+        "AJs",
+        "ATs",
+        "A9s",
+        "A8s",
+        "A7s",
+        "A6s",
+        "A5s",
+        "A4s",
+        "A3s",
+        "A2s",
+        "KQs",
+        "KJs",
+        "KTs",
+        "QJs",
+        "QTs",
+        "JTs",
+        "T9s",
+        "AKo",
+        "AQo",
+        "AJo",
+        "KQo"
+      ],
+      "vs_RFI": {
+        "UTG": {
+          "3bet": [
+            "AA",
+            "KK",
+            "QQ",
+            "JJ",
+            "TT",
+            "AKs",
+            "AKo",
+            "AQs",
+            "AQo"
+          ],
+          "call": [
+            "99",
+            "88",
+            "77",
+            "66",
+            "AJs",
+            "ATs",
+            "KQs",
+            "KJs"
+          ]
+        }
+      },
+      "vs_3bet": {
+        "UTG2": {
+          "4bet": [
+            "KK",
+            "AA",
+            "AKs"
+          ],
+          "call": [
+            "QQ",
+            "JJ",
+            "AKo",
+            "AQs"
+          ]
+        },
+        "MP": {
+          "4bet": [
+            "KK",
+            "AA",
+            "AKs"
+          ],
+          "call": [
+            "QQ",
+            "JJ",
+            "AKo",
+            "AQs"
+          ]
+        },
+        "HJ": {
+          "4bet": [
+            "KK",
+            "AA",
+            "AKs"
+          ],
+          "call": [
+            "QQ",
+            "JJ",
+            "AKo",
+            "AQs"
+          ]
+        },
+        "CO": {
+          "4bet": [
+            "KK",
+            "AA",
+            "AKs"
+          ],
+          "call": [
+            "QQ",
+            "JJ",
+            "AKo",
+            "AQs"
+          ]
+        },
+        "BTN": {
+          "4bet": [
+            "KK",
+            "AA",
+            "AKs"
+          ],
+          "call": [
+            "QQ",
+            "JJ",
+            "AKo",
+            "AQs"
+          ]
+        },
+        "SB": {
+          "4bet": [
+            "KK",
+            "AA",
+            "AKs"
+          ],
+          "call": [
+            "QQ",
+            "JJ",
+            "AKo",
+            "AQs"
+          ]
+        },
+        "BB": {
+          "4bet": [
+            "KK",
+            "AA",
+            "AKs"
+          ],
+          "call": [
+            "QQ",
+            "JJ",
+            "AKo",
+            "AQs"
+          ]
+        }
+      }
+    },
+    "UTG2": {
+      "RFI": [
+        "AA",
+        "KK",
+        "QQ",
+        "JJ",
+        "TT",
+        "99",
+        "88",
+        "77",
+        "AKs",
+        "AQs",
+        "AJs",
+        "ATs",
+        "A9s",
+        "A8s",
+        "A7s",
+        "A6s",
+        "A5s",
+        "A4s",
+        "A3s",
+        "A2s",
+        "KQs",
+        "KJs",
+        "KTs",
+        "QJs",
+        "QTs",
+        "JTs",
+        "T9s",
+        "AKo",
+        "AQo",
+        "AJo",
+        "KQo"
+      ],
+      "vs_RFI": {
+        "UTG": {
+          "3bet": [
+            "AA",
+            "KK",
+            "QQ",
+            "JJ",
+            "TT",
+            "AKs",
+            "AKo",
+            "AQs",
+            "AQo"
+          ],
+          "call": [
+            "99",
+            "88",
+            "77",
+            "66",
+            "AJs",
+            "ATs",
+            "KQs",
+            "KJs"
+          ]
+        },
+        "UTG1": {
+          "3bet": [
+            "AA",
+            "KK",
+            "QQ",
+            "JJ",
+            "TT",
+            "AKs",
+            "AKo",
+            "AQs",
+            "AQo"
+          ],
+          "call": [
+            "99",
+            "88",
+            "77",
+            "66",
+            "AJs",
+            "ATs",
+            "KQs",
+            "KJs"
+          ]
+        }
+      },
+      "vs_3bet": {
+        "MP": {
+          "4bet": [
+            "KK",
+            "AA",
+            "AKs"
+          ],
+          "call": [
+            "QQ",
+            "JJ",
+            "AKo",
+            "AQs"
+          ]
+        },
+        "HJ": {
+          "4bet": [
+            "KK",
+            "AA",
+            "AKs"
+          ],
+          "call": [
+            "QQ",
+            "JJ",
+            "AKo",
+            "AQs"
+          ]
+        },
+        "CO": {
+          "4bet": [
+            "KK",
+            "AA",
+            "AKs"
+          ],
+          "call": [
+            "QQ",
+            "JJ",
+            "AKo",
+            "AQs"
+          ]
+        },
+        "BTN": {
+          "4bet": [
+            "KK",
+            "AA",
+            "AKs"
+          ],
+          "call": [
+            "QQ",
+            "JJ",
+            "AKo",
+            "AQs"
+          ]
+        },
+        "SB": {
+          "4bet": [
+            "KK",
+            "AA",
+            "AKs"
+          ],
+          "call": [
+            "QQ",
+            "JJ",
+            "AKo",
+            "AQs"
+          ]
+        },
+        "BB": {
+          "4bet": [
+            "KK",
+            "AA",
+            "AKs"
+          ],
+          "call": [
+            "QQ",
+            "JJ",
+            "AKo",
+            "AQs"
+          ]
+        }
+      }
+    },
+    "MP": {
+      "RFI": [
+        "AA",
+        "KK",
+        "QQ",
+        "JJ",
+        "TT",
+        "99",
+        "88",
+        "77",
+        "66",
+        "55",
+        "AKs",
+        "AQs",
+        "AJs",
+        "ATs",
+        "A9s",
+        "A8s",
+        "A7s",
+        "A6s",
+        "A5s",
+        "A4s",
+        "A3s",
+        "A2s",
+        "KQs",
+        "KJs",
+        "KTs",
+        "K9s",
+        "QJs",
+        "QTs",
+        "Q9s",
+        "JTs",
+        "J9s",
+        "T9s",
+        "AKo",
+        "AQo",
+        "AJo",
+        "ATo",
+        "KQo"
+      ],
+      "vs_RFI": {
+        "UTG": {
+          "3bet": [
+            "AA",
+            "KK",
+            "QQ",
+            "JJ",
+            "TT",
+            "AKs",
+            "AKo",
+            "AQs",
+            "AQo"
+          ],
+          "call": [
+            "99",
+            "88",
+            "77",
+            "66",
+            "AJs",
+            "ATs",
+            "KQs",
+            "KJs"
+          ]
+        },
+        "UTG1": {
+          "3bet": [
+            "AA",
+            "KK",
+            "QQ",
+            "JJ",
+            "TT",
+            "AKs",
+            "AKo",
+            "AQs",
+            "AQo"
+          ],
+          "call": [
+            "99",
+            "88",
+            "77",
+            "66",
+            "AJs",
+            "ATs",
+            "KQs",
+            "KJs"
+          ]
+        },
+        "UTG2": {
+          "3bet": [
+            "AA",
+            "KK",
+            "QQ",
+            "JJ",
+            "TT",
+            "AKs",
+            "AKo",
+            "AQs",
+            "AQo"
+          ],
+          "call": [
+            "99",
+            "88",
+            "77",
+            "66",
+            "AJs",
+            "ATs",
+            "KQs",
+            "KJs"
+          ]
+        }
+      },
+      "vs_3bet": {
+        "HJ": {
+          "4bet": [
+            "KK",
+            "AA",
+            "AKs"
+          ],
+          "call": [
+            "QQ",
+            "JJ",
+            "AKo",
+            "AQs"
+          ]
+        },
+        "CO": {
+          "4bet": [
+            "KK",
+            "AA",
+            "AKs"
+          ],
+          "call": [
+            "QQ",
+            "JJ",
+            "AKo",
+            "AQs"
+          ]
+        },
+        "BTN": {
+          "4bet": [
+            "KK",
+            "AA",
+            "AKs"
+          ],
+          "call": [
+            "QQ",
+            "JJ",
+            "AKo",
+            "AQs"
+          ]
+        },
+        "SB": {
+          "4bet": [
+            "KK",
+            "AA",
+            "AKs"
+          ],
+          "call": [
+            "QQ",
+            "JJ",
+            "AKo",
+            "AQs"
+          ]
+        },
+        "BB": {
+          "4bet": [
+            "KK",
+            "AA",
+            "AKs"
+          ],
+          "call": [
+            "QQ",
+            "JJ",
+            "AKo",
+            "AQs"
+          ]
+        }
+      }
+    },
+    "HJ": {
+      "RFI": [
+        "AA",
+        "KK",
+        "QQ",
+        "JJ",
+        "TT",
+        "99",
+        "88",
+        "77",
+        "66",
+        "55",
+        "44",
+        "33",
+        "22",
+        "AKs",
+        "AQs",
+        "AJs",
+        "ATs",
+        "A9s",
+        "A8s",
+        "A7s",
+        "A6s",
+        "A5s",
+        "A4s",
+        "A3s",
+        "A2s",
+        "KQs",
+        "KJs",
+        "KTs",
+        "K9s",
+        "K8s",
+        "QJs",
+        "QTs",
+        "Q9s",
+        "Q8s",
+        "JTs",
+        "J9s",
+        "T9s",
+        "T8s",
+        "98s",
+        "87s",
+        "76s",
+        "65s",
+        "AKo",
+        "AQo",
+        "AJo",
+        "ATo",
+        "A9o",
+        "A8o",
+        "KQo",
+        "KJo",
+        "KTo",
+        "QJo"
+      ],
+      "vs_RFI": {
+        "UTG": {
+          "3bet": [
+            "AA",
+            "KK",
+            "QQ",
+            "JJ",
+            "TT",
+            "AKs",
+            "AKo",
+            "AQs",
+            "AQo"
+          ],
+          "call": [
+            "99",
+            "88",
+            "77",
+            "66",
+            "AJs",
+            "ATs",
+            "A9s",
+            "KQs",
+            "KJs",
+            "QJs"
+          ]
+        },
+        "UTG1": {
+          "3bet": [
+            "AA",
+            "KK",
+            "QQ",
+            "JJ",
+            "TT",
+            "AKs",
+            "AKo",
+            "AQs",
+            "AQo"
+          ],
+          "call": [
+            "99",
+            "88",
+            "77",
+            "66",
+            "AJs",
+            "ATs",
+            "A9s",
+            "KQs",
+            "KJs",
+            "QJs"
+          ]
+        },
+        "UTG2": {
+          "3bet": [
+            "AA",
+            "KK",
+            "QQ",
+            "JJ",
+            "TT",
+            "AKs",
+            "AKo",
+            "AQs",
+            "AQo"
+          ],
+          "call": [
+            "99",
+            "88",
+            "77",
+            "66",
+            "AJs",
+            "ATs",
+            "A9s",
+            "KQs",
+            "KJs",
+            "QJs"
+          ]
+        },
+        "MP": {
+          "3bet": [
+            "AA",
+            "KK",
+            "QQ",
+            "JJ",
+            "TT",
+            "AKs",
+            "AKo",
+            "AQs",
+            "AQo"
+          ],
+          "call": [
+            "99",
+            "88",
+            "77",
+            "66",
+            "55",
+            "AJs",
+            "ATs",
+            "A9s",
+            "A8s",
+            "KQs",
+            "KJs",
+            "KTs",
+            "QJs",
+            "QTs",
+            "JTs"
+          ]
+        }
+      },
+      "vs_3bet": {
+        "CO": {
+          "4bet": [
+            "KK",
+            "AA",
+            "AKs"
+          ],
+          "call": [
+            "QQ",
+            "JJ",
+            "AKo",
+            "AQs"
+          ]
+        },
+        "BTN": {
+          "4bet": [
+            "KK",
+            "AA",
+            "AKs"
+          ],
+          "call": [
+            "QQ",
+            "JJ",
+            "AKo",
+            "AQs"
+          ]
+        },
+        "SB": {
+          "4bet": [
+            "KK",
+            "AA",
+            "AKs"
+          ],
+          "call": [
+            "QQ",
+            "JJ",
+            "AKo",
+            "AQs"
+          ]
+        },
+        "BB": {
+          "4bet": [
+            "KK",
+            "AA",
+            "AKs"
+          ],
+          "call": [
+            "QQ",
+            "JJ",
+            "AKo",
+            "AQs"
+          ]
+        }
+      }
+    },
+    "CO": {
+      "RFI": [
+        "AA",
+        "KK",
+        "QQ",
+        "JJ",
+        "TT",
+        "99",
+        "88",
+        "77",
+        "66",
+        "55",
+        "44",
+        "33",
+        "22",
+        "AKs",
+        "AQs",
+        "AJs",
+        "ATs",
+        "A9s",
+        "A8s",
+        "A7s",
+        "A6s",
+        "A5s",
+        "A4s",
+        "A3s",
+        "A2s",
+        "KQs",
+        "KJs",
+        "KTs",
+        "K9s",
+        "K8s",
+        "K7s",
+        "K6s",
+        "K5s",
+        "K4s",
+        "K3s",
+        "K2s",
+        "QJs",
+        "QTs",
+        "Q9s",
+        "Q8s",
+        "Q7s",
+        "JTs",
+        "J9s",
+        "J8s",
+        "J7s",
+        "T9s",
+        "T8s",
+        "T7s",
+        "98s",
+        "97s",
+        "87s",
+        "86s",
+        "76s",
+        "75s",
+        "65s",
+        "64s",
+        "54s",
+        "AKo",
+        "AQo",
+        "AJo",
+        "ATo",
+        "A9o",
+        "A8o",
+        "A7o",
+        "A6o",
+        "KQo",
+        "KJo",
+        "KTo",
+        "K9o",
+        "K8o",
+        "QJo",
+        "QTo",
+        "JTo"
+      ],
+      "vs_RFI": {
+        "MP": {
+          "3bet": [
+            "AA",
+            "KK",
+            "QQ",
+            "JJ",
+            "TT",
+            "AKs",
+            "AKo",
+            "AQs",
+            "AQo"
+          ],
+          "call": [
+            "99",
+            "88",
+            "77",
+            "66",
+            "55",
+            "44",
+            "33",
+            "22",
+            "AJs",
+            "ATs",
+            "A9s",
+            "A8s",
+            "A7s",
+            "A6s",
+            "A5s",
+            "KQs",
+            "KJs",
+            "KTs",
+            "QJs",
+            "QTs",
+            "JTs",
+            "T9s",
+            "98s",
+            "87s",
+            "AJo",
+            "KQo",
+            "KTo"
+          ]
+        },
+        "HJ": {
+          "3bet": [
+            "AA",
+            "KK",
+            "QQ",
+            "JJ",
+            "TT",
+            "AKs",
+            "AKo",
+            "AQs",
+            "AQo"
+          ],
+          "call": [
+            "99",
+            "88",
+            "77",
+            "66",
+            "55",
+            "44",
+            "33",
+            "22",
+            "AJs",
+            "ATs",
+            "A9s",
+            "A8s",
+            "A7s",
+            "A6s",
+            "A5s",
+            "KQs",
+            "KJs",
+            "KTs",
+            "QJs",
+            "QTs",
+            "JTs",
+            "T9s",
+            "98s",
+            "87s",
+            "AJo",
+            "KQo",
+            "KTo"
+          ]
+        },
+        "UTG": {
+          "3bet": [
+            "AA",
+            "KK",
+            "QQ",
+            "JJ",
+            "TT",
+            "AKs",
+            "AKo",
+            "AQs",
+            "AQo"
+          ],
+          "call": [
+            "99",
+            "88",
+            "77",
+            "66",
+            "55",
+            "AJs",
+            "ATs",
+            "A9s",
+            "KQs",
+            "KJs",
+            "KTs",
+            "QJs",
+            "JTs"
+          ]
+        },
+        "UTG1": {
+          "3bet": [
+            "AA",
+            "KK",
+            "QQ",
+            "JJ",
+            "TT",
+            "AKs",
+            "AKo",
+            "AQs",
+            "AQo"
+          ],
+          "call": [
+            "99",
+            "88",
+            "77",
+            "66",
+            "55",
+            "AJs",
+            "ATs",
+            "A9s",
+            "KQs",
+            "KJs",
+            "KTs",
+            "QJs",
+            "JTs"
+          ]
+        },
+        "UTG2": {
+          "3bet": [
+            "AA",
+            "KK",
+            "QQ",
+            "JJ",
+            "TT",
+            "AKs",
+            "AKo",
+            "AQs",
+            "AQo"
+          ],
+          "call": [
+            "99",
+            "88",
+            "77",
+            "66",
+            "55",
+            "AJs",
+            "ATs",
+            "A9s",
+            "KQs",
+            "KJs",
+            "KTs",
+            "QJs",
+            "JTs"
+          ]
+        }
+      },
+      "vs_3bet": {
+        "BTN": {
+          "4bet": [
+            "KK",
+            "AA",
+            "AKs"
+          ],
+          "call": [
+            "QQ",
+            "JJ",
+            "AKo",
+            "AQs"
+          ]
+        },
+        "SB": {
+          "4bet": [
+            "KK",
+            "AA",
+            "AKs"
+          ],
+          "call": [
+            "QQ",
+            "JJ",
+            "AKo",
+            "AQs"
+          ]
+        },
+        "BB": {
+          "4bet": [
+            "KK",
+            "AA",
+            "AKs"
+          ],
+          "call": [
+            "QQ",
+            "JJ",
+            "AKo",
+            "AQs"
+          ]
+        }
+      }
+    },
+    "BTN": {
+      "RFI": [
+        "AA",
+        "KK",
+        "QQ",
+        "JJ",
+        "TT",
+        "99",
+        "88",
+        "77",
+        "66",
+        "55",
+        "44",
+        "33",
+        "22",
+        "AKs",
+        "AQs",
+        "AJs",
+        "ATs",
+        "A9s",
+        "A8s",
+        "A7s",
+        "A6s",
+        "A5s",
+        "A4s",
+        "A3s",
+        "A2s",
+        "KQs",
+        "KJs",
+        "KTs",
+        "K9s",
+        "K8s",
+        "K7s",
+        "K6s",
+        "K5s",
+        "K4s",
+        "K3s",
+        "K2s",
+        "QJs",
+        "QTs",
+        "Q9s",
+        "Q8s",
+        "Q7s",
+        "Q6s",
+        "Q5s",
+        "Q4s",
+        "Q3s",
+        "Q2s",
+        "JTs",
+        "J9s",
+        "J8s",
+        "J7s",
+        "J6s",
+        "J5s",
+        "J4s",
+        "J3s",
+        "J2s",
+        "T9s",
+        "T8s",
+        "T7s",
+        "T6s",
+        "98s",
+        "97s",
+        "96s",
+        "95s",
+        "87s",
+        "86s",
+        "85s",
+        "84s",
+        "76s",
+        "75s",
+        "65s",
+        "64s",
+        "54s",
+        "53s",
+        "43s",
+        "AKo",
+        "AQo",
+        "AJo",
+        "ATo",
+        "A9o",
+        "A8o",
+        "A7o",
+        "A6o",
+        "A5o",
+        "A4o",
+        "A3o",
+        "A2o",
+        "KQo",
+        "KJo",
+        "KTo",
+        "K9o",
+        "K8o",
+        "K7o",
+        "K6o",
+        "QJo",
+        "QTo",
+        "Q9o",
+        "JTo",
+        "J9o",
+        "J8o",
+        "J7o",
+        "T9o",
+        "T8o",
+        "T7o",
+        "98o"
+      ],
+      "vs_RFI": {
+        "CO": {
+          "3bet": [
+            "AA",
+            "KK",
+            "QQ",
+            "JJ",
+            "TT",
+            "AKs",
+            "AKo",
+            "AQs",
+            "AQo"
+          ],
+          "call": [
+            "99",
+            "88",
+            "77",
+            "66",
+            "55",
+            "44",
+            "33",
+            "22",
+            "AJs",
+            "ATs",
+            "A9s",
+            "A8s",
+            "A7s",
+            "A6s",
+            "A5s",
+            "A4s",
+            "A3s",
+            "A2s",
+            "KQs",
+            "KJs",
+            "KTs",
+            "K9s",
+            "K8s",
+            "QJs",
+            "QTs",
+            "Q9s",
+            "Q8s",
+            "JTs",
+            "J9s",
+            "J8s",
+            "T9s",
+            "T8s",
+            "98s",
+            "97s",
+            "87s",
+            "86s",
+            "76s",
+            "75s",
+            "65s",
+            "64s",
+            "54s",
+            "AJo",
+            "ATo",
+            "KQo",
+            "KJo",
+            "KTo",
+            "QJo",
+            "QTo"
+          ]
+        },
+        "UTG": {
+          "3bet": [
+            "AA",
+            "KK",
+            "QQ",
+            "JJ",
+            "TT",
+            "AKs",
+            "AKo",
+            "AQs",
+            "AQo"
+          ],
+          "call": [
+            "99",
+            "88",
+            "77",
+            "66",
+            "55",
+            "44",
+            "33",
+            "22",
+            "AJs",
+            "ATs",
+            "A9s",
+            "A5s",
+            "KQs",
+            "KJs",
+            "KTs",
+            "QJs",
+            "JTs",
+            "T9s"
+          ]
+        },
+        "UTG1": {
+          "3bet": [
+            "AA",
+            "KK",
+            "QQ",
+            "JJ",
+            "TT",
+            "AKs",
+            "AKo",
+            "AQs",
+            "AQo"
+          ],
+          "call": [
+            "99",
+            "88",
+            "77",
+            "66",
+            "55",
+            "44",
+            "33",
+            "22",
+            "AJs",
+            "ATs",
+            "A9s",
+            "A5s",
+            "KQs",
+            "KJs",
+            "KTs",
+            "QJs",
+            "JTs",
+            "T9s"
+          ]
+        },
+        "UTG2": {
+          "3bet": [
+            "AA",
+            "KK",
+            "QQ",
+            "JJ",
+            "TT",
+            "AKs",
+            "AKo",
+            "AQs",
+            "AQo"
+          ],
+          "call": [
+            "99",
+            "88",
+            "77",
+            "66",
+            "55",
+            "44",
+            "33",
+            "22",
+            "AJs",
+            "ATs",
+            "A9s",
+            "A5s",
+            "KQs",
+            "KJs",
+            "KTs",
+            "QJs",
+            "JTs",
+            "T9s"
+          ]
+        },
+        "MP": {
+          "3bet": [
+            "AA",
+            "KK",
+            "QQ",
+            "JJ",
+            "TT",
+            "AKs",
+            "AKo",
+            "AQs",
+            "AQo"
+          ],
+          "call": [
+            "99",
+            "88",
+            "77",
+            "66",
+            "55",
+            "44",
+            "33",
+            "22",
+            "AJs",
+            "ATs",
+            "A9s",
+            "A8s",
+            "A7s",
+            "A6s",
+            "A5s",
+            "A4s",
+            "A3s",
+            "A2s",
+            "KQs",
+            "KJs",
+            "KTs",
+            "K9s",
+            "QJs",
+            "QTs",
+            "Q9s",
+            "JTs",
+            "J9s",
+            "T9s",
+            "98s",
+            "87s",
+            "76s",
+            "AJo",
+            "ATo",
+            "KQo",
+            "KJo"
+          ]
+        },
+        "HJ": {
+          "3bet": [
+            "AA",
+            "KK",
+            "QQ",
+            "JJ",
+            "TT",
+            "AKs",
+            "AKo",
+            "AQs",
+            "AQo"
+          ],
+          "call": [
+            "99",
+            "88",
+            "77",
+            "66",
+            "55",
+            "44",
+            "33",
+            "22",
+            "AJs",
+            "ATs",
+            "A9s",
+            "A8s",
+            "A7s",
+            "A6s",
+            "A5s",
+            "A4s",
+            "A3s",
+            "A2s",
+            "KQs",
+            "KJs",
+            "KTs",
+            "K9s",
+            "K8s",
+            "QJs",
+            "QTs",
+            "Q9s",
+            "Q8s",
+            "JTs",
+            "J9s",
+            "J8s",
+            "T9s",
+            "T8s",
+            "98s",
+            "97s",
+            "87s",
+            "76s",
+            "65s",
+            "AJo",
+            "ATo",
+            "KQo",
+            "KJo",
+            "KTo",
+            "QJo"
+          ]
+        }
+      },
+      "vs_3bet": {
+        "SB": {
+          "4bet": [
+            "KK",
+            "AA",
+            "AKs"
+          ],
+          "call": [
+            "QQ",
+            "JJ",
+            "AKo",
+            "AQs"
+          ]
+        },
+        "BB": {
+          "4bet": [
+            "KK",
+            "AA",
+            "AKs"
+          ],
+          "call": [
+            "QQ",
+            "JJ",
+            "AKo",
+            "AQs"
+          ]
+        }
+      }
+    },
+    "SB": {
+      "RFI": [
+        "AA",
+        "KK",
+        "QQ",
+        "JJ",
+        "TT",
+        "99",
+        "88",
+        "77",
+        "66",
+        "55",
+        "44",
+        "33",
+        "22",
+        "AKs",
+        "AQs",
+        "AJs",
+        "ATs",
+        "A9s",
+        "A8s",
+        "A7s",
+        "A6s",
+        "A5s",
+        "A4s",
+        "A3s",
+        "A2s",
+        "KQs",
+        "KJs",
+        "KTs",
+        "K9s",
+        "K8s",
+        "K7s",
+        "K6s",
+        "K5s",
+        "QJs",
+        "QTs",
+        "Q9s",
+        "Q8s",
+        "Q7s",
+        "JTs",
+        "J9s",
+        "J8s",
+        "T9s",
+        "T8s",
+        "98s",
+        "87s",
+        "76s",
+        "AKo",
+        "AQo",
+        "AJo",
+        "ATo",
+        "A9o",
+        "A8o",
+        "A7o",
+        "A6o",
+        "A5o",
+        "A4o",
+        "A3o",
+        "A2o",
+        "KQo",
+        "KJo",
+        "KTo",
+        "K9o",
+        "QJo",
+        "QTo",
+        "Q9o",
+        "JTo",
+        "J9o",
+        "T9o"
+      ],
+      "vs_RFI": {
+        "UTG": {
+          "3bet": [
+            "AA",
+            "KK",
+            "QQ",
+            "JJ",
+            "TT",
+            "AKs",
+            "AKo",
+            "AQs",
+            "AQo"
+          ],
+          "call": [
+            "99",
+            "88",
+            "77",
+            "AJs",
+            "ATs",
+            "KQs",
+            "KJs"
+          ]
+        },
+        "UTG1": {
+          "3bet": [
+            "AA",
+            "KK",
+            "QQ",
+            "JJ",
+            "TT",
+            "AKs",
+            "AKo",
+            "AQs",
+            "AQo"
+          ],
+          "call": [
+            "99",
+            "88",
+            "77",
+            "AJs",
+            "ATs",
+            "KQs",
+            "KJs"
+          ]
+        },
+        "UTG2": {
+          "3bet": [
+            "AA",
+            "KK",
+            "QQ",
+            "JJ",
+            "TT",
+            "AKs",
+            "AKo",
+            "AQs",
+            "AQo"
+          ],
+          "call": [
+            "99",
+            "88",
+            "77",
+            "AJs",
+            "ATs",
+            "KQs",
+            "KJs"
+          ]
+        },
+        "MP": {
+          "3bet": [
+            "AA",
+            "KK",
+            "QQ",
+            "JJ",
+            "TT",
+            "AKs",
+            "AKo",
+            "AQs",
+            "AQo"
+          ],
+          "call": [
+            "99",
+            "88",
+            "77",
+            "66",
+            "AJs",
+            "ATs",
+            "A9s",
+            "KQs",
+            "KJs",
+            "KTs",
+            "QJs",
+            "JTs"
+          ]
+        },
+        "HJ": {
+          "3bet": [
+            "AA",
+            "KK",
+            "QQ",
+            "JJ",
+            "TT",
+            "AKs",
+            "AKo",
+            "AQs",
+            "AQo"
+          ],
+          "call": [
+            "99",
+            "88",
+            "77",
+            "66",
+            "55",
+            "AJs",
+            "ATs",
+            "A9s",
+            "A8s",
+            "KQs",
+            "KJs",
+            "KTs",
+            "QJs",
+            "QTs",
+            "JTs",
+            "T9s"
+          ]
+        },
+        "CO": {
+          "3bet": [
+            "AA",
+            "KK",
+            "QQ",
+            "JJ",
+            "TT",
+            "AKs",
+            "AKo",
+            "AQs",
+            "AQo"
+          ],
+          "call": [
+            "99",
+            "88",
+            "77",
+            "66",
+            "55",
+            "44",
+            "33",
+            "22",
+            "AJs",
+            "ATs",
+            "A9s",
+            "A8s",
+            "A7s",
+            "A6s",
+            "A5s",
+            "KQs",
+            "KJs",
+            "KTs",
+            "K9s",
+            "QJs",
+            "QTs",
+            "Q9s",
+            "JTs",
+            "J9s",
+            "T9s",
+            "98s",
+            "AJo",
+            "ATo",
+            "KQo",
+            "KJo"
+          ]
+        },
+        "BTN": {
+          "3bet": [
+            "AA",
+            "KK",
+            "QQ",
+            "JJ",
+            "TT",
+            "AKs",
+            "AKo",
+            "AQs",
+            "AQo"
+          ],
+          "call": [
+            "99",
+            "88",
+            "77",
+            "66",
+            "55",
+            "44",
+            "33",
+            "22",
+            "AJs",
+            "ATs",
+            "A9s",
+            "A8s",
+            "A7s",
+            "A6s",
+            "A5s",
+            "A4s",
+            "A3s",
+            "A2s",
+            "KQs",
+            "KJs",
+            "KTs",
+            "K9s",
+            "K8s",
+            "QJs",
+            "QTs",
+            "Q9s",
+            "Q8s",
+            "JTs",
+            "J9s",
+            "T9s",
+            "T8s",
+            "98s",
+            "87s",
+            "76s",
+            "65s",
+            "AJo",
+            "ATo",
+            "KQo",
+            "KJo",
+            "KTo",
+            "QJo",
+            "QTo"
+          ]
+        }
+      },
+      "vs_3bet": {
+        "BB": {
+          "4bet": [
+            "KK",
+            "AA",
+            "AKs"
+          ],
+          "call": [
+            "QQ",
+            "JJ",
+            "AKo",
+            "AQs"
+          ]
+        }
+      }
+    },
+    "BB": {
+      "RFI": [],
+      "vs_RFI": {
+        "UTG": {
+          "3bet": [
+            "AA",
+            "KK",
+            "QQ",
+            "JJ",
+            "TT",
+            "AKs",
+            "AKo",
+            "AQs",
+            "AQo"
+          ],
+          "call": [
+            "99",
+            "88",
+            "77",
+            "66",
+            "55",
+            "44",
+            "AJs",
+            "ATs",
+            "A9s",
+            "A8s",
+            "A5s",
+            "KQs",
+            "KJs",
+            "KTs",
+            "QJs",
+            "QTs",
+            "JTs",
+            "T9s",
+            "98s",
+            "AJo"
+          ]
+        },
+        "UTG1": {
+          "3bet": [
+            "AA",
+            "KK",
+            "QQ",
+            "JJ",
+            "TT",
+            "AKs",
+            "AKo",
+            "AQs",
+            "AQo"
+          ],
+          "call": [
+            "99",
+            "88",
+            "77",
+            "66",
+            "55",
+            "44",
+            "AJs",
+            "ATs",
+            "A9s",
+            "A8s",
+            "A5s",
+            "KQs",
+            "KJs",
+            "KTs",
+            "QJs",
+            "QTs",
+            "JTs",
+            "T9s",
+            "98s",
+            "AJo"
+          ]
+        },
+        "UTG2": {
+          "3bet": [
+            "AA",
+            "KK",
+            "QQ",
+            "JJ",
+            "TT",
+            "AKs",
+            "AKo",
+            "AQs",
+            "AQo"
+          ],
+          "call": [
+            "99",
+            "88",
+            "77",
+            "66",
+            "55",
+            "44",
+            "AJs",
+            "ATs",
+            "A9s",
+            "A8s",
+            "A5s",
+            "KQs",
+            "KJs",
+            "KTs",
+            "QJs",
+            "QTs",
+            "JTs",
+            "T9s",
+            "98s",
+            "AJo"
+          ]
+        },
+        "MP": {
+          "3bet": [
+            "AA",
+            "KK",
+            "QQ",
+            "JJ",
+            "TT",
+            "AKs",
+            "AKo",
+            "AQs",
+            "AQo"
+          ],
+          "call": [
+            "99",
+            "88",
+            "77",
+            "66",
+            "55",
+            "44",
+            "33",
+            "22",
+            "AJs",
+            "ATs",
+            "A9s",
+            "A8s",
+            "A7s",
+            "A5s",
+            "KQs",
+            "KJs",
+            "KTs",
+            "K9s",
+            "QJs",
+            "QTs",
+            "Q9s",
+            "JTs",
+            "J9s",
+            "T9s",
+            "98s",
+            "87s",
+            "AJo",
+            "ATo",
+            "KQo",
+            "KJo"
+          ]
+        },
+        "HJ": {
+          "3bet": [
+            "AA",
+            "KK",
+            "QQ",
+            "JJ",
+            "TT",
+            "AKs",
+            "AKo",
+            "AQs",
+            "AQo"
+          ],
+          "call": [
+            "99",
+            "88",
+            "77",
+            "66",
+            "55",
+            "44",
+            "33",
+            "22",
+            "AJs",
+            "ATs",
+            "A9s",
+            "A8s",
+            "A7s",
+            "A5s",
+            "A4s",
+            "A3s",
+            "A2s",
+            "KQs",
+            "KJs",
+            "KTs",
+            "K9s",
+            "K8s",
+            "QJs",
+            "QTs",
+            "Q9s",
+            "JTs",
+            "J9s",
+            "T9s",
+            "98s",
+            "87s",
+            "76s",
+            "AJo",
+            "ATo",
+            "A9o",
+            "KQo",
+            "KJo",
+            "KTo",
+            "QJo"
+          ]
+        },
+        "CO": {
+          "3bet": [
+            "AA",
+            "KK",
+            "QQ",
+            "JJ",
+            "TT",
+            "AKs",
+            "AKo",
+            "AQs",
+            "AQo"
+          ],
+          "call": [
+            "99",
+            "88",
+            "77",
+            "66",
+            "55",
+            "44",
+            "33",
+            "22",
+            "AJs",
+            "ATs",
+            "A9s",
+            "A8s",
+            "A7s",
+            "A6s",
+            "A5s",
+            "A4s",
+            "A3s",
+            "A2s",
+            "KQs",
+            "KJs",
+            "KTs",
+            "K9s",
+            "K8s",
+            "K7s",
+            "QJs",
+            "QTs",
+            "Q9s",
+            "Q8s",
+            "JTs",
+            "J9s",
+            "J8s",
+            "T9s",
+            "T8s",
+            "98s",
+            "97s",
+            "87s",
+            "86s",
+            "76s",
+            "75s",
+            "65s",
+            "AJo",
+            "ATo",
+            "A9o",
+            "KQo",
+            "KJo",
+            "KTo",
+            "K9o",
+            "QJo",
+            "QTo",
+            "JTo"
+          ]
+        },
+        "BTN": {
+          "3bet": [
+            "AA",
+            "KK",
+            "QQ",
+            "JJ",
+            "TT",
+            "AKs",
+            "AKo",
+            "AQs",
+            "AQo"
+          ],
+          "call": [
+            "99",
+            "88",
+            "77",
+            "66",
+            "55",
+            "44",
+            "33",
+            "22",
+            "AJs",
+            "ATs",
+            "A9s",
+            "A8s",
+            "A7s",
+            "A6s",
+            "A5s",
+            "A4s",
+            "A3s",
+            "A2s",
+            "KQs",
+            "KJs",
+            "KTs",
+            "K9s",
+            "K8s",
+            "K7s",
+            "K6s",
+            "K5s",
+            "QJs",
+            "QTs",
+            "Q9s",
+            "Q8s",
+            "Q7s",
+            "JTs",
+            "J9s",
+            "J8s",
+            "J7s",
+            "T9s",
+            "T8s",
+            "T7s",
+            "98s",
+            "97s",
+            "87s",
+            "86s",
+            "76s",
+            "75s",
+            "65s",
+            "64s",
+            "54s",
+            "AJo",
+            "ATo",
+            "A9o",
+            "A8o",
+            "KQo",
+            "KJo",
+            "KTo",
+            "K9o",
+            "QJo",
+            "QTo",
+            "Q9o",
+            "JTo",
+            "J9o",
+            "T9o"
+          ]
+        },
+        "SB": {
+          "3bet": [
+            "AA",
+            "KK",
+            "QQ",
+            "JJ",
+            "TT",
+            "AKs",
+            "AKo",
+            "AQs",
+            "AQo"
+          ],
+          "call": [
+            "99",
+            "88",
+            "77",
+            "66",
+            "55",
+            "44",
+            "33",
+            "22",
+            "AJs",
+            "ATs",
+            "A9s",
+            "A8s",
+            "A7s",
+            "A6s",
+            "A5s",
+            "A4s",
+            "A3s",
+            "A2s",
+            "KQs",
+            "KJs",
+            "KTs",
+            "K9s",
+            "K8s",
+            "K7s",
+            "K6s",
+            "K5s",
+            "K4s",
+            "K3s",
+            "K2s",
+            "QJs",
+            "QTs",
+            "Q9s",
+            "Q8s",
+            "Q7s",
+            "Q6s",
+            "JTs",
+            "J9s",
+            "J8s",
+            "J7s",
+            "T9s",
+            "T8s",
+            "T7s",
+            "98s",
+            "97s",
+            "96s",
+            "87s",
+            "86s",
+            "76s",
+            "75s",
+            "65s",
+            "64s",
+            "54s",
+            "AJo",
+            "ATo",
+            "A9o",
+            "A8o",
+            "A7o",
+            "A6o",
+            "A5o",
+            "KQo",
+            "KJo",
+            "KTo",
+            "K9o",
+            "K8o",
+            "QJo",
+            "QTo",
+            "Q9o",
+            "Q8o",
+            "JTo",
+            "J9o",
+            "J8o",
+            "T9o",
+            "T8o",
+            "98o"
+          ]
+        }
+      },
+      "vs_3bet": {}
+    }
+  },
+  "_derived_spots": {
+    "vs_RFI": [
+      "UTG2 vs UTG1",
+      "MP vs UTG",
+      "MP vs UTG1",
+      "MP vs UTG2",
+      "HJ vs UTG",
+      "HJ vs UTG1",
+      "HJ vs UTG2",
+      "HJ vs MP",
+      "CO vs UTG",
+      "CO vs UTG1",
+      "CO vs UTG2",
+      "BTN vs UTG",
+      "BTN vs UTG1",
+      "BTN vs UTG2",
+      "BTN vs MP",
+      "BTN vs HJ",
+      "SB vs UTG",
+      "SB vs UTG1",
+      "SB vs UTG2",
+      "SB vs MP",
+      "SB vs HJ",
+      "SB vs CO",
+      "SB vs BTN",
+      "BB vs UTG",
+      "BB vs UTG1",
+      "BB vs UTG2",
+      "BB vs MP",
+      "BB vs HJ",
+      "BB vs CO",
+      "BB vs BTN",
+      "BB vs SB"
+    ],
+    "vs_3bet": [
+      "UTG vs UTG1",
+      "UTG vs UTG2",
+      "UTG vs MP",
+      "UTG vs HJ",
+      "UTG vs CO",
+      "UTG vs BTN",
+      "UTG vs SB",
+      "UTG vs BB",
+      "UTG1 vs UTG2",
+      "UTG1 vs MP",
+      "UTG1 vs HJ",
+      "UTG1 vs CO",
+      "UTG1 vs BTN",
+      "UTG1 vs SB",
+      "UTG1 vs BB",
+      "UTG2 vs MP",
+      "UTG2 vs HJ",
+      "UTG2 vs CO",
+      "UTG2 vs BTN",
+      "UTG2 vs SB",
+      "UTG2 vs BB",
+      "MP vs HJ",
+      "MP vs CO",
+      "MP vs BTN",
+      "MP vs SB",
+      "MP vs BB",
+      "HJ vs CO",
+      "HJ vs BTN",
+      "HJ vs SB",
+      "HJ vs BB",
+      "CO vs BTN",
+      "CO vs SB",
+      "CO vs BB",
+      "BTN vs SB",
+      "BTN vs BB",
+      "SB vs BB"
+    ],
+    "note": "Ranges derivados aplicando os princípios do PDF Reg Life (3-Bet/4-Bet premium pra iniciantes, call seleto por posição). NÃO são fontes diretas do PDF."
+  }
+}

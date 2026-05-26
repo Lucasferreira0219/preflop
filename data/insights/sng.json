@@ -1,0 +1,621 @@
+{
+  "version": 1,
+  "source": "Curado de sng_arq/notes/ranges/* e sng_arq/notes/teoria/*",
+  "phases": {
+    "early": {
+      "label": "Early Game",
+      "stack_range": [50, 100],
+      "rp_avg_pct": 4.8,
+      "players_typical": "9-7",
+      "summary": "Fase inicial do torneio (~75bb, 9 jogadores). ICM existe mas pesa pouco — RP médio só 4.8%. Você joga relativamente próximo ao ChipEV. Foco: construir base sólida e evitar erros caros.",
+      "how_to_play": [
+        "Use ranges sólidos por posição — UTG tight (~13%), BTN agressivo (~50%).",
+        "Raise 3x BB em open raise — mini-raises geram pots multiway complicados.",
+        "Implied odds são importantes: pares baixos (22-66) jogam pra setar.",
+        "Mãos suited connectors ganham valor — flushes e sequências.",
+        "Anti-limp: punir com raise 3.5-4x BB usando o range da posição do limper.",
+        "Postflop: c-bet 100% IP vs BB com size 1/3 pote."
+      ],
+      "common_mistakes": [
+        "Limpar em vez de raise — sempre raise quando entrar.",
+        "Abrir mãos marginais no UTG (JTo, KJo).",
+        "Pouca agressividade no BTN — erro #1 de iniciantes.",
+        "Pagar 3-bet com mãos sem plano pós-flop (KJs, A5s).",
+        "3-bet light sem experiência — fica em premium (AA-TT, AK, AQ)."
+      ],
+      "mentality": "Foco em disciplina e ranges sólidos. Você não precisa vencer no Early — precisa CHEGAR no Middle/Late com stack. Erros caros aqui custam todo o torneio.",
+      "frequency_tips": "VPIP típico: UTG ~13%, MP ~16%, HJ ~25%, CO ~33%, BTN ~50%, SB blind war."
+    },
+    "middle": {
+      "label": "Middle Game",
+      "stack_range": [20, 50],
+      "rp_avg_pct": 8.1,
+      "players_typical": "7-5",
+      "summary": "Fase de transição (5-7 jogadores, stacks 20-50bb). ICM começa a pesar (RP 8.1%). Ranges começam a fragmentar — open raise tem 3 buckets: mini-raise, shove direto, fold.",
+      "how_to_play": [
+        "Range OR encolhe ~5% no BTN (50% → 45% em 30bb).",
+        "Em 30bb, considerar mini-raise com premium pra induzir 3-bets.",
+        "Mãos médias começam a virar shove direto (pares médios, ATo+, KQo).",
+        "Resteal entra em jogo: 3-bet all-in vs late position com 12-18bb.",
+        "BB começa a defender mais agressivo — pot odds melhores que SB.",
+        "Postflop: bets pequenos (25-33%) com frequência ~100% IP vs BB."
+      ],
+      "common_mistakes": [
+        "Manter range de Early Game — não fragmentar é -EV.",
+        "Calls especulativos com 12-15bb — vira push/fold.",
+        "3-bet sem all-in em 15bb — comita demais sem fold equity.",
+        "Não respeitar ICM crescente — ranges devem encolher.",
+        "Slow play com mãos fortes — sempre construir pote."
+      ],
+      "mentality": "Decisões aqui definem se você chega no Late Game com chip stack. Jogadores lucrativos são AGRESSIVOS aqui. Passivos caem em 6º/5º lugar.",
+      "frequency_tips": "Shove ranges 10bb: UTG ~9.4%, HJ ~15%, CO ~26%, BTN ~32%, SB vs BB ~54%."
+    },
+    "late": {
+      "label": "Late Game / Bolha",
+      "stack_range": [10, 20],
+      "rp_avg_pct": 15.2,
+      "players_typical": "4-3",
+      "summary": "Fase mais crítica do torneio. RP médio 15.2% — pico do ICM. Mid stacks sofrem pressão extrema (até 25% RP), CL pode atacar livremente, super-short tem RP baixo (~3-4%).",
+      "how_to_play": [
+        "Reduzir drasticamente call ranges — ICM faz mãos fortes valerem menos.",
+        "Em RP > 20%, AKo pode ser FOLD vs shove tight (counterintuitive!).",
+        "Como chip leader: atacar agressivamente, abusar de mid stacks.",
+        "Como mid stack: evitar confronto com CL, focar em short stacks.",
+        "Como super-short: jogar livre — você tem menos a perder.",
+        "Blind war SB vs BB: limps válidos, range muito amplo, foco em fold equity.",
+        "Adapt ao field: se vilões shovam tight, reduza calls; se loose, expanda."
+      ],
+      "common_mistakes": [
+        "Medo da bolha → jogo tight excessivo → ITM sem fichas pra cravar.",
+        "Pagar shove de SB com AKo na bolha — RP > 20% justifica fold.",
+        "Chip leader passivo — perde chance de explorar pressão.",
+        "Não usar limps no SB blind war — desperdiça opção.",
+        "Esquecer que o objetivo é $EV, não ChipEV."
+      ],
+      "mentality": "Pay jumps grandes mudam tudo. Cada erro custa caro. Cada decisão correta vale muito. NÃO TENHA MEDO DA BOLHA — cair faz parte, desde que seja com EV+. Maximize $EV, não ITM.",
+      "frequency_tips": "Call vs SB shove: Early 44%, Middle 29%, Bolha 16%. Range de shove BTN 15bb: ~40% (early) → tight (bolha)."
+    },
+    "shortstack": {
+      "label": "Push/Fold",
+      "stack_range": [0, 12],
+      "rp_avg_pct": 12.0,
+      "players_typical": "any",
+      "summary": "≤12bb. Estratégia binária: shove ou fold. SEM calls especulativos. EV vem de duas fontes: fold equity (vilão folda → ganha blinds) e equidade quando o vilão paga.",
+      "how_to_play": [
+        "Memorize ranges por posição: UTG ~9.4%, HJ ~15%, CO ~26%, BTN ~32%, SB vs BB ~54%.",
+        "Sem mix de ações: jam ou fold (jogadores iniciantes).",
+        "BTN inclui todos ases, pares e broadways — não perca Q9o, T8s.",
+        "SB vs BB: range muito amplo — J2o, K6o, T7o entram pelo fold equity.",
+        "Como caller (BB defendendo): tight. vs SB 18%, vs BTN 16%, vs UTG 8%.",
+        "Adaptar: se vilão folda demais → expandir shove (~68%). Se calla demais → reduzir (~40%)."
+      ],
+      "common_mistakes": [
+        "Call especulativo com 10bb — sempre shove ou fold.",
+        "Mini-raise com 8bb — comita sem fold equity.",
+        "Foldar mãos como K9o no BTN — entram no range de shove.",
+        "Call de BB muito loose contra UTG shove — UTG tem range forte.",
+        "Resteal contra UTG — range tight do UTG mata o resteal."
+      ],
+      "mentality": "Decisões binárias e disciplinadas. Memorizou range → executa sem hesitar. O jogo é matemática pura aqui. Quem domina push/fold short stack se destaca.",
+      "frequency_tips": "Shove % por posição (10bb): UTG 9.4%, HJ 15%, CO 26%, BTN 32%, SB vs BB 54%."
+    }
+  },
+  "_derived_note": "Spots não cobertos diretamente pelo PDF foram extrapolados aplicando os princípios: 3-Bet só premium (AA-TT, AK, AQ), 4-Bet só premium (KK+, AKs), call seleto adaptado por posição e amplitude do range do vilão.",
+  "open_pct_by_pos": {
+    "75": { "UTG": 13, "UTG1": 13, "UTG2": 13, "MP": 16, "HJ": 25, "CO": 33, "BTN": 50, "SB": 36 },
+    "30": { "UTG": 13, "UTG1": 13, "UTG2": 13, "MP": 16, "HJ": 24, "CO": 31, "BTN": 47, "SB": 32 },
+    "15": { "UTG": 11, "UTG1": 11, "UTG2": 11, "MP": 15, "HJ": 20, "CO": 30, "BTN": 39, "SB": 44 },
+    "10": { "UTG": 9, "UTG1": 9, "UTG2": 9, "MP": 13, "HJ": 15, "CO": 24, "BTN": 33, "SB": 50 }
+  },
+  "spots": {
+    "RFI": {
+      "UTG@75": {
+        "title": "UTG abre ~13%",
+        "summary": "Range extremamente tight — você é o primeiro a falar e tem até 8 jogadores pra reagir. ICM reduz seu range em ~3% vs ChipEV (de 17% pra 14%).",
+        "key_hands": ["77+", "A2s+", "KTs+", "QTs+", "JTs", "T9s", "AJo+", "KQo"],
+        "size_recommendation": "Raise 3x BB em deep stacks. Mini-raises geram multiway pots complicados aqui.",
+        "common_mistakes": [
+          "Abrir JTo do UTG — range incorreto, fold.",
+          "Limpar ao invés de raise — sempre raise quando entrar.",
+          "Abrir mãos suited fracas (Q5s, J6s) — não sustentam contra reraises."
+        ],
+        "icm_note": "Early Game tem RP médio 4.8%. Você ainda pode jogar relativamente solto, mas posição early exige seletividade.",
+        "source_md": "ranges/01-open-raise-early.md"
+      },
+      "UTG1@75": {
+        "title": "UTG+1 abre ~13%",
+        "summary": "Mesma estratégia do UTG — early position pede tight. PDF não diferencia UTG/UTG+1/UTG+2 em SnG 9-handed.",
+        "key_hands": ["77+", "A2s+", "KTs+", "QTs+", "JTs", "T9s", "AJo+", "KQo"],
+        "size_recommendation": "Raise 3x BB.",
+        "common_mistakes": [
+          "Achar que UTG+1 é diferente de UTG — não é, ranges idênticos.",
+          "Expandir range pelo fato de UTG ter foldado — apenas 1 jogador a menos não muda muito."
+        ],
+        "icm_note": "RP early ~4.8%. Mesma seletividade do UTG.",
+        "source_md": "ranges/01-open-raise-early.md"
+      },
+      "UTG2@75": {
+        "title": "UTG+2 abre ~13%",
+        "summary": "Ainda early position. PDF mantém o mesmo range de UTG.",
+        "key_hands": ["77+", "A2s+", "KTs+", "QTs+", "JTs", "T9s", "AJo+", "KQo"],
+        "size_recommendation": "Raise 3x BB.",
+        "common_mistakes": [
+          "Tratar UTG+2 como MP — não é, ainda há ~6 jogadores atrás."
+        ],
+        "icm_note": "RP early ~4.8%.",
+        "source_md": "ranges/01-open-raise-early.md"
+      },
+      "MP@75": {
+        "title": "MP abre ~16%",
+        "summary": "Pequena expansão do range. Adiciona pares baixos (55-66), suited um pouco mais largos e ATo.",
+        "key_hands": ["55+", "A2s+", "K9s+", "Q9s+", "J9s+", "T9s", "ATo+", "KQo"],
+        "size_recommendation": "Raise 3x BB.",
+        "common_mistakes": [
+          "Não expandir o suficiente em relação ao UTG — MP tem 1 jogador a menos atrás.",
+          "3-bet light de MP com mãos médias — ainda há muitos jogadores atrás."
+        ],
+        "icm_note": "RP early ~4.8%. MP é onde começa a ter mais flexibilidade.",
+        "source_md": "ranges/01-open-raise-early.md"
+      },
+      "HJ@75": {
+        "title": "HJ abre ~25%",
+        "summary": "Expansão notável. PDF cita K8s e T9s como adições típicas. Agora você abre suited connectors médios e ases baixos suited.",
+        "key_hands": ["22+", "A2s+", "K8s+", "Q8s+", "J9s+", "T8s+", "98s", "87s", "76s", "65s", "A8o+", "KTo+", "QJo"],
+        "size_recommendation": "Raise 3x BB.",
+        "common_mistakes": [
+          "Não abrir suited connectors (98s, 87s) — eles têm boa equidade e jogabilidade IP.",
+          "Limpar com pares baixos esperando set — abre com raise normal."
+        ],
+        "icm_note": "RP early ~4.8%. HJ é a primeira posição 'late' — pode atacar mais.",
+        "source_md": "ranges/01-open-raise-early.md"
+      },
+      "CO@75": {
+        "title": "CO abre ~33%",
+        "summary": "Expansão grande. PDF cita K2s+, J7s+, T7s+, K9o, J9o. Você abre quase todos os suited e amplia offsuit.",
+        "key_hands": ["22+", "A2s+", "K2s+", "Q7s+", "J7s+", "T7s+", "todos os pares", "A6o+", "K9o+", "QTo+"],
+        "size_recommendation": "Raise 3x BB.",
+        "common_mistakes": [
+          "Abrir tight demais no CO — só BTN e blinds atrás, é hora de pressionar.",
+          "Não 3-betar premium contra reraises — em CO você ainda tem que defender com raises."
+        ],
+        "icm_note": "RP early ~4.8%. CO é spot de ataque.",
+        "source_md": "ranges/01-open-raise-early.md"
+      },
+      "BTN@75": {
+        "title": "BTN abre ~50%",
+        "summary": "Range muito amplo — você joga em posição contra apenas 2 vilões. PDF inclui 64s, K6o, J3o, todos os ases e pares. 'Podemos expandir além disso dependendo da fraqueza dos adversários.'",
+        "key_hands": ["22+", "todos os ases", "K2s+", "Q2s+", "J2s+", "T6s+", "64s+", "K6o+", "J7o+", "T8o+"],
+        "size_recommendation": "Raise 3x BB. Em short stack pode usar mini-raise pra economizar.",
+        "common_mistakes": [
+          "Pouca agressividade no BTN — é o erro #1 de iniciantes segundo o PDF.",
+          "Não pressionar SB/BB que defendem mal — eles foldam muito.",
+          "Foldar mãos como K8o ou J9o no BTN — entram no range."
+        ],
+        "icm_note": "RP early ~4.8%. BTN é a posição mais lucrativa do jogo.",
+        "source_md": "ranges/01-open-raise-early.md"
+      },
+      "SB@75": {
+        "title": "SB ~36% (Blind War)",
+        "summary": "Estratégia distinta — chamada de Blind War. Inclui muitos limps na prática. PDF não detalha %, mas é mais solto que outras posições por enfrentar apenas o BB.",
+        "key_hands": ["22+", "A2s+", "K5s+", "Q7s+", "J8s+", "T8s+", "98s", "87s", "76s", "A2o+", "K9o+", "Q9o+", "J9o+", "T9o"],
+        "size_recommendation": "Raise 2.5-3x BB. Limps são válidos com mãos medianas — útil em bolha.",
+        "common_mistakes": [
+          "Tratar SB como qualquer outra posição — Blind War tem regras próprias.",
+          "Não usar limp como ferramenta — em bolha com mãos médias, limp é melhor que raise.",
+          "Foldar demais no SB — você só tem o BB atrás, tem fold equity."
+        ],
+        "icm_note": "RP varia muito conforme stacks. Na bolha, SB vs BB pode chegar a 15% RP simétrico — Blind War muda completamente.",
+        "source_md": "ranges/01-open-raise-early.md"
+      },
+      "UTG@10": {
+        "title": "UTG shove ~9.4% (push/fold)",
+        "summary": "Com ~10bb a jogada é push/fold puro: shove ou fold, sem mix. UTG é a posição mais tight — até 8 jogadores podem pagar atrás. Só pares médios+, ases suited e broadways fortes valem o all-in.",
+        "key_hands": ["66+", "A7s+", "A5s", "AJo+", "KQs"],
+        "common_mistakes": [
+          "Dar mini-raise com 10bb — comita o stack sem fold equity. Shove ou fold.",
+          "Shovar marginais (KJo, Q9s) do UTG — muitos jogadores atrás pagam com range forte.",
+          "Foldar 66/77 com medo — pares médios são jam padrão até do UTG."
+        ],
+        "icm_note": "RP ~12% no push/fold. UTG shova tight porque o range de call coletivo dos 8 atrás é forte. Fold equity baixa nesta posição.",
+        "source_md": "ranges/04-open-shove-short.md"
+      },
+      "HJ@10": {
+        "title": "HJ shove ~15% (push/fold)",
+        "summary": "Menos gente atrás → range de jam abre. Entram pares pequenos, ases suited e broadways. Offsuit ainda reduzido. Push/fold puro: sem calls, sem raises.",
+        "key_hands": ["22+", "A2s+", "KTs+", "QTs+", "JTs", "ATo+", "KJo+"],
+        "common_mistakes": [
+          "Manter o range tight de UTG — desperdiça fold equity com só 4 jogadores atrás.",
+          "Limpar/mini-raise — em 10bb é jam ou fold."
+        ],
+        "icm_note": "Fold equity sobe vs UTG. RP ~12%, mas a posição compensa abrindo mais.",
+        "source_md": "ranges/04-open-shove-short.md"
+      },
+      "CO@10": {
+        "title": "CO shove ~26% (push/fold)",
+        "summary": "Apenas BTN e blinds atrás. Range de jam largo: todos os pares, ases suited, broadways e alguns suited connectors. Raises são opcionais — simplifique pra shove.",
+        "key_hands": ["22+", "A2s+", "K8s+", "Q9s+", "J9s+", "T9s", "98s", "A8o+", "K9o+", "QTo+"],
+        "common_mistakes": [
+          "Abrir tight demais no CO — é spot de ataque, só 3 jogadores atrás.",
+          "Não shovar suited connectors (98s) — têm boa equidade quando pagos."
+        ],
+        "icm_note": "RP ~12%. CO ganha muito com fold equity sobre BTN/blinds que defendem tight.",
+        "source_md": "ranges/04-open-shove-short.md"
+      },
+      "BTN@10": {
+        "title": "BTN shove ~32% (push/fold)",
+        "summary": "Só as blinds atrás → range de jam muito largo. Todos os ases, todos os pares, broadways e muitos suited. Não perca Q9o, T8s — entram pelo fold equity.",
+        "key_hands": ["22+", "A2s+", "K5s+", "Q8s+", "J8s+", "T8s+", "97s+", "A2o+", "K9o+", "QTo+"],
+        "common_mistakes": [
+          "Pouca agressividade no BTN — erro #1 de iniciantes. Aqui você ataca as blinds.",
+          "Foldar K9o, T8s no BTN — entram no range de shove pelo fold equity."
+        ],
+        "icm_note": "RP ~12%. BTN é a posição mais lucrativa: máximo fold equity (só 2 jogadores atrás).",
+        "source_md": "ranges/04-open-shove-short.md"
+      },
+      "SB@10": {
+        "title": "SB vs BB shove ~54% (push/fold)",
+        "summary": "Só o BB atrás → range altíssimo. J2o, K6o, T7o entram pelo fold equity. AA/KK podem dar mini-raise pra induzir, mas pra iniciante é jam puro.",
+        "key_hands": ["22+", "A2s+", "K2s+", "Q5s+", "J7s+", "A2o+", "K5o+", "Q7o+", "J8o+"],
+        "common_mistakes": [
+          "Foldar demais no SB — você só tem 1 jogador atrás, fold equity enorme.",
+          "Tratar SB como posição normal — é Blind War, range muito mais largo."
+        ],
+        "icm_note": "RP varia com os stacks. Blind War SB vs BB: fold equity é a maior fonte de EV. Range pode chegar a ~68% se o BB paga pouco.",
+        "source_md": "ranges/04-open-shove-short.md"
+      },
+      "BTN@15": {
+        "title": "BTN fragmentação (~15bb)",
+        "summary": "O range de open fragmenta em 3 buckets: mini-raise com premium (TT+, AJs+, AQo+) pra induzir resteal e extrair valor; shove direto com mãos médias (fold equity); fold com o resto. Não é mais uma única ação por mão.",
+        "key_hands": ["mini-raise: TT+, AJs+, AQo+", "shove: pares médios, A-suited, broadways, suited connectors"],
+        "common_mistakes": [
+          "Mini-raise com mãos médias (88, KQo) — em 15bb elas querem shove direto pra maximizar fold equity.",
+          "Shovar AA/KK do BTN — em 15bb dá pra mini-raise e induzir o resteal."
+        ],
+        "icm_note": "Início do ICM pesado. Mini-raise polariza (premium + alguns blefes), shove pega o miolo do range.",
+        "source_md": "ranges/02-open-raise-short.md"
+      },
+      "CO@15": {
+        "title": "CO fragmentação (~15bb)",
+        "summary": "Mesma lógica do BTN, range um pouco mais tight (BTN ainda atrás). Premium dá mini-raise, médias shovam, fracas foldam.",
+        "key_hands": ["mini-raise: 99+, ATs+, KJs+, AJo+", "shove: pares baixos, A-suited, broadways médios"],
+        "common_mistakes": [
+          "Esquecer o BTN atrás — CO fragmenta um pouco mais tight que o BTN.",
+          "Mini-raise com o miolo do range — médias preferem shove."
+        ],
+        "icm_note": "ICM crescente. Shove direto evita spots pós-flop OOP contra BTN/blinds.",
+        "source_md": "ranges/02-open-raise-short.md"
+      },
+      "HJ@15": {
+        "title": "HJ fragmentação (~15bb)",
+        "summary": "Posição intermediária: mais gente atrás → bucket de mini-raise premium e shove mais seletivo que no BTN/CO.",
+        "key_hands": ["mini-raise: 99+, ATs+, AJo+, KQs", "shove: 44+, A-suited, broadways, suited connectors fortes"],
+        "common_mistakes": [
+          "Abrir largo demais do HJ em 15bb — ainda há CO/BTN/blinds atrás.",
+          "Não fragmentar — manter range de early game é -EV em short stack."
+        ],
+        "icm_note": "RP médio sobe. Fragmentar bem é o que separa reg de iniciante no middle game.",
+        "source_md": "ranges/02-open-raise-short.md"
+      }
+    },
+    "vs_RFI": {
+      "UTG1_vs_UTG@75": {
+        "title": "UTG+1 vs UTG (~8%)",
+        "summary": "Range extremamente tight, favorecendo 3-Bet sobre call para evitar multiway pots. Para iniciantes: 3-Bet apenas premium (AA, KK, QQ, JJ, TT, AK, AQ).",
+        "key_hands_3bet": ["AA", "KK", "QQ", "JJ", "TT", "AKs", "AKo", "AQs", "AQo"],
+        "key_hands_call": ["99", "88", "77", "66", "AJs", "ATs", "KQs", "KJs"],
+        "common_mistakes": [
+          "Pagar com KJo/QJo contra UTG — range de UTG é muito forte.",
+          "3-betar light com mãos como A5s — sem experiência pós-flop, não compensa."
+        ],
+        "icm_note": "Early Game RP 4.8% — não há urgência. Tight é OK.",
+        "source_md": "ranges/03-vs-open-raise.md"
+      },
+      "UTG2_vs_UTG@75": {
+        "title": "UTG+2 vs UTG (~8%)",
+        "summary": "Mesma estratégia do UTG+1 vs UTG. PDF não diferencia.",
+        "key_hands_3bet": ["AA", "KK", "QQ", "JJ", "TT", "AKs", "AKo", "AQs", "AQo"],
+        "key_hands_call": ["99", "88", "77", "66", "AJs", "ATs", "KQs", "KJs"],
+        "common_mistakes": [
+          "Achar que ter posição em UTG muda muito — ainda há 5+ jogadores atrás."
+        ],
+        "icm_note": "RP early 4.8%.",
+        "source_md": "ranges/03-vs-open-raise.md"
+      },
+      "CO_vs_MP@75": {
+        "title": "CO vs MP (~15%)",
+        "summary": "MP abre range mais amplo (~16%) → CO se expande. Posição vantajosa pós-flop. Menos jogadores atrás reduz chance de mão forte aparecer.",
+        "key_hands_3bet": ["AA", "KK", "QQ", "JJ", "TT", "AKs", "AKo", "AQs", "AQo"],
+        "key_hands_call": ["99-22 (set mining)", "AJs-A5s", "KQs-KTs", "QJs-QTs", "JTs, T9s, 98s, 87s", "AJo, KQo, KTo"],
+        "common_mistakes": [
+          "3-bet light no CO contra MP — recomendação pra iniciantes é só premium.",
+          "Pagar com mãos marginais (KTo, QJo) — equidade contra range de MP é fraca."
+        ],
+        "icm_note": "Early Game RP baixo. Strategy padrão.",
+        "source_md": "ranges/03-vs-open-raise.md"
+      },
+      "CO_vs_HJ@75": {
+        "title": "CO vs HJ (~15%)",
+        "summary": "HJ abre ~25%, range mais amplo. Mesma estratégia de CO vs MP. PDF não diferencia explicitamente — aproximação razoável.",
+        "key_hands_3bet": ["AA", "KK", "QQ", "JJ", "TT", "AKs", "AKo", "AQs", "AQo"],
+        "key_hands_call": ["99-22", "AJs-A5s", "KQs-KTs", "QJs-QTs", "JTs, T9s, 98s, 87s", "AJo, KQo, KTo"],
+        "common_mistakes": [
+          "Esquecer que HJ abre mais que MP — você pode ser ligeiramente mais loose."
+        ],
+        "icm_note": "Early Game RP baixo.",
+        "source_md": "ranges/03-vs-open-raise.md"
+      },
+      "BTN_vs_CO@75": {
+        "title": "BTN vs CO (~24%) — spot crítico",
+        "summary": "Um dos spots MAIS importantes do jogo (ranges amplos, em posição). CO abre ~33%, BTN responde com ~24%. Estratégia: 3-Bet com valor (TT+, AQ+), expandir call pela posição.",
+        "key_hands_3bet": ["TT+", "AKs", "AKo", "AQs", "AQo"],
+        "key_hands_call": ["99-22", "A2s+", "K8s+", "Q8s+", "J8s+", "T8s+", "97s+", "86s+", "75s+", "64s+", "54s", "AJo, ATo", "KQo-KTo, QJo-QTo"],
+        "common_mistakes": [
+          "Foldar mãos como 75s ou T8o — entram no range pela posição.",
+          "3-bet light sem experiência pós-flop — recomendação pra iniciantes é só premium.",
+          "Tratar BTN como qualquer outra posição — você tem postflop com bola toda."
+        ],
+        "icm_note": "Em early game, RP baixo permite expandir call. Na bolha, mesmo BTN reduz.",
+        "source_md": "ranges/03-vs-open-raise.md"
+      },
+      "BTN_vs_CO@15": {
+        "title": "BTN vs CO — Resteal (~15bb)",
+        "summary": "Spot de resteal clássico. CO abre ~27% (largo) e você está em posição com short stack: 3-bet all-in com range largo de suited e pares. Ax offsuit tem blockers do range de 4-bet dele. Push/fold puro — sem flat call.",
+        "key_hands": ["22+", "A2s+", "K9s+", "Q9s+", "J9s+", "T9s", "98s", "87s", "ATo+", "KJo+", "QJo"],
+        "common_mistakes": [
+          "Flat call com 15bb — comita o stack sem fold equity. É shove ou fold.",
+          "Restealar tight demais contra CO — ele abre largo, seu fold equity é alto."
+        ],
+        "icm_note": "Fold equity é a fonte principal de EV. Quanto mais o CO abre e menos paga, mais largo o resteal.",
+        "source_md": "ranges/05-resteal.md"
+      },
+      "SB_vs_BTN@15": {
+        "title": "SB vs BTN — Resteal (~15bb)",
+        "summary": "BTN abre o range mais largo da mesa → alvo preferencial de resteal. Mesmo OOP, o short stack e o range fraco do BTN tornam o jam muito lucrativo. Sem flat — shove ou fold.",
+        "key_hands": ["22+", "A2s+", "K8s+", "Q8s+", "J8s+", "T8s+", "97s+", "87s", "76s", "65s", "A7o+", "KTo+", "QJo"],
+        "common_mistakes": [
+          "Restealar pouco vs BTN — é quem abre mais, seu fold equity é máximo.",
+          "Flat call OOP — sem posição e com 15bb, jam é melhor que call."
+        ],
+        "icm_note": "Mesmo OOP, o range largo do BTN faz o resteal render. Expanda se ele paga pouco.",
+        "source_md": "ranges/05-resteal.md"
+      },
+      "BB_vs_BTN@15": {
+        "title": "BB vs BTN — Resteal (~15bb)",
+        "summary": "Posição ideal de resteal: só você resta atrás do BTN. Range de jam inclui muitos suited e pares baixos; Ax offsuit tem blockers. Pot odds melhores que do SB.",
+        "key_hands": ["22+", "A2s+", "K7s+", "Q8s+", "J8s+", "T8s+", "97s+", "86s+", "76s", "65s", "A5o+", "K9o+", "QTo+", "JTo"],
+        "common_mistakes": [
+          "Defender só pagando — em 15bb o resteal all-in bate o flat na maioria das mãos.",
+          "Esquecer os blockers — Ax off é lucrativo pra jam porque bloqueia o range forte do BTN."
+        ],
+        "icm_note": "BB tem o melhor spot de resteal (1 vilão restante). Adapte: BTN abre 40% → jam ainda mais largo.",
+        "source_md": "ranges/05-resteal.md"
+      },
+      "CO_vs_HJ@15": {
+        "title": "CO vs HJ — Resteal (~15bb)",
+        "summary": "HJ abre ~21-25%. Em posição com short stack, o resteal jam funciona bem: suited e pares pequenos lucram com fold equity. Adaptado dos princípios do PDF (spot derivado).",
+        "key_hands": ["66+", "A9s+", "A5s", "KTs+", "QJs", "AJo+", "KQo"],
+        "common_mistakes": [
+          "Restealar largo demais vs HJ — abre mais tight que CO/BTN, calibre.",
+          "Flat call com 15bb — é push/fold."
+        ],
+        "icm_note": "HJ abre menos que late position → resteal mais seletivo, mas ainda +EV pela posição.",
+        "source_md": "ranges/05-resteal.md"
+      },
+      "HJ_vs_MP@15": {
+        "title": "HJ vs MP — Resteal (~15bb)",
+        "summary": "MP abre ~16%, range mais forte que late position → resteal seletivo. Foque em mãos com equidade real quando pago + blockers. Adaptado dos princípios (spot derivado).",
+        "key_hands": ["88+", "ATs+", "KJs+", "AJo+", "KQo"],
+        "common_mistakes": [
+          "Jam largo vs MP — o range dele é forte, fold equity menor que vs CO/BTN.",
+          "Restealar com mãos sem equidade — vs range tight, você precisa aguentar o call."
+        ],
+        "icm_note": "Quanto mais tight o open do vilão, mais tight o resteal. MP exige seleção.",
+        "source_md": "ranges/05-resteal.md"
+      },
+      "MP_vs_UTG@15": {
+        "title": "MP vs UTG — Resteal (~15bb)",
+        "summary": "UTG abre ~13% (tight). Resteal contra range forte é quase sempre -EV: a recomendação é 3-bet não-all-in com premium ou fold. Poucos spots de jam. Adaptado dos princípios (spot derivado).",
+        "key_hands": ["TT+", "AKs", "AQs", "AKo"],
+        "common_mistakes": [
+          "Restealar light vs UTG — o range tight dele mata o resteal (-EV).",
+          "Jam com mãos médias contra open de early — você quase sempre é dominado quando pago."
+        ],
+        "icm_note": "Resteal contra range forte é -EV. Vs UTG, prefira fold ou jam só premium.",
+        "source_md": "ranges/05-resteal.md"
+      },
+      "BB_vs_BTN@10": {
+        "title": "BB vs BTN shove — Call ~16%",
+        "summary": "Defendendo vs o shove do BTN com ~10bb: a decisão é call ou fold (ele já está all-in). BTN shova largo, mas você ainda precisa de equidade real. Range de call mais tight que vs SB.",
+        "key_hands": ["66+", "A2s+", "K9s+", "QTs+", "JTs", "A8o+", "KJo+"],
+        "common_mistakes": [
+          "Pagar loose demais vs BTN — mesmo largo, o shove tem equidade contra mãos fracas.",
+          "Foldar pares médios e ases fortes — eles batem o range de shove do BTN."
+        ],
+        "icm_note": "Mais jogadores envolvidos → call mais tight. RP penaliza calls marginais.",
+        "source_md": "ranges/04-open-shove-short.md"
+      },
+      "BB_vs_SB@10": {
+        "title": "BB vs SB shove — Call ~18%",
+        "summary": "SB shova muito largo (~54%) no blind war → seu range de call abre. Ainda assim é call/fold (ele está all-in): pares, ases e reis suited, broadways offsuit fortes.",
+        "key_hands": ["55+", "A2s+", "K9s+", "Q9s+", "JTs", "A6o+", "KTo+", "QJo"],
+        "common_mistakes": [
+          "Foldar demais vs SB — ele shova muito largo, seu call deve abrir.",
+          "Pagar K6o/J8o — mesmo vs range largo, mãos muito fracas não têm equidade."
+        ],
+        "icm_note": "vs SB (1 jogador) o call é mais largo que vs BTN/UTG. Se o SB shova pouco, reduza ainda mais.",
+        "source_md": "ranges/04-open-shove-short.md"
+      }
+    },
+    "vs_3bet": {
+      "_universal@75": {
+        "title": "vs 3-Bet — Heurística universal (derivado)",
+        "summary": "PDF Reg Life NÃO cobre ranges específicos contra 3-bet. Aplicamos heurística geral para iniciantes: 4-Bet APENAS premium (KK+, AKs), call seleto com pares médios e suited fortes.",
+        "key_hands_4bet": ["AA", "KK", "AKs"],
+        "key_hands_call": ["QQ", "JJ", "AKo", "AQs"],
+        "common_mistakes": [
+          "Pagar 3-bet com mãos marginais (KJs, A5s) — sem plano pós-flop é -EV.",
+          "4-bet light contra fish — eles pagam tudo, não há fold equity.",
+          "Foldar QQ pra 3-bet de blinds — geralmente é call/4-bet, não fold.",
+          "Pagar 3-bet sem pensar em pot odds e stack restante (SPR)."
+        ],
+        "icm_note": "Em SnG ICM, calls com QQ-JJ ficam mais marginais conforme RP sobe. Bolha com RP >20% pode justificar fold de mãos fortes.",
+        "source_md": null,
+        "_derived": true
+      }
+    },
+    "_universal_derived": {
+      "vs_RFI@75": {
+        "title": "Range derivado dos princípios do PDF",
+        "summary": "Este spot específico não está coberto diretamente pelo PDF Reg Life. Aplicamos os princípios gerais: 3-Bet só com mãos premium (AA, KK, QQ, JJ, TT, AK, AQ) e call adaptado pela posição (IP wider, OOP tighter) e amplitude do range do vilão (vilão tight = response tight).",
+        "principles": [
+          "3-Bet de iniciante = SÓ premium (AA-TT, AKs/o, AQs/o).",
+          "Call expande com posição: IP > OOP.",
+          "Call expande com range do vilão: vilão loose → você defende mais.",
+          "Pares baixos (22-66) têm valor de implied odds em 75bb.",
+          "Suited connectors (98s, 87s) ganham valor pela posição."
+        ],
+        "common_mistakes": [
+          "3-bet light com mãos como A5s, KJs — exige experiência pós-flop.",
+          "Pagar com mãos marginais OOP — você joga sem posição todo o resto da mão.",
+          "Calls especulativos contra UTG/MP — ranges fortes esmagam mãos médias."
+        ]
+      },
+      "vs_3bet@75": {
+        "title": "Defesa universal vs 3-Bet (derivado)",
+        "summary": "PDF ainda não cobre 4-bet ranges. Aplicamos heurística universal: 4-Bet só premium (KK+, AKs), call seleto (QQ, JJ, AKo, AQs), fold o resto.",
+        "principles": [
+          "4-Bet de iniciante = SÓ premium (KK+, AKs).",
+          "Call de 3-bet: QQ, JJ, AKo, AQs (suficiente pra continuar).",
+          "Fold é a opção padrão pra mãos médias contra 3-bet.",
+          "ICM aumenta valor do fold: nunca pague 3-bet por orgulho."
+        ],
+        "common_mistakes": [
+          "4-bet light sem fold equity vs fish.",
+          "Pagar 3-bet de blinds com QQ achando que tem que call — depende do spot.",
+          "Foldar AA/KK por medo — comita sempre com top 3 pares."
+        ]
+      },
+      "RFI@10": {
+        "title": "Open Shove ~10bb (push/fold)",
+        "summary": "Com ≤12bb a estratégia é binária: shove ou fold, sem mini-raise nem call. O range de jam abre conforme a posição avança (UTG ~9%, BTN ~32%, SB vs BB ~54%). EV vem de fold equity + equidade quando pago.",
+        "principles": [
+          "Push/fold puro: sem mix de ações (jogadores iniciantes).",
+          "Range de jam expande com a posição (menos jogadores atrás = mais fold equity).",
+          "BTN/SB incluem mãos fracas (Q9o, T8s, K6o) pelo fold equity.",
+          "Memorize as % por posição: UTG 9.4%, HJ 15%, CO 26%, BTN 32%, SB vs BB 54%."
+        ],
+        "common_mistakes": [
+          "Mini-raise com 10bb — comita o stack sem fold equity. Jam ou fold.",
+          "Calls especulativos — em push/fold não existe call de open.",
+          "Foldar mãos do range por medo — a matemática manda shovar."
+        ]
+      },
+      "RFI@15": {
+        "title": "Fragmentação do open (~15bb)",
+        "summary": "O range de abertura se divide em 3 buckets: mini-raise com premium (induz resteal e extrai valor), shove direto com médias (maximiza fold equity) e fold com fracas. Não é mais uma ação única por mão.",
+        "principles": [
+          "Premium (TT+, AJs+, AQo+) → mini-raise pra induzir.",
+          "Médias (pares médios, ATo+, KQo, suited connectors) → shove direto.",
+          "Fracas → fold (ou steal em spots específicos).",
+          "Late position fragmenta mais; EP abre mais raise normal e shova menos."
+        ],
+        "common_mistakes": [
+          "Manter range de early game — não fragmentar é -EV.",
+          "Mini-raise com mãos médias — elas querem shove pela fold equity.",
+          "3-bet não-all-in em 15bb — comita demais sem pressão máxima."
+        ]
+      },
+      "vs_RFI@15": {
+        "title": "Resteal — 3-Bet all-in (~15bb)",
+        "summary": "Contra um open de roubo em short stack, a resposta é resteal (3-bet all-in) ou fold — sem flat call. Quanto mais largo o open do vilão e mais tight o call dele, mais largo seu resteal. Late position (CO/BTN) são alvos preferenciais.",
+        "principles": [
+          "Resteal = 3-bet all-in; nunca flat call em 15bb (comita sem fold equity).",
+          "Gatilho é o range de open do vilão: shove largo só se ele abre largo.",
+          "Ax offsuit vira jam lucrativo pelos blockers do range de 4-bet/call dele.",
+          "vs UTG (tight): poucos restealos — prefira fold ou jam só premium."
+        ],
+        "common_mistakes": [
+          "Flat call com 15bb — é push/fold, shove ou fold.",
+          "Restealar contra range tight (UTG) — -EV.",
+          "Não expandir vs BTN/CO que abrem largo — desperdiça fold equity."
+        ]
+      },
+      "vs_RFI@10": {
+        "title": "Defesa vs Shove (~10bb)",
+        "summary": "Quando o vilão já está all-in, sua decisão é call ou fold — não dá pra resteal (ele já jogou tudo). Calle só com equidade real: o range de call é mais tight que o de shove e encolhe com mais jogadores na mão.",
+        "principles": [
+          "vs shove a ação é call/fold — o vilão já está all-in.",
+          "Call mais tight que shove: você precisa de equidade pra pagar o all-in.",
+          "Mais jogadores envolvidos → call mais tight (vs SB mais largo que vs UTG).",
+          "Adapte: se o vilão shova largo demais, expanda o call; se tight, reduza."
+        ],
+        "common_mistakes": [
+          "Pagar loose demais — mesmo vs range largo é preciso equidade real.",
+          "Foldar pares médios e ases fortes vs shove largo (SB) — eles pagam.",
+          "Tentar resteal vs shove — não existe, ele já está all-in."
+        ]
+      }
+    }
+  },
+  "by_stack": {
+    "75": {
+      "label": "Deep — Early Game",
+      "narrative": "Stack inicial do SnG (1500 fichas com blind 10/20 = 75bb). Jogabilidade deep stack: mãos suited ganham valor por sequências/flushes, pares baixos têm implied odds pra setar. Raise 3x BB padrão.",
+      "source_md": "ranges/01-open-raise-early.md"
+    },
+    "30": {
+      "label": "Médio — Transição Middle Game",
+      "narrative": "Stack reduzido — range encolhe ~5% no BTN. Início da fragmentação (raise/shove). Mini-raises começam a ser válidos com premium pra induzir 3-bets.",
+      "source_md": "ranges/02-open-raise-short.md"
+    },
+    "15": {
+      "label": "Resteal Zone",
+      "narrative": "Stack curto. Range fragmenta em 3 buckets: mini-raise (premium), shove direto (médias), fold (fracas). Em vs_RFI, 3-bet vira resteal all-in. Push/fold puro abaixo de 12bb.",
+      "source_md": "ranges/05-resteal.md"
+    },
+    "10": {
+      "label": "Push/Fold puro",
+      "narrative": "≤10bb. Sem mix de ações: shove ou fold. UTG ~9.4%, HJ ~15%, CO ~26%, BTN ~32%, SB vs BB ~54%. Memorize ranges. Sem calls especulativos.",
+      "source_md": "ranges/04-open-shove-short.md"
+    }
+  },
+  "by_pos_common_mistakes": {
+    "UTG": [
+      "Abrir mãos marginais (JTo, KJo) — range deve ser sólido.",
+      "Limpar — sempre raise quando entrar."
+    ],
+    "UTG1": [
+      "Tratar como MP — ainda é early position.",
+      "Expandir muito porque UTG foldou — fold de 1 jogador não muda muito."
+    ],
+    "UTG2": [
+      "Confundir com HJ — ainda há 6+ jogadores atrás."
+    ],
+    "MP": [
+      "Não 3-betar premium contra opens — passividade custa valor.",
+      "3-bet light com muitos jogadores atrás — risk premium alto."
+    ],
+    "HJ": [
+      "Foldar suited connectors — entram no range a partir do HJ.",
+      "Não pressionar quando CO/BTN são tight."
+    ],
+    "CO": [
+      "Abrir tight demais — só BTN e blinds atrás.",
+      "Não atacar blinds passivos."
+    ],
+    "BTN": [
+      "Pouca agressividade no BTN — erro #1 de iniciantes segundo o PDF.",
+      "Não pressionar SB/BB que defendem mal — eles foldam muito.",
+      "Tratar como qualquer outra posição — você tem o melhor postflop possível."
+    ],
+    "SB": [
+      "Tratar SB como posição normal — é Blind War, regras próprias.",
+      "Não usar limp como ferramenta na bolha.",
+      "Foldar demais — só tem 1 jogador atrás."
+    ],
+    "BB": [
+      "Foldar demais quando atacado — defesa precisa de range adequado.",
+      "Não usar resteal com Ax off em 15bb."
+    ]
+  }
+}

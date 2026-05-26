@@ -30,15 +30,32 @@
   <button class="hamburger" onclick="openDrawer()">☰</button>
 </header>
 
+<script>
+  // Header brand reflete o modo escolhido
+  (function(){
+    var m = 'mtt';
+    try { m = localStorage.getItem('preflop_mode') || 'mtt'; } catch(e) {}
+    if (m !== 'mtt' && m !== 'sng') m = 'mtt';
+    var hn = document.querySelector('.header-name');
+    if (hn) hn.textContent = 'PREFLOP ' + m.toUpperCase();
+  })();
+</script>
+
 <!-- MAIN CONTENT -->
 <div id="app">
 
   <div class="logo-area">
     <div class="logo-suit">♠</div>
     <div class="logo-text">
-      <div class="logo-title">PREFLOP MTT</div>
+      <div class="logo-title" id="logoTitle">PREFLOP</div>
       <div class="logo-sub">Treinamento de Ranges</div>
     </div>
+  </div>
+
+  <!-- Seletor de modo MTT / SnG -->
+  <div class="mode-toggle" id="modeToggle">
+    <button class="mode-tab" data-mode="mtt">MTT</button>
+    <button class="mode-tab" data-mode="sng">SnG</button>
   </div>
 
   <div class="cards-row">
@@ -69,7 +86,7 @@
 
 </div>
 
-<script>window._BASE = "/preflop";</script>
+<script>window._BASE = /^\/preflop(?=\/|$)/.test(location.pathname) ? "/preflop" : "";</script>
 <script src="shared/api.js"></script>
 <script src="launcher.js"></script>
 <script>
