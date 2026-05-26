@@ -38,8 +38,10 @@
     }
   }, 500);
 
+  const _ROOT = (typeof window._BASE !== 'undefined') ? window._BASE : '';
+
   async function _callWeb(method, args) {
-    const res = await fetch('/api/' + method, {
+    const res = await fetch(_ROOT + '/api/' + method, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(args || []),
@@ -77,8 +79,8 @@
       return _callDesktop('navigate', [target]);
     }
     // Web: muda URL
-    const paths = { launcher: '/', main: '/consulta', sim: '/sim' };
-    window.location.href = paths[target] || '/';
+    const paths = { launcher: _ROOT + '/', main: _ROOT + '/consulta', sim: _ROOT + '/sim' };
+    window.location.href = paths[target] || (_ROOT + '/');
   }
 
   // ── API pública ────────────────────────────────────────────────────────────

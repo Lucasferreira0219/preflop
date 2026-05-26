@@ -131,19 +131,32 @@ def _correct_action(hand, buckets):
     return 'fold'
 
 
-def generate_question(player_count=9, stack_bb=None):
+def generate_question(player_count=9, stack_bb=None, focus_pos=None, focus_scenario=None):
     if stack_bb is None:
         stack_bb = random.choice([20, 35, 50, 100])
 
     positions = POSITIONS_BY_COUNT.get(player_count, POSITIONS_BY_COUNT[9])
     hands = all_hands()
 
-    for _ in range(100):
-        pos = random.choice(positions)
+    # Filtra posição se modo focado ativo
+    if focus_pos and focus_pos in positions:
+        candidate_positions = [focus_pos]
+    else:
+        candidate_positions = positions
+
+    for _ in range(200):
+        pos = random.choice(candidate_positions)
         possible_scenarios = []
-        if CAN_RFI.get(pos):          possible_scenarios.append('RFI')
-        if CAN_FACE_RAISE.get(pos):   possible_scenarios.append('vs_RFI')
-        if CAN_RFI.get(pos):          possible_scenarios.append('vs_3bet')
+        if CAN_RFI.get(pos):        possible_scenarios.append('RFI')
+        if CAN_FACE_RAISE.get(pos): possible_scenarios.append('vs_RFI')
+        if CAN_RFI.get(pos):        possible_scenarios.append('vs_3bet')
+
+        # Filtra cenário se modo focado ativo
+        if focus_scenario:
+            if focus_scenario in possible_scenarios:
+                possible_scenarios = [focus_scenario]
+            else:
+                continue
 
         if not possible_scenarios:
             continue

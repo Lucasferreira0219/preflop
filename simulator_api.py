@@ -5,11 +5,13 @@ _current_question = None
 
 
 class SimulatorApi:
-    def new_question(self, player_count=9, stack_bb=None):
+    def new_question(self, player_count=9, stack_bb=None, focus_pos=None, focus_scenario=None):
         global _current_question
         q = engine.generate_question(
             player_count=int(player_count),
             stack_bb=int(stack_bb) if stack_bb else None,
+            focus_pos=focus_pos or None,
+            focus_scenario=focus_scenario or None,
         )
         if q is None:
             return {'error': 'Não foi possível gerar uma pergunta.'}

@@ -4,26 +4,50 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Preflop Ranges MTT</title>
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="style.css?v=6" />
 </head>
 <body>
+
+<!-- DRAWER OVERLAY -->
+<div id="drawer-overlay" onclick="closeDrawer()"></div>
+
+<!-- DRAWER -->
+<nav id="drawer">
+  <div class="drawer-header">
+    <span class="drawer-logo">♠ PREFLOP</span>
+    <button class="drawer-close" onclick="closeDrawer()">✕</button>
+  </div>
+  <button class="drawer-item" onclick="PreflopAPI.navigate('sim');closeDrawer()">Simulador</button>
+  <button class="drawer-item active" onclick="closeDrawer()">Consulta</button>
+  <button class="drawer-item" onclick="PreflopAPI.navigate('sim');closeDrawer()">Análises</button>
+  <button class="drawer-item" onclick="PreflopAPI.navigate('launcher');closeDrawer()">Início</button>
+</nav>
+
 <div id="app">
 
   <!-- ── HEADER ── -->
   <header>
-    <div class="header-left">
-      <button class="btn-home" onclick="PreflopAPI.navigate('launcher')">← Início</button>
-      <span class="app-title">♠ PREFLOP</span>
+    <div class="header-brand">
+      <span class="header-suit">♠</span>
+      <span class="app-title">CONSULTA</span>
     </div>
+    <button class="hamburger" onclick="openDrawer()">☰</button>
+  </header>
 
-    <div class="hdr-control">
-      <label for="stackSlider">Stack</label>
+  <!-- ── FILTER BAR ── -->
+  <div class="filter-bar">
+    <div class="filter-group filter-stack">
+      <span class="filter-label">Stack</span>
       <input type="range" id="stackSlider" min="10" max="100" value="35" step="1" />
-      <div class="stack-display"><span id="stackValue">35</span><span class="bb-label">bb</span></div>
+      <div class="stack-display">
+        <span id="stackValue">35</span><span class="bb-label">bb</span>
+      </div>
     </div>
 
-    <div class="hdr-control">
-      <label>Jogadores</label>
+    <div class="filter-sep"></div>
+
+    <div class="filter-group filter-players">
+      <span class="filter-label">Jogadores</span>
       <div class="count-pill">
         <button class="count-btn" id="countMinus">−</button>
         <span id="countValue">9</span>
@@ -31,33 +55,34 @@
       </div>
     </div>
 
-    <button id="resetBtn" class="btn-reset" title="Recomeçar">↺</button>
-  </header>
+    <div class="filter-sep filter-sep-mobile-break"></div>
 
-  <main>
+    <div class="filter-group filter-pos">
+      <span class="filter-label">Posição</span>
+      <button class="pos-arrow" id="posArrowLeft" title="Posição anterior">←</button>
+      <div class="pos-pills" id="posPills"></div>
+      <button class="pos-arrow" id="posArrowRight" title="Próxima posição">→</button>
+    </div>
 
-    <!-- Pickers -->
-    <div class="pickers">
-      <div class="picker-row">
-        <span class="picker-label">Posição</span>
-        <button class="pos-arrow" id="posArrowLeft" title="Posição anterior">←</button>
-        <div class="pos-pills" id="posPills"></div>
-        <button class="pos-arrow" id="posArrowRight" title="Próxima posição">→</button>
-      </div>
+    <div class="filter-sep"></div>
 
-      <div class="picker-row">
-        <span class="picker-label">Situação</span>
-        <div class="scen-pills" id="scenPills">
-          <button class="scen-pill scen-rfi"     data-scen="RFI">🟢 Eu abro (RFI)</button>
-          <button class="scen-pill scen-vs-rfi"  data-scen="vs_RFI">🔴 Vilão abriu</button>
-          <button class="scen-pill scen-vs-3bet" data-scen="vs_3bet">🔵 Vilão 3-betou</button>
-        </div>
+    <div class="filter-group filter-scen">
+      <span class="filter-label">Situação</span>
+      <div class="scen-pills" id="scenPills">
+        <button class="scen-pill scen-rfi"     data-scen="RFI">Eu abro</button>
+        <button class="scen-pill scen-vs-rfi"  data-scen="vs_RFI">Vilão abriu</button>
+        <button class="scen-pill scen-vs-3bet" data-scen="vs_3bet">Vilão 3-bet</button>
       </div>
     </div>
 
+    <button id="resetBtn" class="btn-reset" title="Recomeçar">↺</button>
+  </div>
+
+  <main>
+
     <!-- Placeholder inicial -->
     <div id="gridPlaceholder" class="grid-placeholder">
-      <div class="placeholder-cards">🂡 🂮 🂻 🂺</div>
+      <div class="placeholder-cards">♠ ♥ ♦ ♣</div>
       <div class="placeholder-title">Escolha sua posição</div>
       <div class="placeholder-sub">Clique numa posição acima pra ver o range.</div>
     </div>
@@ -90,8 +115,13 @@
 
 <div id="tooltip" class="tooltip hidden"></div>
 
+<script>window._BASE = "/preflop";</script>
 <script src="shared/api.js"></script>
 <script src="shared/core.js"></script>
 <script src="app.js"></script>
+<script>
+function openDrawer(){document.getElementById('drawer').classList.add('open');document.getElementById('drawer-overlay').classList.add('open');}
+function closeDrawer(){document.getElementById('drawer').classList.remove('open');document.getElementById('drawer-overlay').classList.remove('open');}
+</script>
 </body>
 </html>

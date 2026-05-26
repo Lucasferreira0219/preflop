@@ -53,7 +53,51 @@ let currentScreen   = 'question';
 
 // Preferências persistidas
 const PREFS_KEY = 'preflop.simulator.prefs.v1';
-const prefs = Object.assign({ stack: '35' }, C.lsGet(PREFS_KEY, {}));
+const prefs = Object.assign({ stack: '35', focusPos: '', focusScenario: '' }, C.lsGet(PREFS_KEY, {}));
+
+// ── Histórico de mãos ────────────────────────────────────────────────────────
+const HISTORY_KEY = 'preflop.history.v1';
+const HISTORY_MAX = 100;
+
+function historySave(q, userAction, correctAction) {
+  const hist = C.lsGet(HISTORY_KEY, []);
+  hist.unshift({
+    ts:       Date.now(),
+    hand:     q.hand,
+    pos:      q.pos,
+    scenario: q.scenario,
+    stack:    q.stack,
+    user:     userAction,
+    correct:  correctAction,
+    ok:       userAction === correctAction,
+  });
+  if (hist.length > HISTORY_MAX) hist.length = HISTORY_MAX;
+  C.lsSet(HISTORY_KEY, hist);
+}
+
+// ── SM-2 (repetição espaçada simplificada) ────────────────────────────────────
+// Key: `${hand}|${pos}|${scenario}|${stack}` → score (0=novo/difícil, 3=dominado)
+const SM2_KEY = 'preflop.sm2.v1';
+const sm2 = C.lsGet(SM2_KEY, {});
+
+function sm2Key(q) {
+  return `${q.hand}|${q.pos}|${q.scenario}|${q.stack}`;
+}
+
+function sm2Score(key) {
+  return sm2[key] || 0;
+}
+
+function sm2Update(key, correct) {
+  const cur = sm2[key] || 0;
+  sm2[key] = correct ? Math.min(3, cur + 1) : Math.max(0, cur - 2);
+  C.lsSet(SM2_KEY, sm2);
+}
+
+// Retorna peso para seleção de mão (score baixo = peso alto = aparece mais)
+function sm2Weight(key) {
+  return Math.max(1, 4 - sm2Score(key));
+}
 
 // ── Refs DOM ─────────────────────────────────────────────────────────────────
 
@@ -79,7 +123,14 @@ const el = {
   resultMsg:   document.getElementById('resultMsg'),
   resultGrid:  document.getElementById('resultGrid'),
   resultLegend:document.getElementById('resultLegend'),
+  resultExplain:document.getElementById('resultExplain'),
   nextBtn:     document.getElementById('nextBtn'),
+
+  focusBtn:           document.getElementById('focusBtn'),
+  focusPanel:         document.getElementById('focusPanel'),
+  focusPosSelect:     document.getElementById('focusPosSelect'),
+  focusScenarioSelect:document.getElementById('focusScenarioSelect'),
+  sm2Badge:           document.getElementById('sm2Badge'),
 
   screenAnalytics:  document.getElementById('screenAnalytics'),
   analyticsBtn:     document.getElementById('analyticsBtn'),
@@ -123,6 +174,27 @@ function init() {
   el.analyticsBtn.addEventListener('click', openAnalytics);
   el.backBtn.addEventListener('click', () => showScreen('question'));
 
+  // Focus panel toggle
+  el.focusBtn.addEventListener('click', () => {
+    el.focusPanel.classList.toggle('hidden');
+    updateSM2Badge();
+  });
+  // Restore focus prefs
+  if (prefs.focusPos) el.focusPosSelect.value = prefs.focusPos;
+  if (prefs.focusScenario) el.focusScenarioSelect.value = prefs.focusScenario;
+  el.focusPosSelect.addEventListener('change', () => {
+    prefs.focusPos = el.focusPosSelect.value;
+    C.lsSet(PREFS_KEY, prefs);
+    updateFocusBtnState();
+  });
+  el.focusScenarioSelect.addEventListener('change', () => {
+    prefs.focusScenario = el.focusScenarioSelect.value;
+    C.lsSet(PREFS_KEY, prefs);
+    updateFocusBtnState();
+  });
+  updateFocusBtnState();
+  updateSM2Badge();
+
   // Filtros de período
   el.anPresetGroup.addEventListener('click', e => {
     const btn = e.target.closest('.an-preset');
@@ -140,15 +212,47 @@ function init() {
   nextQuestion();
 }
 
+// ── Focus / SM-2 helpers ──────────────────────────────────────────────────────
+
+function updateFocusBtnState() {
+  const active = !!(prefs.focusPos || prefs.focusScenario);
+  el.focusBtn.classList.toggle('btn-focus-active', active);
+}
+
+function updateSM2Badge() {
+  const total = Object.keys(sm2).length;
+  const weak  = Object.values(sm2).filter(s => s < 2).length;
+  if (el.sm2Badge) el.sm2Badge.textContent = total ? `${weak} fracas / ${total} vistas` : '0 mãos';
+}
+
 // ── Pergunta ─────────────────────────────────────────────────────────────────
 
-function nextQuestion() {
-  showScreen('question');
-  const stackVal = parseInt(el.stackSelect.value) || null;
+// SM-2: probabilidade de aceitar a pergunta atual (score alto = mais chance de pular)
+// Usa "early accept" — 1 chamada ao servidor, decide se aceita ou pede outra
+function sm2Accept(q) {
+  const score = sm2Score(sm2Key(q));
+  // score 0 = sempre aceita, score 3 = aceita só 25% das vezes
+  const threshold = [1.0, 0.7, 0.4, 0.25][score] || 1.0;
+  return Math.random() < threshold;
+}
 
-  PreflopAPI.new_question(9, stackVal || null)
+function nextQuestion(attempt) {
+  if (!attempt) attempt = 0;
+  showScreen('question');
+  const stackVal  = parseInt(el.stackSelect.value) || null;
+  const focusPos  = prefs.focusPos  || null;
+  const focusScen = prefs.focusScenario || null;
+
+  PreflopAPI.new_question(9, stackVal || null, focusPos, focusScen)
     .then(q => {
       if (!q || q.error) { console.error(q && q.error); return; }
+
+      // SM-2: pula perguntas bem dominadas (max 3 tentativas para evitar loop)
+      if (attempt < 3 && !sm2Accept(q)) {
+        nextQuestion(attempt + 1);
+        return;
+      }
+
       currentQuestion = q;
       renderQuestion(q);
     });
@@ -163,7 +267,12 @@ function renderQuestion(q) {
   const { c1, c2 } = handToCards(q.hand);
   q._heroCards = [c1, c2];
 
-  renderSimTable(q.pos, q.villain_pos || null, q.scenario, [c1, c2], q.stack);
+  // Exibe cartas grandes em HTML (acima da mesa)
+  displayHeroCards(c1, c2);
+
+  // Mesa CSS (visível) + SVG oculto (compatibilidade)
+  renderCSSTable(q.pos, q.villain_pos || null);
+  renderSimTable(q.pos, q.villain_pos || null, q.scenario, null, q.stack);
 
   const actions = ACTION_CONFIG[q.scenario] || ACTION_CONFIG.RFI;
   el.actionBtns.innerHTML = '';
@@ -183,30 +292,78 @@ function renderQuestion(q) {
 
 function submitAnswer(action) {
   if (!currentQuestion) return;
-  // Evita duplo-submit
   document.querySelectorAll('.action-btn').forEach(b => b.disabled = true);
 
   PreflopAPI.submit_answer(action).then(res => {
+    // Atualiza SM-2 para esta mão
+    const key = sm2Key(currentQuestion);
+    sm2Update(key, res.result === 'correct');
+    updateSM2Badge();
+
+    // Salva no histórico
+    historySave(currentQuestion, action, res.correct_action);
+
     updateStats(res.stats);
     showResult(res, action);
   });
+}
+
+// Gera explicação contextual baseada na ação correta e situação
+function getExplanation(q, correctAction) {
+  const { hand, pos, scenario, stack } = q;
+  const rank1 = hand[0], rank2 = hand[1] || hand[0], type = hand[2] || '';
+
+  if (scenario === 'RFI') {
+    if (correctAction === 'raise') {
+      if ('AA KK QQ JJ TT'.includes(hand)) return `${hand} é um premium — sempre abre de qualquer posição.`;
+      if (hand.endsWith('s')) return `${hand} suited tem bom equity e playability pós-flop — open é correto.`;
+      return `${hand} tem equity suficiente para abrir de ${pos} a ${stack}bb.`;
+    }
+    return `${hand} está fora do range de abertura de ${pos} a ${stack}bb — muitos jogadores atrás.`;
+  }
+
+  if (scenario === 'vs_RFI') {
+    if (correctAction === '3bet') {
+      if ('AA KK QQ'.includes(hand)) return `${hand} é um premium — 3-bet para valor sempre.`;
+      if (hand === 'AKs' || hand === 'AKo') return `AK é forte o suficiente para 3-bet isolado.`;
+      if (hand.includes('5s') || hand.includes('4s') || hand.includes('3s')) return `${hand} é um 3-bet de blocker (Ax bloqueia range de 4-bet do vilão).`;
+      return `${hand} está no range de 3-bet — mistura valor e bluff.`;
+    }
+    if (correctAction === 'call') return `${hand} tem odds implícitas — chama e joga pós-flop em posição.`;
+    return `${hand} não tem equity suficiente para 3-bet ou call vs este abridor — fold é mais EV.`;
+  }
+
+  if (scenario === 'vs_3bet') {
+    if (correctAction === '4bet') return `${hand} é forte o suficiente para 4-bet — joga por stacks.`;
+    if (correctAction === 'call') return `${hand} tem bom equity mas prefere call e jogar pós-flop.`;
+    return `${hand} não está no range de defesa vs 3-bet — fold preserva stack.`;
+  }
+
+  return '';
 }
 
 function showResult(res, userAction) {
   showScreen('result');
 
   const isCorrect = res.result === 'correct';
-  el.resultBadge.textContent = isCorrect ? '✅ Correto!' : '❌ Errado';
+  el.resultBadge.textContent = isCorrect ? 'CORRETO' : 'ERRADO';
   el.resultBadge.className   = 'result-badge ' + (isCorrect ? 'correct' : 'wrong');
 
   el.resultHand.textContent  = currentQuestion.hand + ' — ' + C.handDescription(currentQuestion.hand);
 
   const correctLabel = C.actionDisplayName(res.correct_action, currentQuestion.scenario);
   if (isCorrect) {
-    el.resultMsg.textContent = `A ação correta é ${correctLabel}. Boa!`;
+    el.resultMsg.textContent = `Acao correta: ${correctLabel}.`;
   } else {
     const userLabel = C.actionDisplayName(userAction, currentQuestion.scenario);
-    el.resultMsg.textContent = `Você escolheu ${userLabel}, mas a ação correta é ${correctLabel}.`;
+    el.resultMsg.textContent = `Voce escolheu ${userLabel}, correto seria ${correctLabel}.`;
+  }
+
+  // Explicação contextual
+  const explain = getExplanation(currentQuestion, res.correct_action);
+  if (el.resultExplain) {
+    el.resultExplain.textContent = explain;
+    el.resultExplain.style.display = explain ? '' : 'none';
   }
 
   renderResultGrid(res.buckets, currentQuestion.hand);
@@ -279,6 +436,33 @@ function handToCards(hand) {
   return { c1: { rank:r1, suit:s1 }, c2: { rank:r2, suit:s2 } };
 }
 
+// ── Exibição grande das cartas do hero (HTML, não SVG) ───────────────────────
+
+function displayHeroCards(c1, c2) {
+  function fillCard(ids, cardId, card) {
+    const isRed = card.suit.color === 'red';
+    const textColor = isRed ? '#c62828' : '#0d0d24';
+    const cardEl = document.getElementById(cardId);
+    if (!cardEl) return;
+
+    ids.forEach(id => {
+      const e = document.getElementById(id);
+      if (!e) return;
+      if (id.includes('Rank')) e.textContent = card.rank;
+      else e.textContent = card.suit.symbol;
+      e.style.color = textColor;
+    });
+
+    // Borda sutil colorida
+    cardEl.style.borderColor = isRed
+      ? 'rgba(198,40,40,0.3)'
+      : 'rgba(30,30,80,0.2)';
+  }
+
+  fillCard(['hRank1','hSuit1','hCenterSuit1','hRank1b','hSuit1b'], 'hCard1', c1);
+  fillCard(['hRank2','hSuit2','hCenterSuit2','hRank2b','hSuit2b'], 'hCard2', c2);
+}
+
 // (renderCard removido — cartas agora são desenhadas no SVG via renderPokerTable)
 
 // ── Stats ─────────────────────────────────────────────────────────────────────
@@ -320,10 +504,43 @@ function renderSimTable(heroPos, villainPos, scenario, heroCards, heroStack) {
     activePositions:   C.POSITIONS_BY_COUNT[9],
     heroCards:         heroCards || null,
     showVillainCards:  !!villainPos,
-    showPot:           true,
+    showPot:           false,
     heroStack:         heroStack,
     villainStack:      heroStack,
     style:             'rich',
+  });
+}
+
+// ── Mesa CSS ─────────────────────────────────────────────────────────────────
+
+// Seat positions as % of oval (scaled from SVG 660x400 coords)
+const CSS_SEAT_PCT = [
+  { left: 50,   top: 86 },  // 0 hero — bottom center
+  { left: 76,   top: 77 },  // 1 — bottom-right
+  { left: 89,   top: 55 },  // 2 — right
+  { left: 84,   top: 26 },  // 3 — top-right
+  { left: 68,   top:  9 },  // 4 — top-right-center
+  { left: 50,   top:  5 },  // 5 — top center
+  { left: 32,   top:  9 },  // 6 — top-left-center
+  { left: 11,   top: 55 },  // 7 — left
+  { left: 24,   top: 77 },  // 8 — bottom-left
+];
+
+function renderCSSTable(heroPos, villainPos) {
+  const container = document.getElementById('cssSeats');
+  if (!container) return;
+  const positions = C.POSITIONS_BY_COUNT[9]; // clockwise from hero seat
+  container.innerHTML = '';
+  positions.forEach((pos, i) => {
+    const coord = CSS_SEAT_PCT[i];
+    const seat = document.createElement('div');
+    seat.className = 'css-seat';
+    if (pos === heroPos)   seat.classList.add('css-seat-hero');
+    if (pos === villainPos) seat.classList.add('css-seat-villain');
+    seat.style.left = coord.left + '%';
+    seat.style.top  = coord.top  + '%';
+    seat.textContent = C.POS_LABEL[pos] || pos;
+    container.appendChild(seat);
   });
 }
 
@@ -357,6 +574,7 @@ function onKeyDown(e) {
 function openAnalytics() {
   showScreen('analytics');
   loadAnalytics();
+  renderHistory();
 }
 
 function getDateRange() {
@@ -405,11 +623,11 @@ function renderAnalytics(data, improv) {
     </div>
     <div class="an-card">
       <div class="an-card-val" style="color:#ff9800">${data.streak ?? 0}</div>
-      <div class="an-card-label">🔥 Streak atual</div>
+      <div class="an-card-label">Streak atual</div>
     </div>
     <div class="an-card">
       <div class="an-card-val" style="color:#ffb74d">${data.best_streak ?? 0}</div>
-      <div class="an-card-label">🏆 Melhor streak</div>
+      <div class="an-card-label">Melhor streak</div>
     </div>
     <div class="an-card">
       <div class="an-card-val" style="color:var(--wrong);font-size:${worstPos ? '18px' : '26px'}">${worstPos ? (C.POS_LABEL[worstPos] || worstPos) : '—'}</div>
@@ -588,6 +806,44 @@ function formatTimeAgo(ts) {
   if (diff < 86400*7) return Math.floor(diff/86400) + 'd';
   const d = new Date(ts*1000);
   return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}`;
+}
+
+// ── Histórico de mãos ─────────────────────────────────────────────────────────
+
+function renderHistory() {
+  const wrap = document.getElementById('historyList');
+  if (!wrap) return;
+  const hist = C.lsGet(HISTORY_KEY, []);
+  if (!hist.length) {
+    wrap.innerHTML = '<div class="hist-empty">Nenhuma mão jogada ainda.</div>';
+    return;
+  }
+  const scenLabel = { RFI: 'RFI', vs_RFI: 'vs RFI', vs_3bet: 'vs 3-Bet' };
+  wrap.innerHTML = hist.map(h => {
+    const time = (() => {
+      const diff = Math.floor((Date.now() - h.ts) / 1000);
+      if (diff < 60)      return 'agora';
+      if (diff < 3600)    return Math.floor(diff/60) + 'min';
+      if (diff < 86400)   return Math.floor(diff/3600) + 'h';
+      if (diff < 86400*7) return Math.floor(diff/86400) + 'd';
+      const d = new Date(h.ts);
+      return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}`;
+    })();
+    const okCls  = h.ok ? 'hist-ok' : 'hist-wrong';
+    const badge  = h.ok ? '✓' : '✗';
+    const userLbl    = C.actionDisplayName(h.user,    h.scenario);
+    const correctLbl = C.actionDisplayName(h.correct, h.scenario);
+    const detail = h.ok
+      ? `<span class="hist-action-ok">${userLbl}</span>`
+      : `<span class="hist-action-wrong">${userLbl}</span> → <span class="hist-action-ok">${correctLbl}</span>`;
+    return `<div class="hist-row ${okCls}">
+      <span class="hist-badge">${badge}</span>
+      <span class="hist-hand">${h.hand}</span>
+      <span class="hist-meta">${C.POS_LABEL[h.pos]||h.pos} · ${scenLabel[h.scenario]||h.scenario} · ${h.stack}bb</span>
+      <span class="hist-detail">${detail}</span>
+      <span class="hist-time">${time}</span>
+    </div>`;
+  }).join('');
 }
 
 function renderBarChart(container, order, data, labelFn, improvData) {

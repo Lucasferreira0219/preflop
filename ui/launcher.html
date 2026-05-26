@@ -2,10 +2,35 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Preflop MTT</title>
-  <link rel="stylesheet" href="launcher.css"/>
+  <link rel="stylesheet" href="launcher.css?v=5"/>
 </head>
 <body>
+
+<!-- DRAWER OVERLAY -->
+<div id="drawer-overlay" onclick="closeDrawer()"></div>
+
+<!-- DRAWER -->
+<nav id="drawer">
+  <div class="drawer-header">
+    <span class="drawer-logo">♠ PREFLOP</span>
+    <button class="drawer-close" onclick="closeDrawer()">✕</button>
+  </div>
+  <button class="drawer-item" onclick="PreflopAPI.navigate('sim');closeDrawer()">Simulador</button>
+  <button class="drawer-item" onclick="PreflopAPI.navigate('main');closeDrawer()">Consulta</button>
+</nav>
+
+<!-- HEADER -->
+<header class="app-header">
+  <div class="header-brand">
+    <span class="header-suit">♠</span>
+    <span class="header-name">PREFLOP MTT</span>
+  </div>
+  <button class="hamburger" onclick="openDrawer()">☰</button>
+</header>
+
+<!-- MAIN CONTENT -->
 <div id="app">
 
   <div class="logo-area">
@@ -19,23 +44,37 @@
   <div class="cards-row">
 
     <button class="mode-card mode-sim" onclick="launch('sim')">
-      <div class="mc-icon">🎯</div>
-      <div class="mc-title">Simulador</div>
-      <div class="mc-desc">Pratique decisões com mãos aleatórias e acompanhe sua evolução</div>
+      <div class="mc-inner">
+        <span class="mc-icon">◎</span>
+        <div class="mc-body">
+          <div class="mc-title">Simulador</div>
+          <div class="mc-desc">Pratique decisões com mãos aleatórias e acompanhe sua evolução</div>
+        </div>
+      </div>
       <div class="mc-arrow">→</div>
     </button>
 
     <button class="mode-card mode-main" onclick="launch('main')">
-      <div class="mc-icon">📖</div>
-      <div class="mc-title">Consulta</div>
-      <div class="mc-desc">Visualize ranges completos por posição, cenário e profundidade de stack</div>
+      <div class="mc-inner">
+        <span class="mc-icon">≡</span>
+        <div class="mc-body">
+          <div class="mc-title">Consulta</div>
+          <div class="mc-desc">Visualize ranges completos por posição, cenário e profundidade de stack</div>
+        </div>
+      </div>
       <div class="mc-arrow">→</div>
     </button>
 
   </div>
 
 </div>
+
+<script>window._BASE = "/preflop";</script>
 <script src="shared/api.js"></script>
 <script src="launcher.js"></script>
+<script>
+function openDrawer(){document.getElementById('drawer').classList.add('open');document.getElementById('drawer-overlay').classList.add('open');}
+function closeDrawer(){document.getElementById('drawer').classList.remove('open');document.getElementById('drawer-overlay').classList.remove('open');}
+</script>
 </body>
 </html>

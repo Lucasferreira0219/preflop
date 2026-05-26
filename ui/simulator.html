@@ -2,46 +2,37 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Simulador Preflop MTT</title>
-  <link rel="stylesheet" href="simulator.css"/>
+  <link rel="stylesheet" href="simulator.css?v=1779770100"/>
 </head>
 <body>
+
+<!-- DRAWER OVERLAY -->
+<div id="drawer-overlay" onclick="closeDrawer()"></div>
+
+<!-- DRAWER -->
+<nav id="drawer">
+  <div class="drawer-header">
+    <span class="drawer-logo">♠ PREFLOP</span>
+    <button class="drawer-close" onclick="closeDrawer()">✕</button>
+  </div>
+  <button class="drawer-item active" onclick="closeDrawer()">Simulador</button>
+  <button class="drawer-item" onclick="PreflopAPI.navigate('main');closeDrawer()">Consulta</button>
+  <button class="drawer-item" onclick="showAnalytics();closeDrawer()">Análises</button>
+  <button class="drawer-item" onclick="PreflopAPI.navigate('launcher');closeDrawer()">Início</button>
+</nav>
+
 <div id="app">
 
-  <!-- HEADER -->
+  <!-- HEADER 56px -->
   <header>
-    <div class="header-left">
-      <button class="btn-home" onclick="goHome()">← Início</button>
-      <span class="app-title">♠ SIMULADOR PREFLOP</span>
+    <div class="header-brand">
+      <span class="header-suit">♠</span>
+      <span class="app-title">SIMULADOR</span>
       <span class="app-sub">MTT</span>
     </div>
-    <div class="stats-bar">
-      <div class="stat-item">
-        <span class="stat-val" id="statTotal">0</span>
-        <span class="stat-label">mãos</span>
-      </div>
-      <div class="stat-sep">|</div>
-      <div class="stat-item correct">
-        <span class="stat-val" id="statCorrect">0</span>
-        <span class="stat-label">certas</span>
-      </div>
-      <div class="stat-sep">|</div>
-      <div class="stat-item wrong">
-        <span class="stat-val" id="statWrong">0</span>
-        <span class="stat-label">erradas</span>
-      </div>
-      <div class="stat-sep">|</div>
-      <div class="stat-item pct">
-        <span class="stat-val" id="statPct">—</span>
-        <span class="stat-label">precisão</span>
-      </div>
-      <div class="stat-sep">|</div>
-      <div class="stat-item streak" title="Sequência de acertos consecutivos">
-        <span class="stat-val" id="statStreak">0</span>
-        <span class="stat-label">🔥 streak</span>
-      </div>
-    </div>
-    <div class="header-actions">
+    <div class="header-controls">
       <div class="stack-ctrl">
         <label>Stack:</label>
         <select id="stackSelect">
@@ -52,10 +43,63 @@
           <option value="100">100bb</option>
         </select>
       </div>
-      <button id="resetBtn" class="btn-ghost">↺ Resetar</button>
-      <button id="analyticsBtn" class="btn-ghost btn-analytics">📊 Análise</button>
+      <button id="focusBtn" class="btn-ghost btn-focus" title="Modo focado">⊙</button>
+      <button id="resetBtn" class="btn-ghost" title="Resetar">↺</button>
+      <button id="analyticsBtn" class="btn-ghost btn-analytics" title="Análise">≡</button>
     </div>
+    <button class="hamburger" onclick="openDrawer()">☰</button>
   </header>
+
+  <!-- FOCUS PANEL -->
+  <div id="focusPanel" class="focus-panel hidden">
+    <div class="focus-panel-row">
+      <label class="focus-label">Posição:</label>
+      <select id="focusPosSelect" class="focus-select">
+        <option value="">Aleatória</option>
+        <option value="UTG">UTG</option>
+        <option value="UTG1">UTG+1</option>
+        <option value="UTG2">UTG+2</option>
+        <option value="MP">MP</option>
+        <option value="HJ">HJ</option>
+        <option value="CO">CO</option>
+        <option value="BTN">BTN</option>
+        <option value="SB">SB</option>
+        <option value="BB">BB</option>
+      </select>
+    </div>
+    <div class="focus-panel-row">
+      <label class="focus-label">Situação:</label>
+      <select id="focusScenarioSelect" class="focus-select">
+        <option value="">Aleatória</option>
+        <option value="RFI">RFI (Eu abro)</option>
+        <option value="vs_RFI">vs RFI</option>
+        <option value="vs_3bet">vs 3-Bet</option>
+      </select>
+    </div>
+    <div class="focus-panel-row">
+      <span class="focus-label">SM-2 priorizando mãos fracas:</span>
+      <span class="focus-sm2-badge" id="sm2Badge">—</span>
+    </div>
+  </div>
+
+  <!-- STATS BAR 36px -->
+  <div class="stats-bar">
+    <div class="stat-pill stat-pct">
+      <span class="stat-pill-icon">✓</span>
+      <span class="stat-val" id="statPct">—</span>
+    </div>
+    <div class="stat-pill stat-streak" title="Sequência de acertos consecutivos">
+      <span class="stat-pill-icon stat-icon-streak">streak</span>
+      <span class="stat-val" id="statStreak">0</span>
+    </div>
+    <div class="stat-pill stat-total">
+      <span class="stat-pill-icon stat-icon-total">#</span>
+      <span class="stat-val" id="statTotal">0</span>
+    </div>
+    <!-- Hidden stats kept for JS compatibility -->
+    <span id="statCorrect" class="stat-hidden">0</span>
+    <span id="statWrong"   class="stat-hidden">0</span>
+  </div>
 
   <!-- MAIN -->
   <main>
@@ -63,19 +107,49 @@
     <!-- TELA: pergunta -->
     <div id="screenQuestion" class="screen screen-question">
 
+      <!-- Chips de contexto -->
       <div class="situation-row">
         <div class="sit-chip" id="sitStack"></div>
         <div class="sit-chip sit-pos" id="sitPos"></div>
         <div class="sit-chip sit-scenario" id="sitScenario"></div>
       </div>
 
-      <div class="sim-table-wrap">
-        <svg id="simTable"></svg>
+      <!-- Mesa SVG -->
+      <div class="table-area">
+        <svg id="simTable" class="sim-table"></svg>
       </div>
 
-      <div class="question-prompt">Qual é a sua ação?</div>
+      <!-- Cartas do herói -->
+      <div class="hero-cards-display" id="heroCardsDisplay">
+        <div class="hero-card" id="hCard1">
+          <div class="hc-tl">
+            <span class="hc-rank" id="hRank1"></span>
+            <span class="hc-suit-sm" id="hSuit1"></span>
+          </div>
+          <div class="hc-center" id="hCenterSuit1"></div>
+          <div class="hc-br">
+            <span class="hc-rank" id="hRank1b"></span>
+            <span class="hc-suit-sm" id="hSuit1b"></span>
+          </div>
+        </div>
+        <div class="hero-card" id="hCard2">
+          <div class="hc-tl">
+            <span class="hc-rank" id="hRank2"></span>
+            <span class="hc-suit-sm" id="hSuit2"></span>
+          </div>
+          <div class="hc-center" id="hCenterSuit2"></div>
+          <div class="hc-br">
+            <span class="hc-rank" id="hRank2b"></span>
+            <span class="hc-suit-sm" id="hSuit2b"></span>
+          </div>
+        </div>
+      </div>
 
-      <div class="action-btns" id="actionBtns"></div>
+      <!-- Área de ação -->
+      <div class="question-footer">
+        <div class="question-prompt">Qual é a sua ação?</div>
+        <div class="action-btns" id="actionBtns"></div>
+      </div>
 
     </div>
 
@@ -85,6 +159,7 @@
       <div class="result-badge" id="resultBadge"></div>
       <div class="result-hand" id="resultHand"></div>
       <div class="result-msg"  id="resultMsg"></div>
+      <div class="result-explain" id="resultExplain"></div>
 
       <div class="result-grid-wrap">
         <div class="result-grid-title">Range completo para esta situação:</div>
@@ -129,41 +204,46 @@
       <!-- Cards de resumo -->
       <div class="an-summary" id="anSummary"></div>
 
-      <!-- Card de melhora (últimos 7 dias vs 7 anteriores) -->
+      <!-- Card de melhora -->
       <div class="an-section an-improvement-section" id="improvementSection">
-        <div class="an-section-title">📈 Evolução — últimos 7 dias vs 7 anteriores</div>
+        <div class="an-section-title">Evolução — últimos 7 dias vs 7 anteriores</div>
         <div id="improvementBody" class="improvement-body"></div>
       </div>
 
       <!-- Histórico diário -->
       <div class="an-section" id="dailySection">
-        <div class="an-section-title">📅 Precisão por dia</div>
+        <div class="an-section-title">Precisão por dia</div>
         <div id="chartDaily" class="chart-daily"></div>
       </div>
 
       <div class="an-section">
-        <div class="an-section-title">📍 Por Posição</div>
+        <div class="an-section-title">Por Posição</div>
         <div id="chartPosition" class="chart-bars"></div>
       </div>
 
       <div class="an-section">
-        <div class="an-section-title">🎯 Por Cenário</div>
+        <div class="an-section-title">Por Cenário</div>
         <div id="chartScenario" class="chart-bars"></div>
       </div>
 
       <div class="an-section" id="stackSection">
-        <div class="an-section-title">💰 Por Stack Depth</div>
+        <div class="an-section-title">Por Stack Depth</div>
         <div id="chartStack" class="chart-bars"></div>
       </div>
 
       <div class="an-section" id="topHandsSection">
-        <div class="an-section-title">❌ Mãos mais erradas</div>
+        <div class="an-section-title">Mãos mais erradas</div>
         <div id="chartHands" class="chart-bars"></div>
       </div>
 
       <div class="an-section" id="mistakesSection">
-        <div class="an-section-title">📋 Últimos erros</div>
+        <div class="an-section-title">Últimos erros</div>
         <div id="mistakesTable" class="mistakes-table-wrap"></div>
+      </div>
+
+      <div class="an-section" id="historySection">
+        <div class="an-section-title">Histórico de mãos</div>
+        <div id="historyList" class="history-list"></div>
       </div>
 
     </div>
@@ -171,8 +251,14 @@
   </main>
 </div>
 
-<script src="shared/api.js"></script>
-<script src="shared/core.js"></script>
-<script src="simulator.js"></script>
+<script>window._BASE = "/preflop";</script>
+<script src="shared/api.js?v=3"></script>
+<script src="shared/core.js?v=3"></script>
+<script src="simulator.js?v=9"></script>
+<script>
+function openDrawer(){document.getElementById('drawer').classList.add('open');document.getElementById('drawer-overlay').classList.add('open');}
+function closeDrawer(){document.getElementById('drawer').classList.remove('open');document.getElementById('drawer-overlay').classList.remove('open');}
+function showAnalytics(){document.getElementById('analyticsBtn').click();}
+</script>
 </body>
 </html>
