@@ -656,22 +656,31 @@ function showScreen(name) {
 
 // ── Mini tira de posições ────────────────────────────────────────────────────
 
+// Oval seat positions as % [left, top] — derived from SVG seat coords (660×400)
+const OVAL_PCT = [
+  [50, 90],  // 0 hero — bottom center
+  [76, 81],  // 1 — bottom-right
+  [90, 57],  // 2 — right
+  [84, 29],  // 3 — top-right
+  [68, 12],  // 4 — top-center-right
+  [50,  8],  // 5 — top center
+  [32, 12],  // 6 — top-center-left
+  [11, 57],  // 7 — left
+  [24, 81],  // 8 — bottom-left
+];
+
 function renderPosStrip(heroPos, villainPos) {
   if (!el.posStrip) return;
   const positions = C.POSITIONS_BY_COUNT[9];
   el.posStrip.innerHTML = '';
   positions.forEach((pos, i) => {
-    if (i > 0) {
-      const sep = document.createElement('span');
-      sep.className = 'ps-sep';
-      sep.textContent = '·';
-      el.posStrip.appendChild(sep);
-    }
     const span = document.createElement('span');
     span.className = 'ps-pos';
-    if (pos === heroPos)   span.classList.add('ps-hero');
+    if (pos === heroPos)    span.classList.add('ps-hero');
     if (pos === villainPos) span.classList.add('ps-villain');
     span.textContent = C.POS_LABEL[pos] || pos;
+    span.style.left = OVAL_PCT[i][0] + '%';
+    span.style.top  = OVAL_PCT[i][1] + '%';
     el.posStrip.appendChild(span);
   });
 }
