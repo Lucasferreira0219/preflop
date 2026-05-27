@@ -28,6 +28,7 @@ class SimulatorApi:
             'mode':        q.get('mode'),
             'villain_pos': q.get('villain_pos'),
             'phase':       q.get('phase'),
+            'source':      q.get('source'),
         }
 
     def submit_answer(self, user_action: str):

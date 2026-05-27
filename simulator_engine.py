@@ -130,9 +130,9 @@ def _get_buckets(pos, scenario, stack_bb, mode=DEFAULT_MODE):
         villain = REPRESENTATIVE_VILLAIN.get(pos)
         if not villain:
             return {}
+        # Usa apenas o spot da própria posição. NÃO faz fallback pro range do BB
+        # (isso misturava a defesa do BB em outras posições, ex.: a 10bb).
         vs_rfi = pos_data.get('vs_RFI', {}).get(villain)
-        if not vs_rfi:
-            vs_rfi = positions.get('BB', {}).get('vs_RFI', {}).get(villain, {})
         if not vs_rfi:
             return {}
         out = {}
@@ -151,6 +151,38 @@ def _get_buckets(pos, scenario, stack_bb, mode=DEFAULT_MODE):
         return {'4bet': vs_3b.get('4bet', []), 'call': vs_3b.get('call', [])}
 
     return {}
+
+
+# Posições cujo RFI tem base direta no PDF (% do curso), por bucket de stack.
+# Demais posições são extrapolações dos princípios → 'derivado'.
+_RFI_CURSO = {
+    75: {'UTG', 'HJ', 'CO', 'BTN'},   # Open Raise Early: %s do PDF
+    10: {'UTG', 'HJ', 'CO', 'BTN', 'SB'},  # Open Shove: %s do PDF
+    # 15 e 30: composição não vem combo-a-combo do PDF → derivado
+}
+
+
+def _spot_source(pos, scenario, stack_bb, mode):
+    """Proveniência do spot: 'curso' (base no PDF), 'derivado' (extrapolado dos
+    princípios) ou 'sem_material' (MTT — fora do escopo do curso SnG)."""
+    if _normalize_mode(mode) != 'sng':
+        return 'sem_material'
+    data    = _load(_pick_file(stack_bb, mode))
+    derived = data.get('_derived_spots', {})
+    try:
+        bucket = int(str(data.get('stack', '')).replace('bb', '').strip())
+    except ValueError:
+        bucket = None
+
+    if scenario == 'vs_3bet':
+        return 'derivado'  # o curso não cobre enfrentar 3-bet
+    if scenario == 'vs_RFI':
+        villain = REPRESENTATIVE_VILLAIN.get(pos)
+        label   = f"{pos} vs {villain}"
+        return 'derivado' if label in set(derived.get('vs_RFI', [])) else 'curso'
+    if scenario == 'RFI':
+        return 'curso' if pos in _RFI_CURSO.get(bucket, set()) else 'derivado'
+    return 'derivado'
 
 
 def _correct_action(hand, buckets):
@@ -225,6 +257,7 @@ def generate_question(player_count=9, stack_bb=None, focus_pos=None, focus_scena
             'buckets':        buckets,
             'villain_pos':    villain_pos,
             'phase':          _phase_for(stack_bb),
+            'source':         _spot_source(pos, scenario, stack_bb, mode),
         }
 
     return None
