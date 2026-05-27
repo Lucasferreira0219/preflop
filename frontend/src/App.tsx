@@ -3,6 +3,7 @@ import { AppProvider } from "@/state/AppProvider";
 import { TooltipProvider } from "@/components/ui/Tooltip";
 import { SettingsDrawer } from "@/components/SettingsDrawer";
 import { GlossaryDialog } from "@/components/GlossaryDialog";
+import { InstallPrompt } from "@/components/InstallPrompt";
 import { LauncherPage } from "@/pages/LauncherPage";
 import { SimulatorPage } from "@/pages/SimulatorPage";
 import { ConsultaPage } from "@/pages/ConsultaPage";
@@ -20,6 +21,7 @@ export function App() {
           </Routes>
           <SettingsDrawer />
           <GlossaryDialog />
+          <InstallPrompt />
         </TooltipProvider>
       </AppProvider>
     </BrowserRouter>
