@@ -5,22 +5,26 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  --bg:        #080c14;
-  --surface:   #0f1520;
-  --surface2:  #16202e;
-  --surface3:  #1e2d3e;
-  --border:    #243044;
-  --border2:   #2e3d55;
-  --accent:    #4eaaff;
-  --accent2:   #7dc4ff;
+  --bg:        #070e1a;
+  --surface:   #0b1525;
+  --surface2:  #101e30;
+  --surface3:  #162840;
+  --border:    #1f3350;
+  --border2:   #274266;
+  --accent:    #3b9eff;
+  --accent2:   #6db8ff;
   --green:     #22c55e;
   --red:       #ef4444;
   --amber:     #f59e0b;
-  --text:      #f0f4ff;
-  --muted:     #7a90aa;
-  --dim:       #3a4e66;
+  --text:      #e8f0ff;
+  --muted:     #6e87a8;
+  --dim:       #2c4060;
   --r8: 8px; --r12: 12px; --r16: 16px; --r20: 20px;
   --shadow: 0 4px 24px rgba(0,0,0,0.7);
+}
+
+html, body {
+  background: var(--bg);
 }
 
 html, body {
