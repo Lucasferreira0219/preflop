@@ -22,6 +22,8 @@ from fastapi.staticfiles import StaticFiles
 from api import Api
 from simulator_api import SimulatorApi
 from insights_api import InsightsApi
+from hands_api import HandsApi
+from tournaments_api import TournamentsApi
 import api as api_module
 import simulator_engine
 import insights_api as insights_module
@@ -37,6 +39,8 @@ app = FastAPI(title="Preflop Trainer", version="1.0")
 main_api     = Api()
 sim_api      = SimulatorApi()
 insights_api = InsightsApi()
+hands_api    = HandsApi()
+tour_api     = TournamentsApi()
 
 # Pré-carrega ranges em memória no startup
 @app.on_event("startup")
@@ -112,6 +116,77 @@ async def get_insights(request: Request):
     if len(args) < 2:
         raise HTTPException(400, "mode, stack required")
     return insights_api.get_insights(*args)
+
+@app.post("/api/import_hands")
+async def import_hands(request: Request):
+    args = await _read_args(request)
+    if not args:
+        raise HTTPException(400, "missing hand history text")
+    return hands_api.import_hands(*args)
+
+@app.post("/api/get_hands_summary")
+async def get_hands_summary(request: Request):
+    args = await _read_args(request)
+    return hands_api.get_hands_summary(*args)
+
+# ── Planilha de torneios ──────────────────────────────────────────────────────
+
+@app.post("/api/import_tournaments")
+async def import_tournaments(request: Request):
+    args = await _read_args(request)
+    if not args:
+        raise HTTPException(400, "missing tournament file text")
+    return tour_api.import_tournaments(*args)
+
+@app.post("/api/list_tournaments")
+async def list_tournaments(request: Request):
+    args = await _read_args(request)
+    return tour_api.list_tournaments(*args)
+
+@app.post("/api/tournaments_overview")
+async def tournaments_overview(request: Request):
+    args = await _read_args(request)
+    return tour_api.tournaments_overview(*args)
+
+@app.post("/api/update_tournament")
+async def update_tournament(request: Request):
+    args = await _read_args(request)
+    if not args:
+        raise HTTPException(400, "missing tournament_id")
+    return tour_api.update_tournament(*args)
+
+@app.post("/api/delete_tournament")
+async def delete_tournament(request: Request):
+    args = await _read_args(request)
+    if not args:
+        raise HTTPException(400, "missing tournament_id")
+    return tour_api.delete_tournament(*args)
+
+@app.post("/api/list_tournament_formats")
+async def list_tournament_formats():
+    return tour_api.list_formats()
+
+@app.post("/api/list_tournament_types")
+async def list_tournament_types():
+    return tour_api.list_tournament_types()
+
+@app.post("/api/set_tournament_payout")
+async def set_tournament_payout(request: Request):
+    args = await _read_args(request)
+    if len(args) < 2:
+        raise HTTPException(400, "type_key e payouts_cents obrigatórios")
+    return tour_api.set_tournament_payout(*args)
+
+@app.post("/api/delete_tournament_payout")
+async def delete_tournament_payout(request: Request):
+    args = await _read_args(request)
+    if not args:
+        raise HTTPException(400, "missing type_key")
+    return tour_api.delete_tournament_payout(*args)
+
+@app.post("/api/reparse_tournaments")
+async def reparse_tournaments():
+    return tour_api.reparse_missing()
 
 
 # ── Static files (ranges + assets do SPA) ────────────────────────────────────

@@ -1,0 +1,84 @@
+len(raw_text) = 69054
+ocorrências de 
+
+
+: 63
+ocorrências de 
+
+
+
+: 62
+
+len(synth) = 69161
+primeiros 200 chars: "Mão PokerStars #0: Torneio #4003791753, Synth Hold'em No Limit - Nível I (10/20) - 2026/01/01 00:00:00 BRT\nMesa '4003791753 1' 9-max Lugar #1 é o botão\nLugar 1: CorreaDe (1500 em fichas) \nLugar 2: Val"
+
+HEADER regex no synth[:400]: match? True groups=('0', '4003791753', "Synth Hold'em No Limit")
+
+parse_text retornou 1:
+  {'tournament_id': '4003791753', 'source_files': ['hh'], 'game_type': 'NLHE', 'format': None, 'tournament_name': "Synth Hold'em No Limit", 'played_at': '2026/01/01 00:00:00', 'hero': 'Eleka77'}
+
+_split_into_documents retornou 64 partes
+  parte 1: 1371 chars, primeiras 80: "Mão PokerStars #0: Torneio #4003791753, Synth Hold'em No Limit - Nível I (10/20)"
+  parte 2: 1626 chars, primeiras 80: "Mesa '4003791753 1' 9-max Lugar #2 é o botão\nLugar 1: CorreaDe (1500 em fichas) "
+  parte 3: 1777 chars, primeiras 80: "Mesa '4003791753 1' 9-max Lugar #3 é o botão\nLugar 1: CorreaDe (1500 em fichas) "
+  parte 4: 1648 chars, primeiras 80: "Mesa '4003791753 1' 9-max Lugar #4 é o botão\nLugar 1: CorreaDe (1500 em fichas) "
+  parte 5: 1322 chars, primeiras 80: "Mesa '4003791753 1' 9-max Lugar #5 é o botão\nLugar 1: CorreaDe (1460 em fichas) "
+  parte 6: 1557 chars, primeiras 80: "Mesa '4003791753 1' 9-max Lugar #6 é o botão\nLugar 1: CorreaDe (1460 em fichas) "
+  parte 7: 1625 chars, primeiras 80: "Mesa '4003791753 1' 9-max Lugar #7 é o botão\nLugar 1: CorreaDe (1460 em fichas) "
+  parte 8: 1584 chars, primeiras 80: "Mesa '4003791753 1' 9-max Lugar #8 é o botão\nLugar 1: CorreaDe (1460 em fichas) "
+  parte 9: 1875 chars, primeiras 80: "Mesa '4003791753 1' 9-max Lugar #9 é o botão\nLugar 1: CorreaDe (2084 em fichas) "
+  parte 10: 1394 chars, primeiras 80: "Mesa '4003791753 1' 9-max Lugar #1 é o botão\nLugar 1: CorreaDe (2054 em fichas) "
+  parte 11: 1430 chars, primeiras 80: "Mesa '4003791753 1' 9-max Lugar #2 é o botão\nLugar 1: CorreaDe (2054 em fichas) "
+  parte 12: 1165 chars, primeiras 80: "Mesa '4003791753 1' 9-max Lugar #3 é o botão\nLugar 1: CorreaDe (2054 em fichas) "
+  parte 13: 1193 chars, primeiras 80: "Mesa '4003791753 1' 9-max Lugar #5 é o botão\nLugar 1: CorreaDe (2054 em fichas) "
+  parte 14: 1514 chars, primeiras 80: "Mesa '4003791753 1' 9-max Lugar #6 é o botão\nLugar 1: CorreaDe (2054 em fichas) "
+  parte 15: 1287 chars, primeiras 80: "Mesa '4003791753 1' 9-max Lugar #7 é o botão\nLugar 1: CorreaDe (2054 em fichas) "
+  parte 16: 1435 chars, primeiras 80: "Mesa '4003791753 1' 9-max Lugar #8 é o botão\nLugar 1: CorreaDe (2054 em fichas) "
+  parte 17: 1234 chars, primeiras 80: "Mesa '4003791753 1' 9-max Lugar #9 é o botão\nLugar 1: CorreaDe (2004 em fichas) "
+  parte 18: 1135 chars, primeiras 80: "Mesa '4003791753 1' 9-max Lugar #1 é o botão\nLugar 1: CorreaDe (1979 em fichas) "
+  parte 19: 1215 chars, primeiras 80: "Mesa '4003791753 1' 9-max Lugar #2 é o botão\nLugar 1: CorreaDe (1979 em fichas) "
+  parte 20: 1608 chars, primeiras 80: "Mesa '4003791753 1' 9-max Lugar #3 é o botão\nLugar 1: CorreaDe (1979 em fichas) "
+  parte 21: 1457 chars, primeiras 80: "Mesa '4003791753 1' 9-max Lugar #5 é o botão\nLugar 1: CorreaDe (1979 em fichas) "
+  parte 22: 1377 chars, primeiras 80: "Mesa '4003791753 1' 9-max Lugar #6 é o botão\nLugar 1: CorreaDe (1779 em fichas) "
+  parte 23: 1437 chars, primeiras 80: "Mesa '4003791753 1' 9-max Lugar #7 é o botão\nLugar 1: CorreaDe (1854 em fichas) "
+  parte 24: 1036 chars, primeiras 80: "Mesa '4003791753 1' 9-max Lugar #8 é o botão\nLugar 1: CorreaDe (1854 em fichas) "
+  parte 25: 1301 chars, primeiras 80: "Mesa '4003791753 1' 9-max Lugar #9 é o botão\nLugar 1: CorreaDe (1604 em fichas) "
+  parte 26: 926 chars, primeiras 80: "Mesa '4003791753 1' 9-max Lugar #1 é o botão\nLugar 1: CorreaDe (3408 em fichas) "
+  parte 27: 1157 chars, primeiras 80: "Mesa '4003791753 1' 9-max Lugar #2 é o botão\nLugar 1: CorreaDe (3408 em fichas) "
+  parte 28: 1298 chars, primeiras 80: "Mesa '4003791753 1' 9-max Lugar #6 é o botão\nLugar 1: CorreaDe (3408 em fichas) "
+  parte 29: 1246 chars, primeiras 80: "Mesa '4003791753 1' 9-max Lugar #7 é o botão\nLugar 1: CorreaDe (3408 em fichas) "
+  parte 30: 944 chars, primeiras 80: "Mesa '4003791753 1' 9-max Lugar #8 é o botão\nLugar 1: CorreaDe (3408 em fichas) "
+  parte 31: 965 chars, primeiras 80: "Mesa '4003791753 1' 9-max Lugar #9 é o botão\nLugar 1: CorreaDe (3258 em fichas) "
+  parte 32: 944 chars, primeiras 80: "Mesa '4003791753 1' 9-max Lugar #1 é o botão\nLugar 1: CorreaDe (3183 em fichas) "
+  parte 33: 943 chars, primeiras 80: "Mesa '4003791753 1' 9-max Lugar #2 é o botão\nLugar 1: CorreaDe (3183 em fichas) "
+  parte 34: 1044 chars, primeiras 80: "Mesa '4003791753 1' 9-max Lugar #6 é o botão\nLugar 1: CorreaDe (3408 em fichas) "
+  parte 35: 1166 chars, primeiras 80: "Mesa '4003791753 1' 9-max Lugar #7 é o botão\nLugar 1: CorreaDe (3408 em fichas) "
+  parte 36: 1461 chars, primeiras 80: "Mesa '4003791753 1' 9-max Lugar #8 é o botão\nLugar 1: CorreaDe (3408 em fichas) "
+  parte 37: 1091 chars, primeiras 80: "Mesa '4003791753 1' 9-max Lugar #9 é o botão\nLugar 1: CorreaDe (2829 em fichas) "
+  parte 38: 758 chars, primeiras 80: "Mesa '4003791753 1' 9-max Lugar #1 é o botão\nLugar 1: CorreaDe (2754 em fichas) "
+  parte 39: 752 chars, primeiras 80: "Mesa '4003791753 1' 9-max Lugar #6 é o botão\nLugar 1: CorreaDe (2754 em fichas) "
+  parte 40: 729 chars, primeiras 80: "Mesa '4003791753 1' 9-max Lugar #7 é o botão\nLugar 1: CorreaDe (2754 em fichas) "
+  parte 41: 722 chars, primeiras 80: "Mesa '4003791753 1' 9-max Lugar #9 é o botão\nLugar 1: CorreaDe (2554 em fichas) "
+  parte 42: 705 chars, primeiras 80: "Mesa '4003791753 1' 9-max Lugar #1 é o botão\nLugar 1: CorreaDe (2454 em fichas) "
+  parte 43: 772 chars, primeiras 80: "Mesa '4003791753 1' 9-max Lugar #6 é o botão\nLugar 1: CorreaDe (2454 em fichas) "
+  parte 44: 708 chars, primeiras 80: "Mesa '4003791753 1' 9-max Lugar #7 é o botão\nLugar 1: CorreaDe (2054 em fichas) "
+  parte 45: 708 chars, primeiras 80: "Mesa '4003791753 1' 9-max Lugar #9 é o botão\nLugar 1: CorreaDe (2154 em fichas) "
+  parte 46: 705 chars, primeiras 80: "Mesa '4003791753 1' 9-max Lugar #1 é o botão\nLugar 1: CorreaDe (2054 em fichas) "
+  parte 47: 935 chars, primeiras 80: "Mesa '4003791753 1' 9-max Lugar #6 é o botão\nLugar 1: CorreaDe (2054 em fichas) "
+  parte 48: 984 chars, primeiras 80: "Mesa '4003791753 1' 9-max Lugar #7 é o botão\nLugar 1: CorreaDe (4208 em fichas) "
+  parte 49: 798 chars, primeiras 80: "Mesa '4003791753 1' 9-max Lugar #9 é o botão\nLugar 1: CorreaDe (5408 em fichas) "
+  parte 50: 782 chars, primeiras 80: "Mesa '4003791753 1' 9-max Lugar #1 é o botão\nLugar 1: CorreaDe (5308 em fichas) "
+  parte 51: 1135 chars, primeiras 80: "Mesa '4003791753 1' 9-max Lugar #6 é o botão\nLugar 1: CorreaDe (5308 em fichas) "
+  parte 52: 632 chars, primeiras 80: "Mesa '4003791753 1' 9-max Lugar #7 é o botão\nLugar 1: CorreaDe (5308 em fichas) "
+  parte 53: 936 chars, primeiras 80: "Mesa '4003791753 1' 9-max Lugar #1 é o botão\nLugar 1: CorreaDe (5208 em fichas) "
+  parte 54: 719 chars, primeiras 80: "Mesa '4003791753 1' 9-max Lugar #6 é o botão\nLugar 1: CorreaDe (5258 em fichas) "
+  parte 55: 706 chars, primeiras 80: "Mesa '4003791753 1' 9-max Lugar #7 é o botão\nLugar 1: CorreaDe (5033 em fichas) "
+  parte 56: 1227 chars, primeiras 80: "Mesa '4003791753 1' 9-max Lugar #1 é o botão\nLugar 1: CorreaDe (5283 em fichas) "
+  parte 57: 542 chars, primeiras 80: "Mesa '4003791753 1' 9-max Lugar #7 é o botão\nLugar 1: CorreaDe (5258 em fichas) "
+  parte 58: 715 chars, primeiras 80: "Mesa '4003791753 1' 9-max Lugar #1 é o botão\nLugar 1: CorreaDe (5383 em fichas) "
+  parte 59: 542 chars, primeiras 80: "Mesa '4003791753 1' 9-max Lugar #7 é o botão\nLugar 1: CorreaDe (5158 em fichas) "
+  parte 60: 608 chars, primeiras 80: "Mesa '4003791753 1' 9-max Lugar #1 é o botão\nLugar 1: CorreaDe (5283 em fichas) "
+  parte 61: 587 chars, primeiras 80: "Mesa '4003791753 1' 9-max Lugar #7 é o botão\nLugar 1: CorreaDe (5058 em fichas) "
+  parte 62: 699 chars, primeiras 80: "Mesa '4003791753 1' 9-max Lugar #1 é o botão\nLugar 1: CorreaDe (4833 em fichas) "
+  parte 63: 1016 chars, primeiras 80: "Mesa '4003791753 1' 9-max Lugar #7 é o botão\nLugar 1: CorreaDe (4608 em fichas) "
+  parte 64: 0 chars, primeiras 80: ''

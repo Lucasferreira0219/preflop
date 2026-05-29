@@ -71,4 +71,13 @@
     font-variant-numeric: tabular-nums;
     font-feature-settings: "tnum";
   }
+
+  /* Input compacto pros filtros/edição inline da planilha de torneios */
+  .filter-input {
+    @apply h-9 w-full rounded-ctl border border-border bg-surface-2 px-2 text-sm text-ink outline-none nums;
+    @apply hover:border-border-strong focus:border-border-strong;
+  }
+  .filter-input::placeholder {
+    @apply text-ink-faint;
+  }
 }

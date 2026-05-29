@@ -1,0 +1,24 @@
+{
+  "examined": 16,
+  "updated_pos": 0,
+  "updated_prize": 0
+}
+
+=== estado dos torneios após reparse ===
+  4003974926 pos=None prize=None known=0
+  4003782626 pos=9 prize=0 known=1
+  4003782991 pos=6 prize=None known=0
+  4003787417 pos=6 prize=None known=0
+  4003791753 pos=None prize=None known=0
+  4003801217 pos=8 prize=None known=0
+  4003805720 pos=None prize=None known=0
+  4003813792 pos=None prize=None known=0
+  4003823643 pos=None prize=None known=0
+  4004014751 pos=4 prize=None known=0
+  4004015081 pos=7 prize=None known=0
+  4004019485 pos=None prize=None known=0
+  4004020064 pos=None prize=None known=0
+  4004082207 pos=5 prize=None known=0
+  4004082759 pos=None prize=None known=0
+  4004090741 pos=6 prize=None known=0
+  4004093907 pos=8 prize=None known=0

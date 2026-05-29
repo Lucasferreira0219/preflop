@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { ArrowRight, Grid3x3, Target } from "lucide-react";
+import { ArrowRight, Grid3x3, LineChart, Target } from "lucide-react";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { useApp } from "@/state/AppProvider";
 import { MODE_LABEL } from "@/lib/mode";
@@ -43,6 +43,12 @@ export function LauncherPage() {
           title="Consulta"
           desc="Visualize ranges completos por posição, cenário e profundidade."
           onClick={() => navigate("/consulta")}
+        />
+        <LaunchCard
+          icon={<LineChart className="h-5 w-5" />}
+          title="Torneios"
+          desc="Planilha dos torneios jogados. Saldo, ROI, ITM e curva da banca."
+          onClick={() => navigate("/tournaments")}
         />
       </div>
 

@@ -1,0 +1,327 @@
+hero = 'Eleka77'
+
+==== 1/8  tournament 4003974926  (None) ====
+Eleka77: mostra [Qd 6c] (dois pares, Valete e Dois)
+Donkhunter51 recebeu 3990 do pote
+Eleka77 recebeu 3990 do pote
+*** SUMÁRIO ***
+Total pote 7980 | comissão 0 
+Lugar 2: Eleka77 (Botão) (small blind) mostrou [Qd 6c] e ganhou (3990) com dois pares, Valete e Dois
+Lugar 8: Donkhunter51 (big blind) mostrou [Qc Tc] e ganhou (3990) com dois pares, Valete e Dois
+Lugar 2: Eleka77 (9510 em fichas) 
+Lugar 8: Donkhunter51 (3990 em fichas) 
+Eleka77: coloca ante 50
+Eleka77: paga o big blind 800
+*** CARTAS DA MÃO ***
+Eleka77 recebe [8s 7s]
+Eleka77: desiste 
+Donkhunter51 recebeu 1700 do pote
+*** SUMÁRIO ***
+Total pote 1700 | comissão 0 
+Lugar 2: Eleka77 (big blind) desistiu antes Flop
+Lugar 8: Donkhunter51 (Botão) (small blind) recebeu (1700)
+Lugar 2: Eleka77 (8660 em fichas) 
+Lugar 8: Donkhunter51 (4840 em fichas) 
+Eleka77: coloca ante 50
+Eleka77: paga o small blind 400
+*** CARTAS DA MÃO ***
+Eleka77 recebe [Kc 2c]
+Eleka77: aumenta 7810 para 8610 e está all-in
+Aposta não-igualada (3820) voltou para Eleka77
+*** FLOP *** [Jd Kd 4h]
+*** TURN *** [Jd Kd 4h] [7s]
+*** RIVER *** [Jd Kd 4h 7s] [Qd]
+*** SHOW DOWN ***
+Eleka77: mostra [Kc 2c] (par de Rei)
+Eleka77 recebeu 9680 do pote
+Donkhunter51 Acabou o torneio em 2º lugar e recebeu $ 1.13.
+Eleka77 ganhou o torneio e recebeu $ 1.90 - parabéns!
+*** SUMÁRIO ***
+Total pote 9680 | comissão 0 
+Lugar 2: Eleka77 (Botão) (small blind) mostrou [Kc 2c] e ganhou (9680) com par de Rei
+Lugar 8: Donkhunter51 (big blind) mostrou [9d Jc] e perdeu com par de Valete
+
+==== 2/8  tournament 4003791753  (2026/05/27 14:22:24) ====
+Lugar 7: Eleka77 (Botão) (small blind) recebeu (450)
+Lugar 1: CorreaDe (4833 em fichas) 
+Lugar 7: Eleka77 (8667 em fichas) 
+Eleka77: coloca ante 25
+Eleka77: paga o big blind 200
+*** CARTAS DA MÃO ***
+Eleka77 recebe [2s 5c]
+Eleka77: passa 
+*** FLOP *** [4d Tc As]
+Eleka77: passa 
+*** TURN *** [4d Tc As] [3h]
+Eleka77: aposta 425
+Aposta não-igualada (425) voltou para Eleka77
+Eleka77 recebeu 450 do pote
+Eleka77: não mostra a mão 
+*** SUMÁRIO ***
+Total pote 450 | comissão 0 
+Lugar 1: CorreaDe (Botão) (small blind) desistiu no Turn
+Lugar 7: Eleka77 (big blind) recebeu (450)
+Lugar 1: CorreaDe (4608 em fichas) 
+Lugar 7: Eleka77 (8892 em fichas) 
+Eleka77: coloca ante 25
+Eleka77: paga o small blind 100
+*** CARTAS DA MÃO ***
+Eleka77 recebe [Qc Td]
+Eleka77: aumenta 8667 para 8867 e está all-in
+Aposta não-igualada (4284) voltou para Eleka77
+*** FLOP *** [2d Kd 3d]
+*** TURN *** [2d Kd 3d] [Ad]
+*** RIVER *** [2d Kd 3d Ad] [6d]
+*** SHOW DOWN ***
+Eleka77: mostra [Qc Td] (Flush, Ás carta mais alta - Dez higher)
+Eleka77 recebeu 9216 do pote
+CorreaDe Acabou o torneio em 2º lugar e recebeu $ 1.13.
+Eleka77 ganhou o torneio e recebeu $ 1.90 - parabéns!
+*** SUMÁRIO ***
+Total pote 9216 | comissão 0 
+Lugar 1: CorreaDe (big blind) mostrou [Ac 6s] e perdeu com Flush, Ás carta mais alta
+Lugar 7: Eleka77 (Botão) (small blind) mostrou [Qc Td] e ganhou (9216) com Flush, Ás carta mais alta
+
+==== 3/8  tournament 4003805720  (2026/05/27 15:25:06) ====
+Lugar 2: Eleka77 (small blind) desistiu antes Flop
+Lugar 5: Donni77 (big blind) mostrou [6h Jd] e perdeu com par de Cinco
+Lugar 8: rafaela919 (Botão) mostrou [Qs As] e ganhou (900) com par de Cinco
+Lugar 2: Eleka77 (4405 em fichas) 
+Lugar 5: Donni77 (5726 em fichas) 
+Lugar 8: rafaela919 (3369 em fichas) 
+*** CARTAS DA MÃO ***
+Eleka77 recebe [Tc Js]
+Eleka77: aumenta 4205 para 4405 e está all-in
+Aposta não-igualada (4205) voltou para Eleka77
+Eleka77 recebeu 500 do pote
+Eleka77: não mostra a mão 
+*** SUMÁRIO ***
+Total pote 500 | comissão 0 
+Lugar 2: Eleka77 (Botão) recebeu (500)
+Lugar 5: Donni77 (small blind) desistiu antes Flop
+Lugar 8: rafaela919 (big blind) desistiu antes Flop
+Lugar 2: Eleka77 (4705 em fichas) 
+Lugar 5: Donni77 (5626 em fichas) 
+Lugar 8: rafaela919 (3169 em fichas) 
+Eleka77: paga o big blind 200
+*** CARTAS DA MÃO ***
+Eleka77 recebe [6d 9d]
+Eleka77: passa 
+*** FLOP *** [2s Ac 6c]
+Eleka77: passa 
+Eleka77: aumenta 4305 para 4505 e está all-in
+*** TURN *** [2s Ac 6c] [7h]
+*** RIVER *** [2s Ac 6c 7h] [Jd]
+*** SHOW DOWN ***
+Eleka77: mostra [6d 9d] (par de Seis)
+Donni77 recebeu 9510 do pote
+Eleka77 Acabou o torneio em 3º lugar e recebeu $ 0.75.
+*** SUMÁRIO ***
+Total pote 9510 | comissão 0 
+Lugar 2: Eleka77 (big blind) mostrou [6d 9d] e perdeu com par de Seis
+Lugar 5: Donni77 (Botão) mostrou [Ad 7d] e ganhou (9510) com dois pares, Ás e Sete
+Lugar 8: rafaela919 (small blind) desistiu antes Flop
+
+==== 4/8  tournament 4003813792  (2026/05/27 15:59:50) ====
+Lugar 1: peatymalt (8183 em fichas) 
+Lugar 2: Eleka77 (5317 em fichas) 
+Eleka77: paga o small blind 75
+*** CARTAS DA MÃO ***
+Eleka77 recebe [7h 4s]
+Eleka77: desiste 
+peatymalt recebeu 150 do pote
+*** SUMÁRIO ***
+Total pote 150 | comissão 0 
+Lugar 1: peatymalt (big blind) recebeu (150)
+Lugar 2: Eleka77 (Botão) (small blind) desistiu antes Flop
+Lugar 1: peatymalt (8258 em fichas) 
+Lugar 2: Eleka77 (5242 em fichas) 
+Eleka77: paga o big blind 150
+*** CARTAS DA MÃO ***
+Eleka77 recebe [5d 5h]
+Aposta não-igualada (75) voltou para Eleka77
+Eleka77 recebeu 150 do pote
+Eleka77: não mostra a mão 
+*** SUMÁRIO ***
+Total pote 150 | comissão 0 
+Lugar 1: peatymalt (Botão) (small blind) desistiu antes Flop
+Lugar 2: Eleka77 (big blind) recebeu (150)
+Lugar 1: peatymalt (8183 em fichas) 
+Lugar 2: Eleka77 (5317 em fichas) 
+Eleka77: paga o small blind 75
+*** CARTAS DA MÃO ***
+Eleka77 recebe [Jd Tc]
+Eleka77: aumenta 5167 para 5317 e está all-in
+*** FLOP *** [4d Kh 3d]
+*** TURN *** [4d Kh 3d] [Jc]
+*** RIVER *** [4d Kh 3d Jc] [Ah]
+*** SHOW DOWN ***
+Eleka77: mostra [Jd Tc] (par de Valete)
+peatymalt recebeu 10634 do pote
+Eleka77 Acabou o torneio em 2º lugar e recebeu $ 1.13.
+peatymalt ganhou o torneio e recebeu $ 1.90 - parabéns!
+*** SUMÁRIO ***
+Total pote 10634 | comissão 0 
+Lugar 1: peatymalt (big blind) mostrou [Ks Kc] e ganhou (10634) com trinca, Rei
+Lugar 2: Eleka77 (Botão) (small blind) mostrou [Jd Tc] e perdeu com par de Valete
+
+==== 5/8  tournament 4003823643  (2026/05/27 16:39:16) ====
+*** SHOW DOWN ***
+Eleka77: mostra [6s 4d] (Sequência, Nove a Rei)
+mr.shh2009 recebeu 696 do pote
+Eleka77 recebeu 696 do pote
+*** SUMÁRIO ***
+Total pote 1392 | comissão 0 
+Lugar 1: Eleka77 (Botão) (small blind) mostrou [6s 4d] e ganhou (696) com Sequência, Nove a Rei
+Lugar 7: mr.shh2009 (big blind) mostrou [6c 4h] e ganhou (696) com Sequência, Nove a Rei
+Lugar 1: Eleka77 (696 em fichas) 
+Lugar 7: mr.shh2009 (12804 em fichas) 
+Eleka77: coloca ante 25
+Eleka77: paga o big blind 300
+*** CARTAS DA MÃO ***
+Eleka77 recebe [7h 2c]
+Aposta não-igualada (150) voltou para Eleka77
+Eleka77 recebeu 350 do pote
+Eleka77: não mostra a mão 
+*** SUMÁRIO ***
+Total pote 350 | comissão 0 
+Lugar 1: Eleka77 (big blind) recebeu (350)
+Lugar 7: mr.shh2009 (Botão) (small blind) desistiu antes Flop
+Lugar 1: Eleka77 (871 em fichas) 
+Lugar 7: mr.shh2009 (12629 em fichas) 
+Eleka77: coloca ante 25
+Eleka77: paga o small blind 150
+*** CARTAS DA MÃO ***
+Eleka77 recebe [Jh 6s]
+Eleka77: aumenta 546 para 846 e está all-in
+*** FLOP *** [4d Kc 2c]
+*** TURN *** [4d Kc 2c] [8h]
+*** RIVER *** [4d Kc 2c 8h] [5d]
+*** SHOW DOWN ***
+Eleka77: mostra [Jh 6s] (Carta Alta Rei)
+mr.shh2009 recebeu 1742 do pote
+Eleka77 Acabou o torneio em 2º lugar e recebeu $ 1.13.
+mr.shh2009 ganhou o torneio e recebeu $ 1.90 - parabéns!
+*** SUMÁRIO ***
+Total pote 1742 | comissão 0 
+Lugar 1: Eleka77 (Botão) (small blind) mostrou [Jh 6s] e perdeu com Carta Alta Rei
+Lugar 7: mr.shh2009 (big blind) mostrou [2d 6h] e ganhou (1742) com par de Dois
+
+==== 6/8  tournament 4004019485  (2026/05/28 12:51:15) ====
+Lugar 9: Eleka77 (big blind) recebeu (850)
+Lugar 4: tequs1 (2680 em fichas) 
+Lugar 9: Eleka77 (10820 em fichas) 
+Eleka77: coloca ante 25
+Eleka77: paga o small blind 100
+*** CARTAS DA MÃO ***
+Eleka77 recebe [8h Tc]
+Eleka77: aumenta 300 para 500
+Eleka77: desiste 
+tequs1 recebeu 1050 do pote
+*** SUMÁRIO ***
+Total pote 1050 | comissão 0 
+Lugar 4: tequs1 (big blind) recebeu (1050)
+Lugar 9: Eleka77 (Botão) (small blind) desistiu antes Flop
+Lugar 4: tequs1 (3205 em fichas) 
+Lugar 9: Eleka77 (10295 em fichas) 
+Eleka77: coloca ante 25
+Eleka77: paga o big blind 200
+*** CARTAS DA MÃO ***
+Eleka77 recebe [9d 2d]
+Eleka77: iguala 200
+*** FLOP *** [2s Td 9c]
+Eleka77: aposta 255
+*** TURN *** [2s Td 9c] [2h]
+Eleka77: aposta 408
+*** RIVER *** [2s Td 9c 2h] [Kd]
+Eleka77: aposta 653
+Eleka77: iguala 1464
+*** SHOW DOWN ***
+Eleka77: mostra [9d 2d] (Full House, Dois com Nove)
+Eleka77 recebeu 6410 do pote
+tequs1 Acabou o torneio em 2º lugar e recebeu $ 1.13.
+Eleka77 ganhou o torneio e recebeu $ 1.90 - parabéns!
+*** SUMÁRIO ***
+Total pote 6410 | comissão 0 
+Lugar 4: tequs1 (Botão) (small blind) mostrou [Qs Js] e perdeu com Sequência, Nove a Rei
+Lugar 9: Eleka77 (big blind) mostrou [9d 2d] e ganhou (6410) com Full House, Dois com Nove
+
+==== 7/8  tournament 4004020064  (2026/05/28 12:54:02) ====
+Eleka77: aumenta 9196 para 9596 e está all-in
+Aposta não-igualada (9196) voltou para Eleka77
+Eleka77 recebeu 850 do pote
+Eleka77: não mostra a mão 
+*** SUMÁRIO ***
+Total pote 850 | comissão 0 
+Lugar 4: tequs1 (Botão) (small blind) desistiu antes Flop
+Lugar 7: Eleka77 (big blind) recebeu (850)
+Lugar 4: tequs1 (3454 em fichas) 
+Lugar 7: Eleka77 (10046 em fichas) 
+Eleka77: coloca ante 25
+Eleka77: paga o small blind 200
+*** CARTAS DA MÃO ***
+Eleka77 recebe [6d Qh]
+Eleka77: aumenta 9621 para 10021 e está all-in
+Aposta não-igualada (9621) voltou para Eleka77
+Eleka77 recebeu 850 do pote
+Eleka77: não mostra a mão 
+*** SUMÁRIO ***
+Total pote 850 | comissão 0 
+Lugar 4: tequs1 (big blind) desistiu antes Flop
+Lugar 7: Eleka77 (Botão) (small blind) recebeu (850)
+Lugar 4: tequs1 (3029 em fichas) 
+Lugar 7: Eleka77 (10471 em fichas) 
+Eleka77: coloca ante 25
+Eleka77: paga o big blind 400
+*** CARTAS DA MÃO ***
+Eleka77 recebe [Td 7d]
+Eleka77: iguala 2604
+*** FLOP *** [9c Qc 6s]
+*** TURN *** [9c Qc 6s] [Qd]
+*** RIVER *** [9c Qc 6s Qd] [7h]
+*** SHOW DOWN ***
+Eleka77: mostra [Td 7d] (dois pares, Dama e Sete)
+Eleka77 recebeu 6058 do pote
+tequs1 Acabou o torneio em 2º lugar e recebeu $ 1.13.
+Eleka77 ganhou o torneio e recebeu $ 1.90 - parabéns!
+*** SUMÁRIO ***
+Total pote 6058 | comissão 0 
+Lugar 4: tequs1 (Botão) (small blind) mostrou [Kh 2c] e perdeu com par de Dama
+Lugar 7: Eleka77 (big blind) mostrou [Td 7d] e ganhou (6058) com dois pares, Dama e Sete
+
+==== 8/8  tournament 4004082759  (2026/05/28 17:18:02) ====
+*** CARTAS DA MÃO ***
+Eleka77 recebe [Jc 8h]
+Eleka77: aumenta 3476 para 3676 e está all-in
+Aposta não-igualada (51) voltou para Eleka77
+*** FLOP *** [Kh 6h 3c]
+*** TURN *** [Kh 6h 3c] [5d]
+*** RIVER *** [Kh 6h 3c 5d] [4d]
+*** SHOW DOWN ***
+Eleka77: mostra [Jc 8h] (Carta Alta Rei)
+LukeSmeth recebeu 7250 do pote
+*** SUMÁRIO ***
+Total pote 7250 | comissão 0 
+Lugar 1: Eleka77 (small blind) mostrou [Jc 8h] e perdeu com Carta Alta Rei
+Lugar 2: LukeSmeth (big blind) mostrou [Tc Ah] e ganhou (7250) com Carta Alta Ás
+Lugar 6: SW42WhizzZ (Botão) desistiu antes Flop (não apostou)
+Lugar 1: Eleka77 (51 em fichas) 
+Lugar 2: LukeSmeth (7250 em fichas) 
+Lugar 6: SW42WhizzZ (6199 em fichas) 
+Eleka77: coloca ante 25
+*** CARTAS DA MÃO ***
+Eleka77 recebe [5c Ah]
+Eleka77: iguala 26 e está all-in
+*** FLOP *** [8h 4h 7d]
+*** TURN *** [8h 4h 7d] [Kd]
+*** RIVER *** [8h 4h 7d Kd] [Qs]
+*** SHOW DOWN ***
+LukeSmeth recebeu 2348 do secundário pote
+Eleka77: esconde a mão 
+LukeSmeth recebeu 153 do principal pote
+Eleka77 Acabou o torneio em 3º lugar e recebeu $ 0.75.
+*** SUMÁRIO ***
+Total pote 2501 Principal pote 153. Secundário pote 2348. | comissão 0 
+Lugar 1: Eleka77 (Botão) escondeu as cartas [5c Ah]
+Lugar 2: LukeSmeth (small blind) mostrou [Ks 6c] e ganhou (2501) com par de Rei
+Lugar 6: SW42WhizzZ (big blind) escondeu as cartas [Qh 6h]

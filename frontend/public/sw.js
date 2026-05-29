@@ -1,4 +1,4 @@
-const CACHE = 'preflop-v1';
+const CACHE = 'preflop-v5-types';
 const ASSETS = ['./', './index.html'];
 
 self.addEventListener('install', e => {

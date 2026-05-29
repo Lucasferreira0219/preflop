@@ -7,6 +7,9 @@ import { InstallPrompt } from "@/components/InstallPrompt";
 import { LauncherPage } from "@/pages/LauncherPage";
 import { SimulatorPage } from "@/pages/SimulatorPage";
 import { ConsultaPage } from "@/pages/ConsultaPage";
+import { ImportPage } from "@/pages/ImportPage";
+import { TournamentsPage } from "@/pages/TournamentsPage";
+import { TournamentTypesPage } from "@/pages/TournamentTypesPage";
 import { BASE } from "@/lib/api";
 
 export function App() {
@@ -18,6 +21,9 @@ export function App() {
             <Route path="/" element={<LauncherPage />} />
             <Route path="/sim" element={<SimulatorPage />} />
             <Route path="/consulta" element={<ConsultaPage />} />
+            <Route path="/import" element={<ImportPage />} />
+            <Route path="/tournaments" element={<TournamentsPage />} />
+            <Route path="/tournament-types" element={<TournamentTypesPage />} />
           </Routes>
           <SettingsDrawer />
           <GlossaryDialog />

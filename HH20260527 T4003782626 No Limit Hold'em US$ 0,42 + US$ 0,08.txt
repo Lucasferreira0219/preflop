@@ -1,0 +1,58 @@
+﻿Mão PokerStars #260946547381: Torneio #4003782626, $ 0.42+$ 0.08 USD Hold'em No Limit - Nível I (10/20) - 2026/05/27 13:40:59 BRT [2026/05/27 12:40:59 ET]
+Mesa '4003782626 1' 9-max Lugar #1 é o botão
+Lugar 1: ikbn7777 (1500 em fichas) 
+Lugar 2: Eleka77 (1500 em fichas) 
+Lugar 3: aaapdmk (1500 em fichas) 
+Lugar 4: mr kadakas (1500 em fichas) 
+Lugar 5: 22wiggy22 (1500 em fichas) 
+Lugar 6: oveandout (1500 em fichas) 
+Lugar 7: BILONGER10 (1500 em fichas) 
+Lugar 8: bcman1232 (1500 em fichas) 
+Lugar 9: PräsiG (1500 em fichas) 
+Eleka77: paga o small blind 10
+aaapdmk: paga o big blind 20
+*** CARTAS DA MÃO ***
+Eleka77 recebe [Kd Ks]
+mr kadakas: iguala 20
+22wiggy22: desiste 
+oveandout: desiste 
+BILONGER10: desiste 
+bcman1232: iguala 20
+PräsiG: iguala 20
+ikbn7777: iguala 20
+Eleka77: aumenta 120 para 140
+aaapdmk: desiste 
+mr kadakas: desiste 
+bcman1232: iguala 120
+PräsiG: desiste 
+ikbn7777: iguala 120
+*** FLOP *** [Ts 9s 3s]
+Eleka77: aposta 144
+bcman1232: desiste 
+ikbn7777: iguala 144
+*** TURN *** [Ts 9s 3s] [Jh]
+Eleka77: aposta 230
+ikbn7777: aumenta 750 para 980
+Eleka77: aumenta 236 para 1216 e está all-in
+ikbn7777: iguala 236 e está all-in
+*** RIVER *** [Ts 9s 3s Jh] [3c]
+*** SHOW DOWN ***
+Eleka77: mostra [Kd Ks] (dois pares, Rei e Três)
+ikbn7777: mostra [9h 9d] (Full House, Nove com Três)
+ikbn7777 recebeu 3200 do pote
+Eleka77 terminou o torneio em 9º lugar
+*** SUMÁRIO ***
+Total pote 3200 | comissão 0 
+Mesa [Ts 9s 3s Jh 3c]
+Lugar 1: ikbn7777 (Botão) mostrou [9h 9d] e ganhou (3200) com Full House, Nove com Três
+Lugar 2: Eleka77 (small blind) mostrou [Kd Ks] e perdeu com dois pares, Rei e Três
+Lugar 3: aaapdmk (big blind) desistiu antes Flop
+Lugar 4: mr kadakas desistiu antes Flop
+Lugar 5: 22wiggy22 desistiu antes Flop (não apostou)
+Lugar 6: oveandout desistiu antes Flop (não apostou)
+Lugar 7: BILONGER10 desistiu antes Flop (não apostou)
+Lugar 8: bcman1232 desistiu no Flop
+Lugar 9: PräsiG desistiu antes Flop
+
+
+

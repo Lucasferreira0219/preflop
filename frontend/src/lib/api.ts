@@ -1,6 +1,7 @@
 // Cliente da API REST do FastAPI. Mantém o padrão _BASE (deploy atrás de /preflop).
 import type {
   Analytics,
+  ImportSummary,
   Improvement,
   Insights,
   Mode,
@@ -9,6 +10,11 @@ import type {
   Scenario,
   Stats,
   SubmitResult,
+  Tournament,
+  TournamentFilters,
+  TournamentImportResult,
+  TournamentOverview,
+  TournamentType,
 } from "./types";
 
 export const BASE = /^\/preflop(?=\/|$)/.test(location.pathname) ? "/preflop" : "";
@@ -69,4 +75,50 @@ export const api = {
     playerCount = 9,
     phase: string | null = null,
   ) => call<Insights>("get_insights", [mode, stack, pos, scenario, villain, playerCount, phase]),
+
+  importHands: (text: string, mode: Mode = "sng") =>
+    call<ImportSummary>("import_hands", [text, mode]),
+
+  // ── Planilha de torneios ────────────────────────────────────────────────────
+  importTournaments: (text: string) =>
+    call<TournamentImportResult>("import_tournaments", [text]),
+
+  listTournaments: (filters: TournamentFilters = {}) =>
+    call<Tournament[]>("list_tournaments", [filters]),
+
+  tournamentsOverview: (filters: TournamentFilters = {}) =>
+    call<TournamentOverview>("tournaments_overview", [filters]),
+
+  updateTournament: (
+    tournamentId: string,
+    prizeCents: number | null = null,
+    finishPos: number | null = null,
+    notes: string | null = null,
+  ) =>
+    call<Tournament | { error: string }>("update_tournament", [
+      tournamentId,
+      prizeCents,
+      finishPos,
+      notes,
+    ]),
+
+  deleteTournament: (tournamentId: string) =>
+    call<{ deleted: number; error?: string }>("delete_tournament", [tournamentId]),
+
+  listTournamentFormats: () => call<string[]>("list_tournament_formats", []),
+
+  listTournamentTypes: () => call<TournamentType[]>("list_tournament_types", []),
+
+  setTournamentPayout: (
+    typeKey: string,
+    payoutsCents: number[],
+    label: string | null = null,
+  ) =>
+    call<{ ok?: boolean; type_key?: string; payouts_cents?: number[]; format?: string | null; error?: string }>(
+      "set_tournament_payout",
+      [typeKey, payoutsCents, label],
+    ),
+
+  deleteTournamentPayout: (typeKey: string) =>
+    call<{ deleted: number; error?: string }>("delete_tournament_payout", [typeKey]),
 };

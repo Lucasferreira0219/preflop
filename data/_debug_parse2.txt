@@ -1,0 +1,6 @@
+raw_text começa com header? False
+primeiras 200 chars: "Mesa '4003791753 1' 9-max Lugar #1 é o botão\nLugar 1: CorreaDe (1500 em fichas) \nLugar 2: Valdi274 (1500 em fichas) \nLugar 3: artuu (1500 em fichas) \nLugar 4: FrigideiraBR (1500 em fichas) está sit ou"
+
+sem header sintético, parse retornou 0 torneios
+com header sintético, parse retornou 1 torneios
+  {'tournament_id': '4003791753', 'game_type': 'NLHE', 'format': None, 'tournament_name': "Synth Hold'em No Limit", 'played_at': '2026/01/01 00:00:00', 'hero': 'Eleka77'}

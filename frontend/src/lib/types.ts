@@ -164,3 +164,121 @@ export interface Improvement {
   by_scenario: Record<string, DeltaEntry>;
   by_stack: Record<string, DeltaEntry>;
 }
+
+// ── Mãos importadas do PokerStars ──────────────────────────────────────────────
+
+export interface ImportedHand {
+  hand_id: string;
+  tournament_id: string;
+  played_at: string | null;
+  hero_pos: string | null;
+  hero_cards: string | null;
+  stack_bb: number | null;
+  scenario: string;
+  hero_action: string | null;
+  course_action: ActionId | null;
+  is_correct: number | null; // 1 / 0 / null (sem nota)
+  source: SpotSource | null;
+  motivo: string;
+}
+
+export interface ImportSummary {
+  parsed: number;
+  new: number;
+  duplicates: number;
+  graded: number;
+  correct: number;
+  wrong: number;
+  not_modeled: number;
+  hands: ImportedHand[];
+  error?: string;
+}
+
+// ── Planilha de torneios ──────────────────────────────────────────────────────
+
+export type PrizeSource = "manual" | "auto" | null;
+
+export interface Tournament {
+  tournament_id: string;
+  played_at: string | null;
+  hero: string | null;
+  tournament_name: string | null;
+  game_type: string | null;
+  format: string | null;
+  buy_in_cents: number | null;
+  fee_cents: number | null;
+  currency: string;
+  n_entries: number | null;
+  prize_pool_cents: number | null;
+  finish_pos: number | null;
+  prize_cents: number | null;
+  prize_known: boolean;
+  prize_source: PrizeSource;
+  profit_cents: number | null;
+  notes: string | null;
+}
+
+export interface FinishPositionUsage {
+  pos: number;
+  n: number;
+}
+
+export interface TournamentType {
+  type_key: string;
+  name: string;
+  buy_in_cents: number | null;
+  fee_cents: number | null;
+  format: string | null;
+  currency: string;
+  typical_entries: number | null;
+  n_tournaments: number;
+  n_manual_overrides: number;
+  payouts_cents: number[];
+  has_payout_table: boolean;
+  finish_positions: FinishPositionUsage[];
+}
+
+export interface TournamentImportResult {
+  parsed: number;
+  new: number;
+  updated: number;
+  duplicates: number;
+  tournaments: Tournament[];
+  error?: string;
+}
+
+export interface TournamentFilters {
+  from_date?: string | null;
+  to_date?: string | null;
+  format?: string | null;
+  min_buyin?: number | null;
+  max_buyin?: number | null;
+}
+
+export interface TournamentFormatBreakdown {
+  n: number;
+  cost: number;
+  prize: number;
+  itm: number;
+  cashed: number;
+}
+
+export interface CumulativePoint {
+  tournament_id: string;
+  played_at: string | null;
+  running: number;
+}
+
+export interface TournamentOverview {
+  n_tournaments: number;
+  cost_total_cents: number;
+  prize_total_cents: number;
+  profit_cents: number;
+  roi_pct: number | null;
+  itm_pct: number | null;
+  avg_buyin_cents: number | null;
+  pending_prize: number;
+  cashed: number;
+  cumulative: CumulativePoint[];
+  by_format: Record<string, TournamentFormatBreakdown>;
+}
