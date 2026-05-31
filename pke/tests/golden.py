@@ -10,7 +10,7 @@ from pke import HandContext, engine
 
 
 def case(desc, ctx, hero_action, expect_rec=None, expect_score=None, expect_rule=None,
-         expect_insufficient=False):
+         expect_insufficient=False, expect_source=None, expect_status=None):
     eng = engine()
     dec = eng.evaluate_decision(ctx, hero_action)
     ok = True
@@ -24,13 +24,18 @@ def case(desc, ctx, hero_action, expect_rec=None, expect_score=None, expect_rule
             ok = ok and (dec["nota"] is not None and lo <= dec["nota"] <= hi)
         if expect_rule is not None:
             ok = ok and any(expect_rule in r for r in dec["regra_pdf"])
+        if expect_source is not None:
+            ok = ok and dec.get("source_type") == expect_source
+        if expect_status is not None:
+            ok = ok and dec.get("range_status") == expect_status
     status = "OK " if ok else "FAIL"
     print(f"[{status}] {desc}")
-    print(f"        spot={dec['spot'] if 'spot' in dec else ctx.spot} fase={dec['fase']} "
-          f"rec={dec['acao_recomendada']} nota={dec['nota']} erro={dec['tipo_erro']} "
-          f"regra={dec['regra_pdf']}")
+    print(f"        spot={ctx.spot} fase={dec['fase']} rec={dec['acao_recomendada']} "
+          f"nota={dec['nota']} src={dec.get('source_type')}/{dec.get('range_status')} "
+          f"conf={dec.get('confidence')} regra={dec['regra_pdf']}")
     if not ok:
-        print(f"        ESPERADO rec={expect_rec} score={expect_score} rule={expect_rule} insuf={expect_insufficient}")
+        print(f"        ESPERADO rec={expect_rec} score={expect_score} rule={expect_rule} "
+              f"src={expect_source} status={expect_status} insuf={expect_insufficient}")
     return ok
 
 
@@ -84,12 +89,13 @@ def main() -> int:
                     preflop_action="first_in", players_left=2),
         hero_action="fold", expect_rec="raise", expect_rule="HU.BTN"))
 
-    # 6) Bolha: call de shove → regra-nível (insuficiente p/ nota exata)
+    # 6) Bolha: call de shove → APROXIMAÇÃO por ICM (não recusa mais). A9o = fold.
     results.append(case(
-        "Bolha call de shove → insuficiente (anti-alucinação)",
+        "Bolha call de shove A9o → ICM heuristic = fold (DERIVED, não insuficiente)",
         HandContext(eff_stack_bb=12, hero_pos="BB", hero_cards="A9o",
                     preflop_action="vs_shove", opener_pos="BTN", players_left=4, paid_places=3),
-        hero_action="call", expect_insufficient=True))
+        hero_action="call", expect_rec="fold", expect_score=(0, 5),
+        expect_source="DERIVED_FROM_PDF", expect_status="approximate"))
 
     # 7) Sem mão informada → pede a mão
     results.append(case(
@@ -151,11 +157,11 @@ def main() -> int:
         HandContext(eff_stack_bb=30, hero_pos="BB", hero_cards="AA", preflop_action="vs_raise", opener_pos="CO", players_left=6),
         "3bet", expect_rec="3bet", expect_score=(8, 10), expect_rule="BB.NOFOLD_SUITED"))
 
-    # ── spot insuficiente (pós-flop ainda não modelado) ──────────────────────────
+    # ── pós-flop → guideline aproximada (não recusa mais) ────────────────────────
     results.append(case(
-        "Pós-flop (street=flop) → insuficiente",
+        "Pós-flop IP (street=flop) → guideline c-bet (DERIVED, não insuficiente)",
         HandContext(eff_stack_bb=30, hero_pos="BTN", hero_cards="AhKh", street="flop", players_left=6),
-        "bet", expect_insufficient=True))
+        "bet", expect_rec="bet", expect_source="DERIVED_FROM_PDF"))
 
     # ── raise/fold com <10bb punido forte ────────────────────────────────────────
     results.append(case(
@@ -181,9 +187,88 @@ def main() -> int:
         hero_action="call", hero_all_in=False, n_players=4, hero_voluntary=True, faced_allin=True,
         opener_pos="BTN", villain_action="shove", n_limpers=0, pot_total=2400, stack_chips=1200,
         hero_won=None, went_to_showdown=False, hero_busted=False, bb=100, hand_id="bub1"))
-    ok_bubble = a_bubble["outcome"] == "insuficiente"
-    print(f"[{'OK ' if ok_bubble else 'FAIL'}] Bolha call de shove sem range → insuficiente (não chuta)")
+    # agora a bolha é APROXIMADA (ICM): call loose de A9o vira erro com nota baixa, não "insuficiente"
+    ok_bubble = a_bubble["outcome"] == "erro" and (a_bubble["decision"]["source_type"] == "DERIVED_FROM_PDF")
+    print(f"[{'OK ' if ok_bubble else 'FAIL'}] Bolha call loose A9o → aproximação ICM = erro (não insuficiente)  "
+          f"[outcome={a_bubble['outcome']} src={a_bubble['decision'].get('source_type')} nota={a_bubble['decision'].get('nota')}]")
     results.append(ok_bubble)
+
+    # ── síntese: nunca recusa quando dá pra aproximar (testes da nova fase) ──────
+    print("\n— Range Synthesis —")
+    results.append(case(
+        "Resteal 14bb SB vs CO A5s (sem bucket exato) → shove",
+        HandContext(eff_stack_bb=14, hero_pos="SB", hero_cards="A5s", preflop_action="vs_raise", opener_pos="CO", players_left=6),
+        "shove", expect_rec="shove", expect_rule="RESTEAL.SHORT"))
+    results.append(case(
+        "Open shove 9bb BTN A8o → responde (grid 10bb = regra clara de push/fold)",
+        HandContext(eff_stack_bb=9, hero_pos="BTN", hero_cards="A8o", preflop_action="first_in", players_left=6),
+        "shove", expect_rec="shove", expect_score=(9, 10), expect_source="CANONICAL_RULE"))
+    results.append(case(
+        "Pós-flop IP vs BB (flop) → guideline c-bet (DERIVED, não insuficiente)",
+        HandContext(eff_stack_bb=30, hero_pos="BTN", hero_cards="AhKh", street="flop",
+                    opener_pos="BB", players_left=6),
+        "bet", expect_rec="bet", expect_source="DERIVED_FROM_PDF"))
+    results.append(case(
+        "Call especulativo 12bb vs open CO (resteal spot) → regra resteal pune",
+        HandContext(eff_stack_bb=12, hero_pos="SB", hero_cards="KJo", preflop_action="vs_raise", opener_pos="CO", players_left=6),
+        "call", expect_rec="fold", expect_rule="RESTEAL.SHORT"))
+    # essenciais ausentes → INSUFFICIENT (via query)
+    from pke import engine as _eng
+    q_nopos = _eng().query("o que faço com A8o e 9bb?", {"hero_cards": "A8o", "effective_stack_bb": 9})
+    ok_nopos = q_nopos["confidence"] == "insufficient" or "hero_position" in q_nopos.get("missing_info", [])
+    print(f"[{'OK ' if ok_nopos else 'FAIL'}] Sem posição → insufficient/pede posição  [{q_nopos.get('missing_info')}]")
+    results.append(ok_nopos)
+
+    # ── nota ponderada por impacto + caps ────────────────────────────────────────
+    print("\n— Nota ponderada por impacto —")
+    def view(dl, il, w, s):
+        return {"decision_label": dl, "impact_label": il, "impact_weight": w, "internal_score": s}
+
+    # T1/T2: 20 folds fáceis (10, peso 0.4) + 1 punt crítico (0, peso 4.0) → NÃO fica alto
+    agg = ta.aggregate_score([view("correct", "low", 0.4, 10) for _ in range(20)]
+                             + [view("major_error", "critical", 4.0, 0)])
+    ok = agg["pke_score"] is not None and agg["pke_score"] <= 6.5 and agg["media_simples"] >= 9
+    print(f"[{'OK ' if ok else 'FAIL'}] 20 folds(10) + 1 punt crítico(0) → nota {agg['pke_score']} "
+          f"(média simples {agg['media_simples']}) — não inflou")
+    results.append(ok)
+
+    # T4: cooler não penaliza
+    agg = ta.aggregate_score([view("correct", "high", 2.0, 10), view("cooler", "high", 2.0, 0)])
+    ok = agg["pke_score"] == 10.0
+    print(f"[{'OK ' if ok else 'FAIL'}] cooler não penaliza → nota {agg['pke_score']}")
+    results.append(ok)
+
+    # T5: insuficiente não entra
+    agg = ta.aggregate_score([view("correct", "medium", 1.0, 8), view("insufficient", "low", 0.0, None)])
+    ok = agg["pke_score"] == 8.0
+    print(f"[{'OK ' if ok else 'FAIL'}] insuficiente não entra → nota {agg['pke_score']}")
+    results.append(ok)
+
+    # T3: erro grave na bolha derruba bastante
+    agg = ta.aggregate_score([view("correct", "medium", 1.0, 9) for _ in range(5)]
+                             + [view("major_error", "critical", 4.0, 3)])
+    ok = agg["pke_score"] <= 6.5
+    print(f"[{'OK ' if ok else 'FAIL'}] 5 acertos + 1 erro grave bolha → nota {agg['pke_score']} (cai bastante)")
+    results.append(ok)
+
+    # T6: raise/fold <10bb → peso crítico
+    w6, il6 = ta._impact("push_fold", "middle", 8, "raise", "shove", "major_error", {})
+    ok = il6 == "critical" and w6 >= 4.0
+    print(f"[{'OK ' if ok else 'FAIL'}] raise/fold 8bb → impacto {il6} peso {w6}")
+    results.append(ok)
+
+    # T7: call especulativo short (resteal) erro grave → crítico
+    w7, il7 = ta._impact("resteal_short", "middle", 12, "call", "fold", "major_error", {})
+    ok = il7 == "critical"
+    print(f"[{'OK ' if ok else 'FAIL'}] call especulativo short → impacto {il7}")
+    results.append(ok)
+
+    # T8: acerto em push/fold importante pesa mais que fold trivial
+    w_pf, _ = ta._impact("push_fold", "middle", 8, "shove", "shove", "correct", {})
+    w_fold, il_fold = ta._impact("rfi", "early", 50, "fold", "fold", "correct", {})
+    ok = w_pf > w_fold and il_fold == "low"
+    print(f"[{'OK ' if ok else 'FAIL'}] push/fold importante (peso {w_pf}) > fold trivial (peso {w_fold}, {il_fold})")
+    results.append(ok)
 
     n_ok = sum(results)
     print(f"\nTOTAL {n_ok}/{len(results)} OK")

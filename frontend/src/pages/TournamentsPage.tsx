@@ -1008,8 +1008,21 @@ function TournamentsList({
   onAnalyze: (tid: string) => Promise<void>;
 }) {
   // Engine traz asc por data, mostra desc (mais recente primeiro)
-  const rows = [...tournaments].reverse();
+  const allRows = useMemo(() => [...tournaments].reverse(), [tournaments]);
   const hasSemMaos = tournaments.some((t) => tournamentStatus(t) === "sem_maos");
+
+  // paginação (desktop: páginas; mobile: carregar mais). Reseta ao mudar filtros.
+  const [perPage, setPerPage] = useState(25);
+  const [page, setPage] = useState(1);
+  const [mobileCount, setMobileCount] = useState(25);
+  useEffect(() => { setPage(1); setMobileCount(perPage); }, [tournaments, perPage]);
+
+  const total = allRows.length;
+  const pageCount = Math.max(1, Math.ceil(total / perPage));
+  const safePage = Math.min(page, pageCount);
+  const start = (safePage - 1) * perPage;
+  const pageRows = allRows.slice(start, start + perPage);
+  const mobileRows = allRows.slice(0, mobileCount);
 
   return (
     <div className="mt-2">
@@ -1019,9 +1032,9 @@ function TournamentsList({
           history — importe o .txt do PokerStars para receber análise PKE.
         </p>
       )}
-      {/* MOBILE: cards empilhados */}
+      {/* MOBILE: cards empilhados + carregar mais */}
       <div className="flex flex-col gap-2 sm:hidden">
-        {rows.map((t) => (
+        {mobileRows.map((t) => (
           <TournamentCard
             key={t.tournament_id}
             t={t}
@@ -1034,6 +1047,16 @@ function TournamentsList({
             onAnalyze={onAnalyze}
           />
         ))}
+        <div className="mt-1 flex flex-col items-center gap-2">
+          <span className="text-2xs text-ink-faint">
+            Mostrando {Math.min(mobileCount, total)} de {total} torneios
+          </span>
+          {mobileCount < total && (
+            <Button variant="ghost" size="sm" onClick={() => setMobileCount((c) => c + perPage)}>
+              Carregar mais
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* DESKTOP: tabela tradicional */}
@@ -1051,7 +1074,7 @@ function TournamentsList({
             </tr>
           </thead>
           <tbody>
-            {rows.map((t) => (
+            {pageRows.map((t) => (
               <TableRow
                 key={t.tournament_id}
                 t={t}
@@ -1067,6 +1090,34 @@ function TournamentsList({
           </tbody>
         </table>
       </Card>
+
+      {/* DESKTOP: paginação */}
+      <div className="hidden items-center justify-between gap-3 px-1 pt-3 text-xs text-ink-dim sm:flex">
+        <span>
+          Mostrando {total === 0 ? 0 : start + 1}–{Math.min(start + perPage, total)} de {total} torneios
+        </span>
+        <div className="flex items-center gap-3">
+          <label className="flex items-center gap-1.5 text-2xs text-ink-faint">
+            Por página
+            <select
+              value={perPage}
+              onChange={(e) => setPerPage(Number(e.target.value))}
+              className="rounded-ctl border border-border bg-surface-2 px-2 py-1 text-xs text-ink outline-none"
+            >
+              {[10, 25, 50].map((n) => <option key={n} value={n}>{n}</option>)}
+            </select>
+          </label>
+          <div className="flex items-center gap-1">
+            <Button variant="ghost" size="sm" disabled={safePage <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>
+              ‹ Anterior
+            </Button>
+            <span className="px-1 nums">{safePage}/{pageCount}</span>
+            <Button variant="ghost" size="sm" disabled={safePage >= pageCount} onClick={() => setPage((p) => Math.min(pageCount, p + 1))}>
+              Próxima ›
+            </Button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

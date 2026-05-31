@@ -557,6 +557,40 @@ context, knowledge, phase/icm, spot, decision (handlers por spot), scorer, expla
 - Validado no navegador o ciclo completo: importar → analisar → "Treinar meus leaks" →
   treino ponderado → encerrar → resumo com erros revisáveis + desempenho nos leaks.
 
+**Fase: Range Synthesis + cards de mão ricos** — ✅ implementado e testado:
+- **Range Synthesis (`pke/range_synthesis.py`):** quando NÃO há range exato, o motor aproxima
+  em camadas (exact → regra/predicado → ICM heuristic → low-stakes → INSUFFICIENT só no fim).
+  `Recommendation` ganhou `source_type` (CANONICAL_RULE / EXTRACTED_RANGE / DERIVED_FROM_PDF /
+  HEURISTIC_LOW_STAKES / INSUFFICIENT), `confidence`, `range_status`, `used_proxy`, `warning`.
+  - Bolha sem range de call → heurística de ICM (fold/call por tier+role, medium_low, warning HRC)
+    em vez de recusar. Pós-flop IP vs BB → guideline c-bet 33% (DERIVED). HU curto → push/fold.
+  - **INSUFFICIENT só por falta de info essencial** (mão/posição/stack/ação) — nunca por falta de range.
+  - **Scorer cauteloso** em spots aproximados (acerto cap 8; erro 4–6; mas call loose na bolha = 3;
+    regras claras como push/fold e resteal seguem estritas — raise/fold <10bb punido forte).
+  - Golden ampliado: **29/29** (inclui resteal 14bb, open shove 9bb, bolha ICM, pós-flop guideline,
+    call especulativo 12bb, sem posição → insufficient).
+- **Parser enriquecido (`hand_history_parser.py`):** agora expõe blinds, ante, stacks (hero/vilão em
+  fichas e bb), stack efetivo, opener_pos/action/size, hero_action_size, allin_amount, board,
+  showdown, villain_cards, pot_total, hero_net_chips, hero_busted, street e `preflop_action_summary`
+  (linha humana da ação). Verificado em mãos sintéticas e nos dados reais (re-parse do raw_text).
+- **Relatório (`tournament_analysis`):** cada mão crítica em `maos[]` carrega `hh` (todos os campos
+  acima) + `source_type/confidence/range_status/warning`. Componente `HandDetail` no `PkeReport`
+  renderiza os 5 blocos (Situação / Ação / Decisão / Regra / Resultado).
+
+**Fase: Nota ponderada por impacto + labels por mão + paginação** — ✅ feito e testado (36/36 golden):
+- **Nota PKE única e ponderada** (`tournament_analysis.aggregate_score`): média ponderada por
+  `impact_weight` (folds fáceis pesam 0.25–0.5; push/fold/resteal/all-in/bolha/pote grande 2.0;
+  raise-fold<10bb / punt / bustout / call shove loose 4.0). **Caps**: 1 grave→8.5, 2→7.5, 3+→6.5,
+  crítico ICM/punt→6.0, múltiplos punts→5.0. Insuficiente não entra; cooler não penaliza.
+  `pke_score_explanation` no relatório. Persistido em `pke_score_avg` (lista "Meus Torneios").
+  Média simples vira só debug (`media_notas`), **não aparece na UI**.
+- **Por mão**: `decision_label` (correct/minor/medium/major_error/cooler/insufficient) +
+  `impact_label` (low/medium/high/critical) + `impact_weight` + `internal_score` (debug). UI da mão
+  **remove a nota numérica** e mostra badges de Status + Impacto (`PkeReport` Summary/HandCard).
+- **Paginação** na lista de torneios (`TournamentsPage`): desktop 10/25/50 + contador
+  "Mostrando X–Y de N" + ‹Anterior/Próxima›; mobile "Carregar mais"; reseta ao mudar filtros.
+- Nada do ciclo PKE validado foi tocado (engine, geração de treino, leaks, revisão, consulta).
+
 ## 15. Roadmap
 
 **MVP (evolução mínima, reaproveita tudo):**

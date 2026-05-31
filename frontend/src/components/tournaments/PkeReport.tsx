@@ -43,6 +43,22 @@ const OUTCOME: Record<string, { label: string; cls: string }> = {
   insuficiente: { label: "Insuficiente", cls: "bg-surface-2 text-ink-faint" },
 };
 
+// status da decisão (sem nota numérica) e impacto — só cores/labels
+const DEC_BADGE: Record<string, { label: string; cls: string; bar: string }> = {
+  correct: { label: "Acerto", cls: "bg-action-green/15 text-action-green", bar: "bg-action-green/60" },
+  minor_error: { label: "Erro leve", cls: "bg-gold/15 text-gold", bar: "bg-gold/50" },
+  medium_error: { label: "Erro médio", cls: "bg-orange-500/15 text-orange-400", bar: "bg-orange-500/60" },
+  major_error: { label: "Erro grave", cls: "bg-action-red/15 text-action-red", bar: "bg-action-red/70" },
+  cooler: { label: "Cooler", cls: "bg-action-blue/15 text-action-blue", bar: "bg-action-blue/60" },
+  insufficient: { label: "Insuficiente", cls: "bg-surface-2 text-ink-faint", bar: "bg-border" },
+};
+const IMP_BADGE: Record<string, { label: string; cls: string }> = {
+  low: { label: "Impacto baixo", cls: "bg-surface-2 text-ink-faint" },
+  medium: { label: "Impacto médio", cls: "bg-surface-2 text-ink-dim" },
+  high: { label: "Impacto alto", cls: "bg-gold/10 text-gold" },
+  critical: { label: "Impacto crítico", cls: "bg-action-red/15 text-action-red" },
+};
+
 function lbl(map: Record<string, string>, k: string | null | undefined) {
   return k ? map[k] ?? k : "—";
 }
@@ -108,7 +124,7 @@ export function PkeReport({
       if (fase !== "all" && m.fase !== fase) return false;
       if (spot !== "all" && m.spot !== spot) return false;
       if (filter === "erros") return m.outcome === "erro";
-      if (filter === "graves") return m.nota != null && m.nota <= 4;
+      if (filter === "graves") return m.decision_label === "major_error";
       if (filter === "boas") return m.outcome === "decisao_boa";
       if (filter === "coolers") return m.outcome === "cooler";
       if (filter === "insuf") return m.outcome === "insuficiente";
@@ -203,38 +219,30 @@ export function PkeReport({
 
 // ── resumo ──────────────────────────────────────────────────────────────────────
 export function Summary({ report }: { report: TournamentReport }) {
-  const media = report.media_notas;
-  const mediaCls = media == null ? "text-ink-faint"
-    : media >= 7 ? "text-action-green" : media >= 5 ? "text-gold" : "text-action-red";
+  // NOTA ÚNICA visível = ponderada por impacto (fallback média só se faltar).
+  const score = report.pke_score ?? report.media_notas;
+  const cls = score == null ? "text-ink-faint"
+    : score >= 7 ? "text-action-green" : score >= 5 ? "text-gold" : "text-action-red";
+  const graves = report.pke_grave_errors ?? report.erros_graves;
   return (
     <Card className="p-4">
       <div className="flex items-center gap-4">
         <div className="text-center">
-          <div className={cn("text-4xl font-bold tabular-nums", mediaCls)}>
-            {media != null ? media.toFixed(1) : "—"}
+          <div className={cn("text-4xl font-bold tabular-nums", cls)}>
+            {score != null ? score.toFixed(1) : "—"}
           </div>
-          <div className="text-2xs uppercase tracking-[0.1em] text-ink-faint">Média</div>
+          <div className="text-2xs uppercase tracking-[0.1em] text-ink-faint">Nota PKE</div>
         </div>
-        <div className="grid flex-1 grid-cols-2 gap-2 sm:grid-cols-4">
+        <div className="grid flex-1 grid-cols-2 gap-2 sm:grid-cols-3">
           <Mini label="Críticas" value={report.maos_criticas} />
-          <Mini label="Com nota" value={report.maos_com_nota} />
-          <Mini label="Erros graves" value={report.erros_graves} tone="red" />
+          <Mini label="Erros graves" value={graves} tone="red" />
           <Mini label="Fase pior" text={lbl(PHASE_LABEL, report.fase_com_mais_erros)} />
         </div>
       </div>
-      {report.tipos_erro_top.length > 0 && (
-        <div className="mt-3 border-t border-border pt-3">
-          <div className="mb-1.5 text-2xs uppercase tracking-[0.1em] text-ink-faint">
-            Principais tipos de erro
-          </div>
-          <div className="flex flex-wrap gap-1.5">
-            {report.tipos_erro_top.map((t) => (
-              <span key={t.tipo} className="rounded-full bg-surface-2 px-2 py-1 text-2xs text-ink-dim">
-                {t.tipo.replace(/_/g, " ")} · {t.n}
-              </span>
-            ))}
-          </div>
-        </div>
+      {report.pke_score_explanation && (
+        <p className="mt-3 border-t border-border pt-3 text-[13px] leading-relaxed text-ink-dim">
+          {report.pke_score_explanation}
+        </p>
       )}
     </Card>
   );
@@ -391,7 +399,7 @@ export function HandList({
       if (fase !== "all" && m.fase !== fase) return false;
       if (spot !== "all" && m.spot !== spot) return false;
       if (filter === "erros") return m.outcome === "erro";
-      if (filter === "graves") return m.nota != null && m.nota <= 4;
+      if (filter === "graves") return m.decision_label === "major_error";
       if (filter === "boas") return m.outcome === "decisao_boa";
       if (filter === "coolers") return m.outcome === "cooler";
       if (filter === "insuf") return m.outcome === "insuficiente";
@@ -444,15 +452,15 @@ function HandCard({
   onAskHand?: (hand: ReportHand) => void;
 }) {
   const [open, setOpen] = useState(false);
-  const out = OUTCOME[m.outcome] ?? OUTCOME.insuficiente;
+  const dec = DEC_BADGE[m.decision_label ?? ""] ?? DEC_BADGE.insufficient;
+  const imp = IMP_BADGE[m.impact_label ?? ""];
   const mode = trainModeFor(m.spot);
   const ruleId = ruleIdOf(m.regra[0]);
   return (
     <Card className="overflow-hidden p-0">
       <button onClick={() => setOpen((v) => !v)} className="flex w-full items-center gap-3 p-3 text-left">
-        <span className={cn("grid h-9 w-9 shrink-0 place-items-center rounded-lg text-sm font-bold tabular-nums", notaCls(m.nota))}>
-          {m.nota != null ? m.nota : "—"}
-        </span>
+        {/* marcador de severidade (sem nota numérica) */}
+        <span className={cn("h-9 w-1.5 shrink-0 rounded-full", dec.bar)} />
         <div className="flex shrink-0 items-center gap-2">
           <span className="rounded-ctl border border-border bg-surface-2 px-2 py-0.5 text-2xs font-semibold text-ink-dim">
             {m.pos ?? "?"}

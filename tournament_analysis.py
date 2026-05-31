@@ -246,11 +246,81 @@ def detect_leaks(analyzed: list[dict]) -> list[dict]:
 
 # ── relatório do torneio ────────────────────────────────────────────────────────────
 
+# ── classificação de decisão (severidade) e impacto (peso) por mão ───────────────
+_SHOWN_LABEL = {
+    "correct": "Acerto", "minor_error": "Erro leve", "medium_error": "Erro médio",
+    "major_error": "Erro grave", "cooler": "Cooler", "insufficient": "Insuficiente",
+}
+_SHOWN_IMPACT = {"low": "Impacto baixo", "medium": "Impacto médio",
+                 "high": "Impacto alto", "critical": "Impacto crítico"}
+
+
+def _decision_label(outcome: str, score) -> str:
+    if outcome == "insuficiente":
+        return "insufficient"
+    if outcome == "cooler":
+        return "cooler"
+    if score is None:
+        return "insufficient"
+    if score >= 8:
+        return "correct"
+    if score >= 6:
+        return "minor_error"
+    if score >= 4:
+        return "medium_error"
+    return "major_error"
+
+
+def _impact(spot, fase, eff, line, rec, label, hh) -> tuple[float, str]:
+    """impact_weight (0.25–5.0) + impact_label (low/medium/high/critical).
+
+    Folds óbvios pesam pouco; push/fold, resteal, all-in, bolha, pote grande pesam
+    muito; raise/fold <10bb, punts, bustout e erros graves de ICM são críticos.
+    """
+    eff = eff or 0
+    allin = bool(hh.get("faced_allin")) or line == "shove" or rec == "shove" or bool(hh.get("hero_busted"))
+    busted = bool(hh.get("hero_busted"))
+    pot, hs = hh.get("pot_total"), hh.get("hero_stack_chips")
+    big_pot = bool(pot and hs and pot >= hs)
+
+    if line == "fold" and rec == "fold" and not allin and not busted:
+        w = 0.4                                   # fold óbvio / trivial
+    elif spot in ("rfi", "vs_limp", "bb_defense", "blind_war_sb"):
+        w = 1.0                                   # decisão pré-flop normal
+    elif (spot in ("push_fold", "resteal_short", "bubble_call")
+          or (spot == "vs_open" and eff <= 20) or allin or fase == "bubble" or big_pot):
+        w = 2.0                                   # alto risco / muda o stack
+    else:
+        w = 1.0
+
+    raise_fold_sub10 = spot == "push_fold" and eff < 10 and line == "raise"
+    critical = busted or raise_fold_sub10 or (
+        label == "major_error" and (fase == "bubble" or spot == "bubble_call"
+                                    or allin or spot in ("push_fold", "resteal_short")))
+    if critical:
+        w = max(w, 4.0)
+
+    il = "low" if w <= 0.5 else "medium" if w <= 1.5 else "high" if w <= 2.5 else "critical"
+    return round(w, 2), il
+
+
 def _hand_view(a: dict) -> dict:
     """Visão completa de uma mão crítica para a UI (só exibição)."""
     d = a["decision"]
     dbg = a.get("debug") or {}
+    hh = a.get("hh") or {}
+    _outcome = a["outcome"]
+    _score = d.get("nota")
+    _dlabel = _decision_label(_outcome, _score)
+    _w, _ilabel = _impact(dbg.get("spot"), d.get("fase"), d.get("eff_stack_bb"),
+                          d.get("linha_hero"), d.get("acao_recomendada"), _dlabel, hh)
     return {
+        "decision_label": _dlabel,
+        "impact_label": _ilabel,
+        "impact_weight": _w,
+        "internal_score": _score,        # debug/cálculo — NÃO exibir como nota na UI da mão
+        "shown_label": _SHOWN_LABEL.get(_dlabel, _dlabel),
+        "shown_impact": _SHOWN_IMPACT.get(_ilabel, _ilabel),
         "hand_id": a.get("hand_id"),
         "fase": d.get("fase"),
         "spot": dbg.get("spot"),
@@ -271,19 +341,86 @@ def _hand_view(a: dict) -> dict:
         "motivos_criticos": a.get("critical_reasons") or [],
         "insuficiente": d.get("insuficiente", False),
         "falta_info": d.get("falta_info") or [],
+        # proveniência da síntese de range
+        "source_type": d.get("source_type"),
+        "confidence": d.get("confidence"),
+        "range_status": d.get("range_status"),
+        "warning": d.get("warning"),
+        # dados da mão (hand history) para o card expandido
+        "hh": hh,
     }
+
+
+def aggregate_score(maos: list[dict]) -> dict:
+    """Nota PKE ponderada por impacto + caps por erro grave.
+
+    - insuficiente NÃO entra; cooler NÃO penaliza (excluído da média).
+    - média ponderada por impact_weight (folds fáceis pesam pouco).
+    - caps: erros graves limitam o teto da nota (punt não fica com nota alta).
+    Devolve {pke_score, media_simples, grave_errors, critical_punts, explanation}.
+    """
+    contrib = []          # (internal_score, weight)
+    grave = 0
+    critical_punts = 0
+    simples = []
+    for m in maos:
+        lbl = m["decision_label"]
+        if lbl in ("insufficient", "cooler"):
+            continue
+        s = m["internal_score"]
+        if s is None:
+            continue
+        contrib.append((s, m["impact_weight"]))
+        simples.append(s)
+        if lbl == "major_error":
+            grave += 1
+            if m["impact_label"] == "critical":
+                critical_punts += 1
+
+    if not contrib:
+        return {"pke_score": None, "media_simples": None, "grave_errors": 0,
+                "critical_punts": 0, "explanation": "Sem decisões avaliáveis (só folds triviais/insuficientes/coolers)."}
+
+    wsum = sum(w for _, w in contrib)
+    weighted = sum(s * w for s, w in contrib) / wsum
+    media_simples = round(sum(simples) / len(simples), 2)
+
+    cap = 10.0
+    if grave >= 1:
+        cap = 8.5
+    if grave >= 2:
+        cap = 7.5
+    if grave >= 3:
+        cap = 6.5
+    if critical_punts >= 1:
+        cap = min(cap, 6.0)
+    if critical_punts >= 2:
+        cap = min(cap, 5.0)
+    pke = round(min(weighted, cap), 1)
+
+    # explicação curta
+    if grave == 0 and pke >= 7:
+        expl = "Nota boa: poucos erros graves e boas decisões nos spots de maior impacto. Folds fáceis tiveram peso baixo."
+    elif grave >= 1:
+        extra = " (incluindo erro crítico de ICM/all-in)" if critical_punts else ""
+        expl = (f"Nota impactada por {grave} erro(s) grave(s){extra} em spots de alto impacto. "
+                "Folds fáceis tiveram peso baixo; erros em push/fold, resteal e bolha pesaram mais.")
+    else:
+        expl = "Decisões majoritariamente corretas; mãos triviais tiveram peso baixo."
+    return {"pke_score": pke, "media_simples": media_simples, "grave_errors": grave,
+            "critical_punts": critical_punts, "explanation": expl}
 
 
 def build_report(tournament_id: str, analyzed: list[dict]) -> dict:
     maos = [_hand_view(a) for a in analyzed]
     scored = [m for m in maos if m["nota"] is not None]
-    notas = [m["nota"] for m in scored]
-    media = round(sum(notas) / len(notas), 2) if notas else None
+
+    agg = aggregate_score(maos)
 
     # ordena pior→melhor; insuficientes não entram em "scored"
     piores = sorted(scored, key=lambda m: m["nota"])[:5]
     melhores = [m for m in sorted(scored, key=lambda m: -m["nota"]) if m["nota"] >= 8][:5]
-    erros_graves = sum(1 for m in scored if m["nota"] <= 4)
+    erros_graves = agg["grave_errors"]
 
     # fase com mais erros (nota < 6) — insuficiente NÃO conta como erro
     erros_por_fase: dict[str, int] = {}
@@ -299,13 +436,21 @@ def build_report(tournament_id: str, analyzed: list[dict]) -> dict:
 
     leaks = detect_leaks(analyzed)   # cooler/insuficiente não viram leak (só nota<6)
     treino = sorted({l["exercicio"] for l in leaks if l["exercicio"]})
+    main_leak = leaks[0]["exercicio"] if leaks else None
 
     return {
         "tournament_id": tournament_id,
         "maos_no_torneio": None,            # preenchido pelo hands_engine
         "maos_criticas": len(maos),
         "maos_com_nota": len(scored),
-        "media_notas": media,
+        # NOTA PRINCIPAL (única, visível): ponderada por impacto + caps
+        "pke_score": agg["pke_score"],
+        "pke_score_explanation": agg["explanation"],
+        "pke_grave_errors": erros_graves,
+        "pke_main_leak": main_leak,
+        "pke_critical_hands": len(maos),
+        # interno/debug (não exibir como nota principal)
+        "media_notas": agg["media_simples"],
         "erros_graves": erros_graves,
         "fase_com_mais_erros": fase_pior,
         "erros_por_fase": erros_por_fase,

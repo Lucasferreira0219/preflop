@@ -385,7 +385,13 @@ export interface TournamentReport {
   maos_no_torneio: number | null;
   maos_criticas: number;
   maos_com_nota: number;
-  media_notas: number | null;
+  // NOTA PRINCIPAL (única, visível) — ponderada por impacto + caps
+  pke_score: number | null;
+  pke_score_explanation?: string | null;
+  pke_grave_errors?: number;
+  pke_main_leak?: string | null;
+  pke_critical_hands?: number;
+  media_notas: number | null;  // interno/debug — não exibir como nota principal
   erros_graves: number;
   fase_com_mais_erros: string | null;
   erros_por_fase: Record<string, number>;

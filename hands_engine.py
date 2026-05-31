@@ -261,9 +261,10 @@ def _persist_pke_summary(tournament_id, report):
     try:
         te.set_pke_summary(tournament_id, {
             "pke_analyzed": True,
-            "pke_score_avg": report.get("media_notas"),
-            "pke_critical_hands": report.get("maos_criticas"),
-            "pke_grave_errors": report.get("erros_graves"),
+            # NOTA PRINCIPAL = ponderada por impacto (não a média simples)
+            "pke_score_avg": report.get("pke_score"),
+            "pke_critical_hands": report.get("pke_critical_hands") or report.get("maos_criticas"),
+            "pke_grave_errors": report.get("pke_grave_errors"),
             "pke_main_leak": (leaks[0].get("id") if leaks else None),
             "pke_leaks": leaks[:3],
             "pke_last_analyzed_at": int(time.time()),
