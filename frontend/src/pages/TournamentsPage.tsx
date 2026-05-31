@@ -444,9 +444,19 @@ function notaCls(n: number | null | undefined): string {
   return "text-gold";
 }
 
+const SEM_MAOS_TITLE =
+  "Sem hand history importado. Importe o .txt do PokerStars para receber análise PKE.";
+
 function StatusChip({ t }: { t: Tournament }) {
   const st = tournamentStatus(t);
-  return <span className={cn("rounded-full px-2 py-0.5 text-2xs font-semibold", STATUS_CLS[st])}>{STATUS_LABEL[st]}</span>;
+  return (
+    <span
+      title={st === "sem_maos" ? SEM_MAOS_TITLE : undefined}
+      className={cn("cursor-default rounded-full px-2 py-0.5 text-2xs font-semibold", STATUS_CLS[st])}
+    >
+      {STATUS_LABEL[st]}
+    </span>
+  );
 }
 
 function AnalyzeBtn({ t, onAnalyze }: { t: Tournament; onAnalyze: (tid: string) => Promise<void> }) {
