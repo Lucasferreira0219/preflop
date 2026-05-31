@@ -162,9 +162,9 @@ def import_text(text: str) -> dict:
                 continue
 
             prize_cents = t.get("prize_cents")
-            # se o summary trouxe prize (mesmo $0), considera "known"
             sources = t.get("source_files", set()) or set()
-            prize_known = 1 if ("summary" in sources and prize_cents is not None) else 0
+            # known quando: summary confirmou OU HH extraiu explicitamente (prize_cents presente)
+            prize_known = 1 if prize_cents is not None else 0
 
             c.execute("""
                 INSERT INTO tournaments
