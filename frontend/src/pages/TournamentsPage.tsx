@@ -64,6 +64,7 @@ const ROOM_ALL = "__all__";
 
 export function TournamentsPage() {
   const { openTournament } = useApp();
+  const navigate = useNavigate();
   const [error, setError] = useState<string | null>(null);
 
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
@@ -75,6 +76,7 @@ export function TournamentsPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showNew, setShowNew] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [outdated, setOutdated] = useState(0);
   const importRef = useRef<HTMLDivElement>(null);
 
   async function refresh(f = filters) {
@@ -96,6 +98,7 @@ export function TournamentsPage() {
     refresh().catch((e) =>
       setError(e instanceof Error ? e.message : "Falha ao carregar torneios."),
     );
+    api.getPkeStatus().then((s) => setOutdated(s.pke_outdated)).catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -205,6 +208,17 @@ export function TournamentsPage() {
         <div ref={importRef} className="scroll-mt-20">
           <TournamentImport onImported={() => refresh()} />
         </div>
+
+        {outdated > 0 && (
+          <Card className="mt-3 flex items-center justify-between gap-3 border-gold/30 bg-gold/5 p-3">
+            <span className="text-xs text-ink-dim">
+              Existem {outdated} torneio(s) analisados com versão antiga do PKE. Reprocessar agora.
+            </span>
+            <Button variant="ghost" size="sm" onClick={() => navigate("/settings")}>
+              Reprocessar análises
+            </Button>
+          </Card>
+        )}
 
         {error && (
           <Card className="mt-3 flex items-center gap-2 border-action-red/30 p-3 text-sm text-action-red">

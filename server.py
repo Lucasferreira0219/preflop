@@ -26,6 +26,7 @@ from hands_api import HandsApi
 from tournaments_api import TournamentsApi
 from pke import engine as pke_engine
 from pke_sim_api import PkeSimApi
+from settings_api import SettingsApi
 import api as api_module
 import simulator_engine
 import insights_api as insights_module
@@ -44,6 +45,7 @@ insights_api = InsightsApi()
 hands_api    = HandsApi()
 tour_api     = TournamentsApi()
 pke_sim      = PkeSimApi()
+settings_api = SettingsApi()
 
 # Pré-carrega ranges em memória no startup
 @app.on_event("startup")
@@ -183,6 +185,21 @@ async def pke_sim_session():
 @app.post("/api/pke/sim/reset")
 async def pke_sim_reset():
     return pke_sim.reset_session()
+
+# ── Configurações / Manutenção PKE ─────────────────────────────────────────────
+@app.get("/api/settings/pke_status")
+async def settings_pke_status():
+    return settings_api.pke_status()
+
+@app.post("/api/settings/reprocess_pke")
+async def settings_reprocess_pke(request: Request):
+    b = await _read_obj(request)
+    return settings_api.reprocess_pke(b.get("scope", "all"),
+                                      bool(b.get("recalculate_sessions", True)))
+
+@app.post("/api/settings/recalculate_sessions")
+async def settings_recalculate_sessions():
+    return settings_api.recalculate_sessions()
 
 @app.post("/api/pke/rule")
 async def pke_rule(request: Request):

@@ -13,6 +13,7 @@ import { TournamentTypesPage } from "@/pages/TournamentTypesPage";
 import { SessionsPage } from "@/pages/SessionsPage";
 import { AskPage } from "@/pages/AskPage";
 import { TrainPage } from "@/pages/TrainPage";
+import { SettingsPage } from "@/pages/SettingsPage";
 import { BASE } from "@/lib/api";
 
 export function App() {
@@ -30,6 +31,7 @@ export function App() {
             <Route path="/sessions" element={<SessionsPage />} />
             <Route path="/perguntar" element={<AskPage />} />
             <Route path="/treinar" element={<TrainPage />} />
+            <Route path="/settings" element={<SettingsPage />} />
           </Routes>
           <SettingsDrawer />
           <GlossaryDialog />

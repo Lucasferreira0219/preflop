@@ -1,5 +1,6 @@
 {
   "schema_version": 1,
+  "version": "2026-05-31",
   "source_master": "guia_de_bolso",
   "priorities": { "guia_de_bolso": 100, "especifico": 50 },
   "rules": [

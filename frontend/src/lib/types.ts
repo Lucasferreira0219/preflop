@@ -415,6 +415,41 @@ export interface StudyOverview {
   tem_revisao?: boolean;
 }
 
+// ── Configurações / Manutenção PKE ──────────────────────────────────────────────
+
+export interface PkeStatus {
+  pke_version: string;
+  rules_version: string;
+  ranges_version: string;
+  rules_updated_at: string | null;
+  last_reprocess_at: string | null;
+  tournaments_total: number;
+  with_hand_history: number;
+  without_hand_history: number;
+  pke_analyzed: number;
+  pke_outdated: number;
+  pke_not_analyzed: number;
+}
+
+export interface ReprocessError {
+  tournament_id: string;
+  motivo: string;
+  acao_sugerida: string;
+}
+
+export interface ReprocessResult {
+  scope: string;
+  processed: number;
+  updated: number;
+  skipped: number;
+  failed: number;
+  errors: ReprocessError[];
+  started_at: string;
+  finished_at: string;
+  elapsed_s: number;
+  sessions?: { recalculated: boolean; days?: number; error?: string };
+}
+
 // ── Planilha de torneios ──────────────────────────────────────────────────────
 
 export type PrizeSource = "manual" | "auto" | null;

@@ -11,7 +11,9 @@ import type {
   PkeQueryContext,
   PkeQueryResponse,
   PkeRule,
+  PkeStatus,
   Question,
+  ReprocessResult,
   StudyOverview,
   SimCorrection,
   SimSession,
@@ -41,13 +43,19 @@ async function call<T>(method: string, args: unknown[] = []): Promise<T> {
   return (await res.json()) as T;
 }
 
-// POST com body objeto (endpoints /api/pke/* que não usam o array padrão).
+// POST com body objeto (endpoints /api/pke/* e /api/settings/* que não usam o array padrão).
 async function _postObj<T>(path: string, body: unknown): Promise<T> {
   const res = await fetch(`${BASE}${path}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
+  if (!res.ok) throw new Error(`API ${path} HTTP ${res.status}`);
+  return (await res.json()) as T;
+}
+
+async function _getJson<T>(path: string): Promise<T> {
+  const res = await fetch(`${BASE}${path}`, { method: "GET" });
   if (!res.ok) throw new Error(`API ${path} HTTP ${res.status}`);
   return (await res.json()) as T;
 }
@@ -123,6 +131,13 @@ export const api = {
     _postObj<SimCorrection>("/api/pke/sim/answer", { spot_id: spotId, hero_answer: heroAnswer }),
   pkeSimSession: () => _postObj<SimSession>("/api/pke/sim/session", {}),
   pkeSimReset: () => _postObj<{ ok: boolean }>("/api/pke/sim/reset", {}),
+
+  // ── Configurações / Manutenção PKE ──────────────────────────────────────────
+  getPkeStatus: () => _getJson<PkeStatus>("/api/settings/pke_status"),
+  reprocessPke: (scope: string, recalculate_sessions = true) =>
+    _postObj<ReprocessResult>("/api/settings/reprocess_pke", { scope, recalculate_sessions }),
+  recalculateSessions: () =>
+    _postObj<{ recalculated: boolean; days?: number }>("/api/settings/recalculate_sessions", {}),
   pkeRule: (id: string) => _postObj<PkeRule>("/api/pke/rule", { id }),
 
   studyOverview: () => call<StudyOverview>("study_overview", []),

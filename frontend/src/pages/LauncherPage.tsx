@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ArrowRight, BookOpen, Dumbbell, Grid3x3, LineChart, Loader2,
-  MessageCircleQuestion, RotateCcw, Target, Upload,
+  MessageCircleQuestion, RotateCcw, Settings, Target, Upload,
 } from "lucide-react";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { Card } from "@/components/ui/Card";
@@ -179,6 +179,12 @@ export function LauncherPage() {
           title="Perguntar ao PKE"
           desc="Tire dúvidas de estratégia. Resposta pelo Guia de Bolso, com regra citada."
           onClick={() => navigate("/perguntar")}
+        />
+        <LaunchCard
+          icon={<Settings className="h-5 w-5" />}
+          title="Configurações"
+          desc="Manutenção PKE: reprocessar torneios quando regras/ranges/nota mudarem."
+          onClick={() => navigate("/settings")}
         />
       </div>
 

@@ -112,9 +112,13 @@ def _init_schema():
             ("pke_critical_hands", "INTEGER"), ("pke_grave_errors", "INTEGER"),
             ("pke_main_leak", "TEXT"), ("pke_leaks_json", "TEXT"),
             ("pke_last_analyzed_at", "INTEGER"),
+            # versionamento da análise (detectar "análise antiga")
+            ("pke_analysis_version", "TEXT"), ("pke_rules_version", "TEXT"),
         ]:
             if col not in cols:
                 c.execute(f"ALTER TABLE tournaments ADD COLUMN {col} {decl}")
+        # meta key/value (last_reprocess_at etc.)
+        c.execute("CREATE TABLE IF NOT EXISTS pke_meta (key TEXT PRIMARY KEY, value TEXT)")
         # Índice de room criado após garantir que a coluna existe.
         c.execute("CREATE INDEX IF NOT EXISTS idx_t_room ON tournaments(room)")
 
@@ -705,7 +709,8 @@ def set_pke_summary(tournament_id: str, summary: dict) -> None:
         c.execute(
             "UPDATE tournaments SET pke_analyzed = ?, pke_score_avg = ?, "
             "pke_critical_hands = ?, pke_grave_errors = ?, pke_main_leak = ?, "
-            "pke_leaks_json = ?, pke_last_analyzed_at = ?, updated_ts = ? "
+            "pke_leaks_json = ?, pke_last_analyzed_at = ?, "
+            "pke_analysis_version = ?, pke_rules_version = ?, updated_ts = ? "
             "WHERE tournament_id = ?",
             (
                 1 if summary.get("pke_analyzed") else 0,
@@ -715,10 +720,51 @@ def set_pke_summary(tournament_id: str, summary: dict) -> None:
                 summary.get("pke_main_leak"),
                 json.dumps(leaks, ensure_ascii=False) if leaks else None,
                 summary.get("pke_last_analyzed_at") or int(time.time()),
+                summary.get("pke_analysis_version"),
+                summary.get("pke_rules_version"),
                 int(time.time()),
                 tournament_id,
             ),
         )
+
+
+# ── meta (key/value) e contagens de status ────────────────────────────────────
+
+def get_meta(key: str) -> str | None:
+    with _conn() as c:
+        row = c.execute("SELECT value FROM pke_meta WHERE key = ?", (key,)).fetchone()
+    return row["value"] if row else None
+
+
+def set_meta(key: str, value: str) -> None:
+    with _conn() as c:
+        c.execute(
+            "INSERT INTO pke_meta (key, value) VALUES (?, ?) "
+            "ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+            (key, value),
+        )
+
+
+def pke_counts(current_pke_version: str, current_rules_version: str) -> dict:
+    """Contagens de status do PKE para a tela de Configurações."""
+    with _conn() as c:
+        total = c.execute("SELECT COUNT(*) n FROM tournaments").fetchone()["n"]
+        analyzed = c.execute(
+            "SELECT COUNT(*) n FROM tournaments WHERE pke_analyzed = 1").fetchone()["n"]
+        outdated = c.execute(
+            "SELECT COUNT(*) n FROM tournaments WHERE pke_analyzed = 1 AND "
+            "(COALESCE(pke_analysis_version,'') <> ? OR COALESCE(pke_rules_version,'') <> ?)",
+            (current_pke_version, current_rules_version)).fetchone()["n"]
+    return {"tournaments_total": total, "pke_analyzed": analyzed, "pke_outdated": outdated}
+
+
+def tournament_ids(only_analyzed: bool = False) -> list[str]:
+    with _conn() as c:
+        sql = "SELECT tournament_id FROM tournaments"
+        if only_analyzed:
+            sql += " WHERE pke_analyzed = 1"
+        sql += " ORDER BY played_at ASC"
+        return [r["tournament_id"] for r in c.execute(sql).fetchall()]
 
 
 # ── Tipos de torneio (estruturas de payout) ───────────────────────────────────

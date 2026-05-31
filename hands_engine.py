@@ -259,6 +259,7 @@ def _persist_pke_summary(tournament_id, report):
     """Grava o resumo denormalizado do PKE na linha do torneio (Meus Torneios)."""
     leaks = report.get("leaks") or []
     try:
+        from pke import version as pkever
         te.set_pke_summary(tournament_id, {
             "pke_analyzed": True,
             # NOTA PRINCIPAL = ponderada por impacto (não a média simples)
@@ -268,6 +269,9 @@ def _persist_pke_summary(tournament_id, report):
             "pke_main_leak": (leaks[0].get("id") if leaks else None),
             "pke_leaks": leaks[:3],
             "pke_last_analyzed_at": int(time.time()),
+            # versionamento da análise (detectar "análise antiga")
+            "pke_analysis_version": pkever.PKE_VERSION,
+            "pke_rules_version": pkever.rules_version(),
         })
     except Exception:  # persistência é aditiva; nunca quebrar a análise
         if os.environ.get("PKE_DEBUG"):
@@ -301,6 +305,15 @@ def study_overview():
         "leaks": (rep.get("leaks") or [])[:3],
         "tem_revisao": (rep.get("erros_graves", 0) or 0) > 0,
     }
+
+
+def tids_with_hands():
+    """tournament_ids distintos que têm hand history salva (imported_hands)."""
+    with _conn() as c:
+        rows = c.execute(
+            "SELECT DISTINCT tournament_id FROM imported_hands "
+            "WHERE tournament_id IS NOT NULL").fetchall()
+    return [r["tournament_id"] for r in rows]
 
 
 def leak_weights(tournament_id=None):
