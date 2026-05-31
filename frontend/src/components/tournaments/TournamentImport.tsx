@@ -1,10 +1,8 @@
-import { useRef, useState } from "react";
+﻿import { useRef, useState } from "react";
 import { CheckCircle2, Loader2, Upload, X } from "lucide-react";
 import { Card } from "@/components/ui/Card";
-import { PkeBadge } from "@/components/PkeBadge";
 import { api } from "@/lib/api";
 import { useApp } from "@/state/AppProvider";
-import { leakLabel } from "@/lib/pke";
 import type { ImportTournamentFilesResult, Tournament } from "@/lib/types";
 import { cn } from "@/lib/cn";
 
@@ -66,10 +64,10 @@ export function TournamentImport({ onImported, className }: { onImported?: () =>
           {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Upload className="h-5 w-5" />}
         </span>
         <span className="text-sm font-semibold text-ink">
-          {loading ? "Importando e analisando com o PKE…" : "Importar do PokerStars"}
+          {loading ? "Importando e analisando com o PKEâ€¦" : "Importar do PokerStars"}
         </span>
         <span className="text-2xs text-ink-faint">
-          Solte os arquivos .txt (torneios ou mãos) aqui ou clique — o PKE analisa automaticamente
+          Solte os arquivos .txt (torneios ou mÃ£os) aqui ou clique â€” o PKE analisa automaticamente
         </span>
       </button>
 
@@ -92,9 +90,7 @@ export function TournamentImport({ onImported, className }: { onImported?: () =>
         <div className="mt-3 flex flex-col gap-2">
           <div className="flex flex-wrap items-center gap-2 text-xs text-action-green">
             <CheckCircle2 className="h-4 w-4 shrink-0" />
-            {result.financeiro.new} novo(s) · {result.financeiro.updated} atualizado(s) ·
-            {" "}{result.hands.new} mão(s) analisada(s)
-            <PkeBadge variant="analisado" />
+            {result.tournaments.length} {result.tournaments.length === 1 ? "torneio importado" : "torneios importados"}
           </div>
           {result.tournaments.map((t) => (
             <ImportedTournamentRow key={t.tournament_id} t={t} onOpen={() => openTournament(t.tournament_id)} />
@@ -106,17 +102,11 @@ export function TournamentImport({ onImported, className }: { onImported?: () =>
 }
 
 function ImportedTournamentRow({ t, onOpen }: { t: Tournament; onOpen: () => void }) {
-  const leak = leakLabel(t.pke_main_leak);
   return (
     <div className="flex items-center justify-between gap-2 rounded-ctl border border-border bg-surface-1 px-3 py-2">
       <div className="min-w-0">
         <div className="text-sm font-semibold text-ink">
           {t.tournament_name || `Torneio #${t.tournament_id}`}
-        </div>
-        <div className="mt-0.5 flex flex-wrap items-center gap-x-2 text-2xs text-ink-faint">
-          {t.pke_score_avg != null && <span>nota <b className="text-ink">{t.pke_score_avg.toFixed(1)}</b></span>}
-          {t.pke_grave_errors != null && <span>· {t.pke_grave_errors} erro(s) grave(s)</span>}
-          {leak && <span>· leak: <span className="text-gold">{leak}</span></span>}
         </div>
       </div>
       <button

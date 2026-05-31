@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Area,
@@ -14,14 +14,16 @@ import {
   BarChart3,
   CalendarDays,
   CalendarClock,
-  ChevronDown,
   Clock,
   Download,
   Dumbbell,
+  Filter,
   Info,
+  MoreHorizontal,
   Pencil,
   Plus,
   RotateCcw,
+  Upload,
   Trash2,
   Trophy,
   X,
@@ -29,6 +31,7 @@ import {
 import { BrandBar } from "@/components/layout/BrandBar";
 import { Button } from "@/components/ui/Button";
 import { Card, SectionLabel } from "@/components/ui/Card";
+import { Drawer } from "@/components/ui/Drawer";
 import { Select } from "@/components/ui/Select";
 import {
   BIG_WIN_MULT,
@@ -60,7 +63,6 @@ const FMT_ALL = "__all__";
 const ROOM_ALL = "__all__";
 
 export function TournamentsPage() {
-  const navigate = useNavigate();
   const { openTournament } = useApp();
   const [error, setError] = useState<string | null>(null);
 
@@ -72,6 +74,8 @@ export function TournamentsPage() {
   const [filters, setFilters] = useState<TournamentFilters>({});
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showNew, setShowNew] = useState(false);
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const importRef = useRef<HTMLDivElement>(null);
 
   async function refresh(f = filters) {
     const [list, ov, fmts, rms, sess] = await Promise.all([
@@ -145,7 +149,7 @@ export function TournamentsPage() {
       t.n_entries ?? "", c(t.prize_cents), c(t.profit_cents), t.origin ?? "",
     ]);
     const csv = [header, ...rows].map((r) => r.map(esc).join(";")).join("\r\n");
-    const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });
+    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -155,6 +159,7 @@ export function TournamentsPage() {
   }
 
   const currency = tournaments[0]?.currency ?? "USD";
+  const activeFilterCount = countFilters(filters);
 
   const pkeKpis = useMemo(() => {
     let soma = 0, maos = 0, graves = 0, analisados = 0;
@@ -173,47 +178,33 @@ export function TournamentsPage() {
     await refresh();
   }
 
+  function goImport() {
+    importRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
   return (
     <div className="min-h-full">
       <header className="sticky top-0 z-30 border-b border-border bg-bg/85 backdrop-blur-md">
         <BrandBar
           title="Meus Torneios"
           actions={
-            <div className="flex items-center gap-1">
-              <Button variant="ghost" size="sm" onClick={() => setShowNew(true)}>
-                <Plus className="h-4 w-4" />
-                <span className="hidden sm:inline">Novo torneio</span>
-              </Button>
-              {tournaments.length > 0 && (
-                <Button variant="ghost" size="sm" onClick={exportCsv}>
-                  <Download className="h-4 w-4" />
-                  <span className="hidden sm:inline">CSV</span>
-                </Button>
-              )}
-              <Button variant="ghost" size="sm" onClick={() => navigate("/sessions")}>
-                <CalendarClock className="h-4 w-4" />
-                <span className="hidden sm:inline">Sessões</span>
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => navigate("/tournament-types")}
-              >
-                <Trophy className="h-4 w-4" />
-                <span className="hidden sm:inline">Estruturas</span>
-              </Button>
-              <Button variant="ghost" size="sm" onClick={() => navigate("/")}>
-                <ArrowLeft className="h-4 w-4" />
-                <span className="hidden sm:inline">Início</span>
-              </Button>
-            </div>
+            <HeaderActions
+              canExport={tournaments.length > 0}
+              activeFilterCount={activeFilterCount}
+              onImport={goImport}
+              onFilters={() => setFiltersOpen(true)}
+              onNew={() => setShowNew(true)}
+              onExport={exportCsv}
+            />
           }
         />
       </header>
 
-      {/* Container — padding menor no mobile, max-width pra desktop */}
+      {/* Container â€” padding menor no mobile, max-width pra desktop */}
       <div className="mx-auto w-full max-w-5xl px-3 py-4 sm:px-6 sm:py-6">
-        <TournamentImport onImported={() => refresh()} />
+        <div ref={importRef} className="scroll-mt-20">
+          <TournamentImport onImported={() => refresh()} />
+        </div>
 
         {error && (
           <Card className="mt-3 flex items-center gap-2 border-action-red/30 p-3 text-sm text-action-red">
@@ -224,11 +215,11 @@ export function TournamentsPage() {
 
         {overview && overview.n_tournaments > 0 ? (
           <>
-            <HeroLucro overview={overview} currency={currency} />
-            <StatsRow overview={overview} currency={currency} pke={pkeKpis} />
-            <EvolutionBlock sessions={sessions} />
-            <PositionDistribution overview={overview} />
+            <StatsBar overview={overview} currency={currency} pke={pkeKpis} />
             <BankrollChart overview={overview} currency={currency} tournaments={tournaments} />
+            <EvolutionBlock
+              sessions={sessions}
+            />
             <SessionsCard
               sessions={sessions}
               currency={currency}
@@ -240,12 +231,6 @@ export function TournamentsPage() {
                     : { ...filters, from_date: day, to_date: day },
                 )
               }
-            />
-            <Filters
-              filters={filters}
-              formats={formats}
-              rooms={rooms}
-              onApply={applyFilters}
             />
             <TournamentsList
               tournaments={tournaments}
@@ -260,7 +245,7 @@ export function TournamentsPage() {
           </>
         ) : (
           <Card className="mt-4 p-6 text-center text-sm text-ink-dim sm:p-8">
-            Solte os arquivos do PokerStars (.txt) acima para começar — ou use{" "}
+            Solte os arquivos do PokerStars (.txt) acima para comeÃ§ar â€” ou use{" "}
             <button
               onClick={() => setShowNew(true)}
               className="font-semibold text-gold underline-offset-2 hover:underline"
@@ -281,12 +266,113 @@ export function TournamentsPage() {
           onSave={addManual}
         />
       )}
+      <Drawer open={filtersOpen} onOpenChange={setFiltersOpen} title="Filtros">
+        <Filters
+          filters={filters}
+          formats={formats}
+          rooms={rooms}
+          onApply={(f) => {
+            applyFilters(f);
+            setFiltersOpen(false);
+          }}
+        />
+      </Drawer>
     </div>
   );
 }
 
-// ── Hero (Lucro grande) ──────────────────────────────────────────────────────
+// â”€â”€ Hero (Lucro grande) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
+function HeaderActions({
+  canExport,
+  activeFilterCount,
+  onImport,
+  onFilters,
+  onNew,
+  onExport,
+}: {
+  canExport: boolean;
+  activeFilterCount: number;
+  onImport: () => void;
+  onFilters: () => void;
+  onNew: () => void;
+  onExport: () => void;
+}) {
+  const navigate = useNavigate();
+  const [open, setOpen] = useState(false);
+  const boxRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function onDown(e: MouseEvent) {
+      if (!boxRef.current?.contains(e.target as Node)) setOpen(false);
+    }
+    window.addEventListener("mousedown", onDown);
+    return () => window.removeEventListener("mousedown", onDown);
+  }, []);
+
+  const item = "flex w-full items-center gap-2 rounded-ctl px-3 py-2 text-left text-sm text-ink-dim hover:bg-surface-2 hover:text-ink";
+  return (
+    <div className="relative flex items-center gap-1" ref={boxRef}>
+      <Button variant="primary" size="sm" onClick={onImport} aria-label="Importar mÃ£os">
+        <Upload className="h-4 w-4" />
+        <span className="hidden sm:inline">Importar mÃ£os</span>
+      </Button>
+      <Button variant="ghost" size="sm" onClick={onFilters} aria-label="Filtros">
+        <Filter className="h-4 w-4" />
+        <span className="hidden sm:inline">Filtros</span>
+        {activeFilterCount > 0 && (
+          <span className="ml-0.5 rounded-full bg-gold/15 px-1.5 py-0.5 text-[10px] font-bold text-gold">
+            {activeFilterCount}
+          </span>
+        )}
+      </Button>
+      <button
+        type="button"
+        onClick={onNew}
+        className="grid h-8 w-8 place-items-center rounded-ctl text-ink-dim hover:bg-surface-2 hover:text-ink sm:hidden"
+        aria-label="Novo torneio"
+      >
+        <Plus className="h-4 w-4" />
+      </button>
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="grid h-8 w-8 place-items-center rounded-ctl text-ink-dim hover:bg-surface-2 hover:text-ink"
+        aria-label="Mais aÃ§Ãµes"
+      >
+        <MoreHorizontal className="h-4 w-4" />
+      </button>
+      {open && (
+        <div className="absolute right-0 top-10 z-50 w-48 rounded-card border border-border bg-surface-1 p-1 shadow-pop">
+          <button className={cn(item, "hidden sm:flex")} onClick={() => { setOpen(false); onNew(); }}>
+            <Plus className="h-4 w-4" /> Novo torneio
+          </button>
+          {canExport && (
+            <button className={item} onClick={() => { setOpen(false); onExport(); }}>
+              <Download className="h-4 w-4" /> CSV
+            </button>
+          )}
+          <button className={item} onClick={() => { setOpen(false); navigate("/sessions"); }}>
+            <CalendarClock className="h-4 w-4" /> SessÃµes
+          </button>
+          <button className={item} onClick={() => { setOpen(false); navigate("/tournament-types"); }}>
+            <Trophy className="h-4 w-4" /> Estruturas
+          </button>
+          <button className={item} onClick={() => { setOpen(false); navigate("/"); }}>
+            <ArrowLeft className="h-4 w-4" /> InÃ­cio
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function countFilters(filters: TournamentFilters): number {
+  return [
+    filters.from_date, filters.to_date, filters.format, filters.room,
+    filters.min_buyin, filters.max_buyin,
+  ].filter((v) => v != null && v !== "").length;
+}
 function HeroLucro({
   overview,
   currency,
@@ -305,46 +391,55 @@ function HeroLucro({
       </div>
       {overview.pending_prize > 0 && (
         <div className="mt-1 text-2xs text-ink-faint">
-          {overview.pending_prize} {overview.pending_prize === 1 ? "torneio" : "torneios"} sem prêmio confirmado · usando custo como base
+          {overview.pending_prize} {overview.pending_prize === 1 ? "torneio" : "torneios"} sem prÃªmio confirmado Â· usando custo como base
         </div>
       )}
     </Card>
   );
 }
 
-// ── Tiles secundários ─────────────────────────────────────────────────────────
+// â”€â”€ Tiles secundÃ¡rios â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-function StatsRow({ overview, currency, pke }: {
+function StatsBar({ overview, currency, pke }: {
   overview: TournamentOverview;
   currency: string;
   pke: { media: number | null; graves: number; analisados: number };
 }) {
-  const avgProfit = overview.avg_profit_cents;
+  const profit = overview.profit_cents;
   const mediaTone = pke.media == null ? "ink" : pke.media >= 7 ? "green" : pke.media < 5 ? "red" : "ink";
   return (
-    <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
+    <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-6">
+      <Tile
+        label="Saldo"
+        value={fmtMoney(profit, currency, { signed: true })}
+        tone={profit > 0 ? "green" : profit < 0 ? "red" : "ink"}
+      />
       <Tile label="Torneios" value={String(overview.n_tournaments)} />
       <Tile label="ROI" value={fmtPct(overview.roi_pct)} tone={overview.roi_pct != null && overview.roi_pct > 0 ? "green" : overview.roi_pct != null && overview.roi_pct < 0 ? "red" : "ink"} />
       <Tile label="ITM" value={fmtPct(overview.itm_pct, 0)} />
-      <Tile label="Nota média PKE" value={pke.media != null ? pke.media.toFixed(1) : "—"} tone={mediaTone} />
+      <Tile label="Nota mÃ©dia PKE" value={pke.media != null ? pke.media.toFixed(1) : "â€”"} tone={mediaTone} />
       <Tile label="Erros graves" value={String(pke.graves)} tone={pke.graves > 0 ? "red" : "ink"} />
-      <Tile
-        label="$/torneio"
-        value={fmtMoney(avgProfit, currency, { signed: true })}
-        tone={avgProfit != null && avgProfit > 0 ? "green" : avgProfit != null && avgProfit < 0 ? "red" : "ink"}
-      />
+      {overview.pending_prize > 0 && (
+        <p className="col-span-2 text-2xs text-ink-faint sm:col-span-6">
+          {overview.pending_prize} {overview.pending_prize === 1 ? "torneio" : "torneios"} sem prÃªmio confirmado Â· usando custo como base.
+        </p>
+      )}
     </div>
   );
 }
 
-// ── Evolução técnica (abas por dia: nota / erros / leaks) ─────────────────────
-function EvolutionBlock({ sessions }: { sessions: TournamentSession[] }) {
+// â”€â”€ EvoluÃ§Ã£o tÃ©cnica (abas por dia: nota / erros / leaks) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+function EvolutionBlock({
+  sessions,
+}: {
+  sessions: TournamentSession[];
+}) {
   type Tab = "nota" | "graves" | "leaks";
   const [tab, setTab] = useState<Tab>("nota");
   const TABS: { key: Tab; label: string }[] = [
     { key: "nota", label: "Nota PKE" },
     { key: "graves", label: "Erros graves" },
-    { key: "leaks", label: "Leaks por dia" },
+    { key: "leaks", label: "Leaks" },
   ];
   const days = useMemo(
     () => [...sessions].filter((s) => s.day !== "Sem data" && (s.analisados ?? 0) > 0).reverse(),
@@ -352,15 +447,13 @@ function EvolutionBlock({ sessions }: { sessions: TournamentSession[] }) {
   );
   const insight = useMemo(() => pickInsight(days), [days]);
 
-  if (days.length === 0) return null;
-
   return (
     <Card className="mt-2 p-3 sm:p-4">
       <div className="mb-3 flex items-center gap-2">
         <SectionLabel className="flex items-center gap-1.5">
-          <BarChart3 className="h-3.5 w-3.5" /> Evolução técnica
+          <BarChart3 className="h-3.5 w-3.5" /> Evolução
         </SectionLabel>
-        <PkeBadge variant="analisado" />
+        {days.length > 0 && <PkeBadge variant="analisado" />}
       </div>
       <div className="mb-3 flex flex-wrap gap-1.5">
         {TABS.map((t) => (
@@ -373,12 +466,14 @@ function EvolutionBlock({ sessions }: { sessions: TournamentSession[] }) {
         ))}
       </div>
       {tab === "nota" && (
-        <DayBars days={days} value={(s) => s.media_notas ?? null} max={10}
+        days.length > 0 ? <DayBars days={days} value={(s) => s.media_notas ?? null} max={10}
           fmt={(v) => v.toFixed(1)} color={(v) => v >= 7 ? "#2BA672" : v < 5 ? "#D6535B" : "#D2A54A"} />
+        : <p className="py-6 text-center text-xs text-ink-faint">Nenhum dia analisado pelo PKE ainda.</p>
       )}
       {tab === "graves" && (
-        <DayBars days={days} value={(s) => s.erros_graves ?? null}
+        days.length > 0 ? <DayBars days={days} value={(s) => s.erros_graves ?? null}
           fmt={(v) => String(v)} color={() => "#D6535B"} />
+        : <p className="py-6 text-center text-xs text-ink-faint">Nenhum dia analisado pelo PKE ainda.</p>
       )}
       {tab === "leaks" && (
         <div className="flex flex-col gap-1.5">
@@ -405,9 +500,9 @@ function pickInsight(days: TournamentSession[]): { text: string; tone: "warn" | 
     const s = days[i];
     if (s.media_notas == null) continue;
     if (s.profit_cents > 0 && s.media_notas < 6)
-      return { text: `${s.day}: você ganhou, mas a nota foi ${s.media_notas}. Cuidado com a variância — resultado bom não valida decisão.`, tone: "warn" };
+      return { text: `${s.day}: vocÃª ganhou, mas a nota foi ${s.media_notas}. Cuidado com a variÃ¢ncia â€” resultado bom nÃ£o valida decisÃ£o.`, tone: "warn" };
     if (s.profit_cents < 0 && s.media_notas >= 7)
-      return { text: `${s.day}: você perdeu, mas jogou bem (nota ${s.media_notas}). Decisões boas — siga o processo.`, tone: "good" };
+      return { text: `${s.day}: vocÃª perdeu, mas jogou bem (nota ${s.media_notas}). DecisÃµes boas â€” siga o processo.`, tone: "good" };
   }
   return null;
 }
@@ -445,7 +540,7 @@ function notaCls(n: number | null | undefined): string {
 }
 
 const SEM_MAOS_TITLE =
-  "Sem hand history importado. Importe o .txt do PokerStars para receber análise PKE.";
+  "Sem hand history importado. Importe o .txt do PokerStars para receber anÃ¡lise PKE.";
 
 function StatusChip({ t }: { t: Tournament }) {
   const st = tournamentStatus(t);
@@ -497,23 +592,23 @@ function Tile({
   );
 }
 
-// ── Distribuição de posições ──────────────────────────────────────────────────
+// â”€â”€ DistribuiÃ§Ã£o de posiÃ§Ãµes â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-function PositionDistribution({ overview }: { overview: TournamentOverview }) {
+function PositionDistribution({ overview, compact }: { overview: TournamentOverview; compact?: boolean }) {
   const b = overview.position_buckets;
   const total = b.champion + b.podium + b.itm + b.out;
   if (total === 0) return null;
 
   const bars = [
-    { key: "champion", label: "Campeão", icon: "🥇", n: b.champion, color: GOLD },
-    { key: "podium", label: "Pódio (2º–3º)", icon: "🥈", n: b.podium, color: "#7C8AA5" },
-    { key: "itm", label: "ITM", icon: "💰", n: b.itm, color: GREEN },
-    { key: "out", label: "Fora", icon: "—", n: b.out, color: "#3A4757" },
+    { key: "champion", label: "CampeÃ£o", icon: "1", n: b.champion, color: GOLD },
+    { key: "podium", label: "PÃ³dio (2Âºâ€“3Âº)", icon: "2-3", n: b.podium, color: "#7C8AA5" },
+    { key: "itm", label: "ITM", icon: "$", n: b.itm, color: GREEN },
+    { key: "out", label: "Fora", icon: "â€”", n: b.out, color: "#3A4757" },
   ];
 
   return (
-    <Card className="mt-2 p-3 sm:p-4">
-      <SectionLabel>Distribuição de posições</SectionLabel>
+    <Card className={cn("p-3 sm:p-4", !compact && "mt-2")}>
+      <SectionLabel>DistribuiÃ§Ã£o de posiÃ§Ãµes</SectionLabel>
       <div className="mt-3 flex flex-col gap-2">
         {bars.map((bar) => {
           const pct = total ? (bar.n / total) * 100 : 0;
@@ -541,16 +636,18 @@ function PositionDistribution({ overview }: { overview: TournamentOverview }) {
   );
 }
 
-// ── Bankroll cumulativo ───────────────────────────────────────────────────────
+// â”€â”€ Bankroll cumulativo â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function BankrollChart({
   overview,
   currency,
   tournaments,
+  compact,
 }: {
   overview: TournamentOverview;
   currency: string;
   tournaments: Tournament[];
+  compact?: boolean;
 }) {
   const bigWinIds = useMemo(() => {
     const s = new Set<string>();
@@ -571,7 +668,7 @@ function BankrollChart({
 
   if (data.length < 2) {
     return (
-      <Card className="mt-2 p-4 text-center text-xs text-ink-faint sm:text-sm">
+      <Card className={cn("p-4 text-center text-xs text-ink-faint sm:text-sm", !compact && "mt-2")}>
         Importe pelo menos 2 torneios pra ver a curva.
       </Card>
     );
@@ -581,14 +678,14 @@ function BankrollChart({
   const tone = last > 0 ? GREEN : last < 0 ? RED : GOLD;
 
   return (
-    <Card className="mt-2 p-3 sm:p-4">
+    <Card className={cn("p-3 sm:p-4", !compact && "mt-2")}>
       <div className="flex items-start justify-between gap-3">
         <SectionLabel>Banca acumulada</SectionLabel>
         <div className="text-xs nums" style={{ color: tone }}>
           {fmtMoney(Math.round(last * 100), currency, { signed: true })}
         </div>
       </div>
-      <div className="mt-2 h-[170px] w-full sm:h-[200px]">
+      <div className={cn("mt-3 h-[190px] w-full", compact ? "sm:h-[150px]" : "sm:h-[260px]")}>
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={data} margin={{ top: 6, right: 6, bottom: 0, left: -12 }}>
             <defs>
@@ -634,18 +731,11 @@ function BankrollChart({
   );
 }
 
-// Dot só nos pontos de Big Win (cravadas grandes) — destaca no gráfico.
+// Dot sÃ³ nos pontos de Big Win (cravadas grandes) â€” destaca no grÃ¡fico.
 function BigWinDot(props: any) {
   const { cx, cy, payload } = props;
   if (!payload?.bigWin || cx == null || cy == null) return null;
-  return (
-    <g>
-      <circle cx={cx} cy={cy} r={5} fill={GOLD} stroke="#0B1016" strokeWidth={2} />
-      <text x={cx} y={cy - 9} textAnchor="middle" fontSize={11}>
-        🔥
-      </text>
-    </g>
-  );
+  return <circle cx={cx} cy={cy} r={5} fill={GOLD} stroke="#0B1016" strokeWidth={2} />;
 }
 
 function BkTooltip({ active, payload, currency }: any) {
@@ -657,13 +747,13 @@ function BkTooltip({ active, payload, currency }: any) {
         {fmtMoney(Math.round(p.running * 100), currency, { signed: true })}
       </div>
       <div className="mt-0.5 text-ink-faint nums">
-        #{p.idx} · {p.date}
+        #{p.idx} Â· {p.date}
       </div>
     </div>
   );
 }
 
-// ── Filtros ──────────────────────────────────────────────────────────────────
+// â”€â”€ Filtros â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function fmtDate(d: Date): string {
   const y = d.getFullYear();
@@ -678,7 +768,7 @@ const PRESETS: { key: PresetKey; label: string }[] = [
   { key: "today", label: "Hoje" },
   { key: "7d", label: "7 dias" },
   { key: "30d", label: "30 dias" },
-  { key: "month", label: "Mês" },
+  { key: "month", label: "MÃªs" },
   { key: "year", label: "Ano" },
   { key: "all", label: "Tudo" },
 ];
@@ -720,7 +810,6 @@ function Filters({
   rooms: string[];
   onApply: (f: TournamentFilters) => void;
 }) {
-  const [open, setOpen] = useState(false);
   const [from, setFrom] = useState(filters.from_date ?? "");
   const [to, setTo] = useState(filters.to_date ?? "");
   const [fmt, setFmt] = useState(filters.format ?? FMT_ALL);
@@ -732,8 +821,8 @@ function Filters({
     filters.max_buyin != null ? String(filters.max_buyin / 100) : "",
   );
 
-  // Mantém os inputs sincronizados quando os filtros mudam por fora
-  // (presets, clique em sessão, etc.).
+  // MantÃ©m os inputs sincronizados quando os filtros mudam por fora
+  // (presets, clique em sessÃ£o, etc.).
   useEffect(() => {
     setFrom(filters.from_date ?? "");
     setTo(filters.to_date ?? "");
@@ -757,7 +846,6 @@ function Filters({
       min_buyin: min ? parseCentsInput(min) : null,
       max_buyin: max ? parseCentsInput(max) : null,
     });
-    setOpen(false);
   }
 
   function clear() {
@@ -768,13 +856,12 @@ function Filters({
     setMin("");
     setMax("");
     onApply({});
-    setOpen(false);
   }
 
   const fmtOptions = [
     { value: FMT_ALL, label: "Todos os formatos" },
     ...formats.map((f) => ({ value: f, label: f })),
-    { value: "Sem rótulo", label: "Sem rótulo" },
+    { value: "Sem rÃ³tulo", label: "Sem rÃ³tulo" },
   ];
 
   const roomOptions = [
@@ -782,39 +869,10 @@ function Filters({
     ...rooms.map((r) => ({ value: r, label: r })),
   ];
 
-  const activeCount = [
-    filters.from_date, filters.to_date, filters.format, filters.room,
-    filters.min_buyin, filters.max_buyin,
-  ].filter((v) => v != null && v !== "").length;
-
   return (
-    <Card className="mt-2 overflow-hidden">
-      {/* Mobile: header clicável; sm+: sempre expandido (sem header) */}
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center justify-between gap-3 px-3 py-2.5 text-left sm:hidden"
-        aria-expanded={open}
-      >
-        <span className="text-sm font-semibold text-ink">
-          Filtros
-          {activeCount > 0 && (
-            <span className="ml-2 rounded-full bg-gold/15 px-2 py-0.5 text-2xs font-semibold text-gold">
-              {activeCount}
-            </span>
-          )}
-        </span>
-        <ChevronDown
-          className={cn(
-            "h-4 w-4 text-ink-faint transition-transform",
-            open && "rotate-180",
-          )}
-        />
-      </button>
-
-      <div className={cn("sm:block", open ? "block" : "hidden")}>
-        {/* Presets de período — atalhos rápidos */}
-        <div className="flex flex-wrap gap-1.5 px-3 pt-3">
+    <div className="flex flex-col gap-3">
+        {/* Presets de perÃ­odo â€” atalhos rÃ¡pidos */}
+        <div className="flex flex-wrap gap-1.5">
           {PRESETS.map((p) => {
             const r = presetRange(p.key);
             const active =
@@ -838,7 +896,7 @@ function Filters({
           })}
         </div>
 
-        <div className="grid grid-cols-2 gap-2 p-3 sm:grid-cols-6">
+        <div className="grid grid-cols-2 gap-2">
           <FilterField label="De" hint="aaaa/mm/dd">
             <input
               value={from}
@@ -848,7 +906,7 @@ function Filters({
               className="filter-input"
             />
           </FilterField>
-          <FilterField label="Até">
+          <FilterField label="AtÃ©">
             <input
               value={to}
               onChange={(e) => setTo(e.target.value)}
@@ -857,7 +915,7 @@ function Filters({
               className="filter-input"
             />
           </FilterField>
-          <FilterField label="Tipo" colSpan="col-span-2 sm:col-span-1">
+          <FilterField label="Tipo" colSpan="col-span-2">
             <Select
               value={fmt}
               onValueChange={setFmt}
@@ -866,7 +924,7 @@ function Filters({
               className="w-full"
             />
           </FilterField>
-          <FilterField label="Sala" colSpan="col-span-2 sm:col-span-1">
+          <FilterField label="Sala" colSpan="col-span-2">
             <Select
               value={room}
               onValueChange={setRoom}
@@ -888,22 +946,21 @@ function Filters({
             <input
               value={max}
               onChange={(e) => setMax(e.target.value)}
-              placeholder="∞"
+              placeholder="âˆž"
               inputMode="decimal"
               className="filter-input"
             />
           </FilterField>
-          <div className="col-span-2 flex items-end gap-2 sm:col-span-6">
-            <Button size="sm" variant="primary" onClick={apply} className="flex-1 sm:flex-none">
+          <div className="col-span-2 flex flex-col gap-2 sm:flex-row sm:items-end">
+            <Button size="sm" variant="primary" onClick={apply} className="w-full sm:w-auto">
               Aplicar
             </Button>
-            <Button size="sm" variant="ghost" onClick={clear}>
+            <Button size="sm" variant="ghost" onClick={clear} className="w-full sm:w-auto">
               Limpar
             </Button>
           </div>
         </div>
-      </div>
-    </Card>
+    </div>
   );
 }
 
@@ -922,14 +979,14 @@ function FilterField({
     <label className={cn("flex flex-col gap-1", colSpan)}>
       <span className="text-2xs uppercase tracking-[0.1em] text-ink-faint">
         {label}
-        {hint && <span className="ml-1 text-ink-faint/70 normal-case tracking-normal">· {hint}</span>}
+        {hint && <span className="ml-1 text-ink-faint/70 normal-case tracking-normal">Â· {hint}</span>}
       </span>
       {children}
     </label>
   );
 }
 
-// ── Lista de torneios (mobile: cards / desktop: tabela) ───────────────────────
+// â”€â”€ Lista de torneios (mobile: cards / desktop: tabela) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function TournamentsList({
   tournaments,
@@ -958,8 +1015,8 @@ function TournamentsList({
     <div className="mt-2">
       {hasSemMaos && (
         <p className="mb-2 text-2xs text-ink-faint">
-          Torneios marcados como <span className="text-ink-dim">"Sem mãos"</span> não têm hand
-          history — importe o .txt do PokerStars para receber análise PKE.
+          Torneios marcados como <span className="text-ink-dim">"Sem mÃ£os"</span> nÃ£o tÃªm hand
+          history â€” importe o .txt do PokerStars para receber anÃ¡lise PKE.
         </p>
       )}
       {/* MOBILE: cards empilhados */}
@@ -985,11 +1042,9 @@ function TournamentsList({
           <thead className="border-b border-border text-2xs uppercase tracking-[0.1em] text-ink-faint">
             <tr>
               <Th>Data</Th>
-              <Th>Tipo</Th>
               <Th right>Buy-in</Th>
-              <Th right>Pos.</Th>
-              <Th right>Lucro</Th>
-              <Th right>Nota</Th>
+              <Th>Resultado</Th>
+              <Th right>Nota PKE</Th>
               <Th right>Graves</Th>
               <Th>Status</Th>
               <Th />
@@ -1016,7 +1071,7 @@ function TournamentsList({
   );
 }
 
-// ── Card mobile ──────────────────────────────────────────────────────────────
+// â”€â”€ Card mobile â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function TournamentCard({
   t,
@@ -1056,31 +1111,31 @@ function TournamentCard({
           </div>
           <div className="mt-0.5 flex items-center gap-1.5 text-sm font-semibold text-ink">
             {medal && <span aria-hidden>{medal}</span>}
-            <span>{t.format ?? "Sem rótulo"}</span>
+            <span>{t.format ?? "Sem rÃ³tulo"}</span>
             {big && <BigWinBadge />}
           </div>
           <div className="truncate text-2xs text-ink-faint" title={t.tournament_name ?? ""}>
-            {t.tournament_name ?? "—"}
+            {t.tournament_name ?? "â€”"}
           </div>
         </div>
         <div className={cn("text-right text-base font-bold nums", profitTone)}>
-          {profit != null ? fmtMoney(profit, t.currency, { signed: true }) : "—"}
+          {profit != null ? fmtMoney(profit, t.currency, { signed: true }) : "â€”"}
         </div>
       </div>
 
-      {/* Linha 2: Buy-in · Pos · Prêmio */}
+      {/* Linha 2: Buy-in Â· Pos Â· PrÃªmio */}
       <div className="mt-2 grid grid-cols-3 gap-2 border-t border-border pt-2 text-xs">
         <Field label="Buy-in">
           <span className="nums text-ink">{fmtMoney(cost, t.currency)}</span>
         </Field>
-        <Field label="Posição">
+        <Field label="PosiÃ§Ã£o">
           <span className="text-ink">
             {t.finish_pos != null
               ? `${t.finish_pos}${t.n_entries ? `/${t.n_entries}` : ""}`
-              : "—"}
+              : "â€”"}
           </span>
         </Field>
-        <Field label="Prêmio">
+        <Field label="PrÃªmio">
           {t.prize_known ? (
             <span className="flex items-baseline gap-1">
               <span className="nums text-ink">{fmtMoney(t.prize_cents, t.currency)}</span>
@@ -1112,7 +1167,7 @@ function TournamentCard({
         {leak && <span className="text-gold">{leak}</span>}
       </div>
 
-      {/* Form de edição expandido (mobile-friendly: inputs grandes, vertical) */}
+      {/* Form de ediÃ§Ã£o expandido (mobile-friendly: inputs grandes, vertical) */}
       {editing && (
         <EditForm
           t={t}
@@ -1121,9 +1176,12 @@ function TournamentCard({
         />
       )}
 
-      {/* Botões de ação no rodapé do card — só quando NÃO editando */}
+      {/* BotÃµes de aÃ§Ã£o no rodapÃ© do card â€” sÃ³ quando NÃƒO editando */}
       {!editing && (
-        <div className="mt-2 flex items-center justify-end gap-1">
+        <div className="mt-2 flex items-center gap-1">
+          <Button size="sm" variant="primary" className="mr-auto" onClick={onOpen}>
+            Abrir review
+          </Button>
           <AnalyzeBtn t={t} onAnalyze={onAnalyze} />
           <button
             onClick={onStartEdit}
@@ -1154,7 +1212,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
-// Form de edição compartilhado entre mobile card e desktop table
+// Form de ediÃ§Ã£o compartilhado entre mobile card e desktop table
 function EditForm({
   t,
   onSave,
@@ -1172,17 +1230,17 @@ function EditForm({
   return (
     <div className="mt-3 grid grid-cols-2 gap-2 border-t border-border pt-3">
       <label className="flex flex-col gap-1">
-        <span className="text-2xs uppercase tracking-[0.1em] text-ink-faint">Posição final</span>
+        <span className="text-2xs uppercase tracking-[0.1em] text-ink-faint">PosiÃ§Ã£o final</span>
         <input
           value={pos}
           onChange={(e) => setPos(e.target.value)}
           inputMode="numeric"
-          placeholder="—"
+          placeholder="â€”"
           className="filter-input"
         />
       </label>
       <label className="flex flex-col gap-1">
-        <span className="text-2xs uppercase tracking-[0.1em] text-ink-faint">Prêmio ({t.currency})</span>
+        <span className="text-2xs uppercase tracking-[0.1em] text-ink-faint">PrÃªmio ({t.currency})</span>
         <input
           value={prize}
           onChange={(e) => setPrize(e.target.value)}
@@ -1215,7 +1273,7 @@ function EditForm({
   );
 }
 
-// ── Tabela desktop ───────────────────────────────────────────────────────────
+// â”€â”€ Tabela desktop â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function Th({
   children,
@@ -1266,9 +1324,9 @@ function TableRow({
   if (editing) {
     return (
       <tr className="border-b border-border/60">
-        <td colSpan={9} className="px-3 py-3">
+        <td colSpan={7} className="px-3 py-3">
           <div className="mb-2 text-xs text-ink-dim">
-            {fmtShortDate(t.played_at)} · {t.tournament_name ?? "—"}
+            {fmtShortDate(t.played_at)} Â· {t.tournament_name ?? "â€”"}
           </div>
           <EditForm t={t} onSave={onSave} onCancel={onCancelEdit} />
         </td>
@@ -1281,37 +1339,39 @@ function TableRow({
       <td className="px-3 py-2 text-xs text-ink-dim nums">
         <div>{fmtShortDate(t.played_at)}</div>
         <div className="mt-0.5"><RoomTag room={t.room} /></div>
-      </td>
-      <td className="px-3 py-2">
-        <div className="flex items-center gap-1.5 text-xs text-ink">
-          {medal && <span aria-hidden>{medal}</span>}
-          <span>{t.format ?? "Sem rótulo"}</span>
-          {big && <BigWinBadge />}
+        <div className="mt-0.5 truncate text-2xs text-ink-faint" title={t.tournament_name ?? ""}>
+          {t.tournament_name ?? "â€”"}
         </div>
-        {leak ? (
-          <div className="text-2xs text-gold">{leak}</div>
-        ) : (
-          <div className="truncate text-2xs text-ink-faint" title={t.tournament_name ?? ""}>
-            {t.tournament_name ?? "—"}
-          </div>
-        )}
       </td>
       <td className="px-3 py-2 text-right text-xs nums text-ink-dim">
         {fmtMoney(cost, t.currency)}
       </td>
-      <td className="px-3 py-2 text-right text-xs text-ink nums">
-        {t.finish_pos != null
-          ? `${t.finish_pos}${t.n_entries ? `/${t.n_entries}` : ""}`
-          : "—"}
-      </td>
-      <td className={cn("px-3 py-2 text-right text-xs nums font-semibold", profitTone)}>
-        {profit != null ? fmtMoney(profit, t.currency, { signed: true }) : "—"}
+      <td className="px-3 py-2">
+        <div className="flex items-center gap-1.5 text-xs text-ink">
+          {medal && <span aria-hidden>{medal}</span>}
+          <span className={cn("font-semibold nums", profitTone)}>
+            {profit != null ? fmtMoney(profit, t.currency, { signed: true }) : "â€”"}
+          </span>
+          {big && <BigWinBadge />}
+        </div>
+        <div className="mt-0.5 text-2xs text-ink-faint">
+          {t.finish_pos != null
+            ? `${t.finish_pos}${t.n_entries ? `/${t.n_entries}` : ""}`
+            : "sem posiÃ§Ã£o"}
+          {" Â· "}
+          {t.format ?? "Sem rÃ³tulo"}
+        </div>
+        {leak ? (
+          <div className="mt-0.5 text-2xs text-gold">{leak}</div>
+        ) : (
+          null
+        )}
       </td>
       <td className={cn("px-3 py-2 text-right text-xs nums font-bold", notaCls(t.pke_score_avg))}>
-        {t.pke_score_avg != null ? t.pke_score_avg.toFixed(1) : "—"}
+        {t.pke_score_avg != null ? t.pke_score_avg.toFixed(1) : "â€”"}
       </td>
       <td className="px-3 py-2 text-right text-xs nums text-action-red">
-        {t.pke_grave_errors ? t.pke_grave_errors : "—"}
+        {t.pke_grave_errors ? t.pke_grave_errors : "â€”"}
       </td>
       <td className="px-3 py-2"><StatusChip t={t} /></td>
       <td className="px-3 py-2" onClick={stop}>
@@ -1337,11 +1397,21 @@ function TableRow({
   );
 }
 
-// ── Sessões (por dia) ─────────────────────────────────────────────────────────
+// â”€â”€ SessÃµes (por dia) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function hhmm(s: string | null): string {
   if (!s || s.length < 16) return "";
   return s.slice(11, 16);
+}
+
+function SessionMini({ label, value, tone = "ink" }: { label: string; value: string; tone?: "ink" | "green" | "red" }) {
+  const color = { ink: "text-ink", green: "text-action-green", red: "text-action-red" }[tone];
+  return (
+    <div className="rounded-ctl bg-surface-2/50 px-2 py-1.5">
+      <div className={cn("font-bold nums", color)}>{value}</div>
+      <div className="text-[10px] uppercase tracking-[0.08em] text-ink-faint">{label}</div>
+    </div>
+  );
 }
 
 function SessionsCard({
@@ -1356,6 +1426,7 @@ function SessionsCard({
   onPickDay: (day: string) => void;
 }) {
   const [open, setOpen] = useState(false);
+  const navigate = useNavigate();
   if (sessions.length === 0) return null;
   const shown = open ? sessions : sessions.slice(0, 5);
 
@@ -1365,14 +1436,14 @@ function SessionsCard({
         <SectionLabel>
           <span className="inline-flex items-center gap-1.5">
             <CalendarDays className="h-3.5 w-3.5" />
-            Sessões (por dia)
+            SessÃµes (por dia)
           </span>
         </SectionLabel>
         <span className="text-2xs text-ink-faint">
           {sessions.length} {sessions.length === 1 ? "dia" : "dias"}
         </span>
       </div>
-      <div className="mt-1 flex flex-col">
+      <div className="mt-2 grid gap-2 p-3 sm:grid-cols-2">
         {shown.map((s) => {
           const start = hhmm(s.start_at);
           const end = hhmm(s.end_at);
@@ -1385,35 +1456,42 @@ function SessionsCard({
                   ? "text-action-red"
                   : "text-ink";
           return (
-            <button
+            <div
               key={s.day}
-              type="button"
-              onClick={() => onPickDay(s.day)}
               className={cn(
-                "flex items-center justify-between gap-3 border-t border-border/60 px-3 py-2 text-left transition-colors hover:bg-surface-2/60",
-                activeDay === s.day && "bg-gold/10",
+                "rounded-card border border-border bg-surface-1 p-3 transition-colors",
+                activeDay === s.day && "border-gold/40 bg-gold/10",
               )}
             >
-              <div className="min-w-0">
-                <div className="text-xs font-semibold text-ink nums">
-                  {fmtShortDate(s.day)}
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="text-xs font-semibold text-ink nums">{fmtShortDate(s.day)}</div>
+                  <div className="mt-0.5 text-2xs text-ink-faint nums">
+                    {s.n} {s.n === 1 ? "torneio" : "torneios"}
+                    {s.roi_pct != null && ` Â· ROI ${fmtPct(s.roi_pct, 0)}`}
+                  </div>
                 </div>
-                <div className="flex items-center gap-1 text-2xs text-ink-faint nums">
-                  {start && (
-                    <>
-                      <Clock className="h-2.5 w-2.5" />
-                      <span>{start}{end && end !== start ? `–${end}` : ""}</span>
-                      <span>·</span>
-                    </>
-                  )}
-                  <span>{s.n} {s.n === 1 ? "torneio" : "torneios"}</span>
-                  {s.roi_pct != null && <span>· ROI {fmtPct(s.roi_pct, 0)}</span>}
+                <div className={cn("shrink-0 text-right text-sm font-bold nums", tone)}>
+                  {fmtMoney(s.profit_cents, currency, { signed: true })}
                 </div>
               </div>
-              <div className={cn("shrink-0 text-right text-sm font-bold nums", tone)}>
-                {fmtMoney(s.profit_cents, currency, { signed: true })}
+              <div className="mt-2 grid grid-cols-2 gap-2 text-2xs">
+                <SessionMini label="Nota PKE" value={s.media_notas != null ? s.media_notas.toFixed(1) : "â€”"} tone={s.media_notas != null && s.media_notas < 5 ? "red" : s.media_notas != null && s.media_notas >= 7 ? "green" : "ink"} />
+                <SessionMini label="Erros graves" value={String(s.erros_graves ?? 0)} tone={(s.erros_graves ?? 0) > 0 ? "red" : "ink"} />
+                <div className="col-span-2 text-2xs text-ink-faint">
+                  {start && <span><Clock className="mr-1 inline h-2.5 w-2.5" />{start}{end && end !== start ? `â€“${end}` : ""} Â· </span>}
+                  Leak principal: <span className="text-gold">{s.main_leak ? leakLabel(s.main_leak) : "â€”"}</span>
+                </div>
               </div>
-            </button>
+              <div className="mt-3 flex gap-2">
+                <Button size="sm" variant="ghost" className="flex-1" onClick={() => onPickDay(s.day)}>
+                  Revisar sessÃ£o
+                </Button>
+                <Button size="sm" variant="primary" className="flex-1" onClick={() => navigate("/treinar?mode=leaks&from=leak")}>
+                  Treinar leaks
+                </Button>
+              </div>
+            </div>
           );
         })}
       </div>
@@ -1429,4 +1507,3 @@ function SessionsCard({
     </Card>
   );
 }
-

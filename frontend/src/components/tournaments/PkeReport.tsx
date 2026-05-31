@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   BookOpen,
   ChevronDown,
@@ -202,7 +202,7 @@ export function PkeReport({
 }
 
 // ── resumo ──────────────────────────────────────────────────────────────────────
-function Summary({ report }: { report: TournamentReport }) {
+export function Summary({ report }: { report: TournamentReport }) {
   const media = report.media_notas;
   const mediaCls = media == null ? "text-ink-faint"
     : media >= 7 ? "text-action-green" : media >= 5 ? "text-gold" : "text-action-red";
@@ -252,7 +252,7 @@ function Mini({ label, value, text, tone = "ink" }: { label: string; value?: num
 }
 
 // ── leaks ────────────────────────────────────────────────────────────────────────
-function Leaks({
+export function Leaks({
   leaks,
   onTrainLeak,
   onOpenRule,
@@ -328,7 +328,7 @@ function LeakBtn({ children, onClick, primary }: { children: React.ReactNode; on
   );
 }
 
-function Treino({ drills, onTrainLeak }: { drills: string[]; onTrainLeak?: (mode: string) => void }) {
+export function Treino({ drills, onTrainLeak }: { drills: string[]; onTrainLeak?: (mode: string) => void }) {
   return (
     <Card className="p-4">
       <SectionLabel className="mb-2 flex items-center gap-1.5">
@@ -353,6 +353,81 @@ function Treino({ drills, onTrainLeak }: { drills: string[]; onTrainLeak?: (mode
         Toque numa categoria para treinar agora — os spots são gerados pelos seus leaks.
       </p>
     </Card>
+  );
+}
+
+// ── lista de mãos com filtros (export para uso em abas) ───────────────────────
+export function HandList({
+  report,
+  initialSpot,
+  onTrainLeak,
+  onOpenRule,
+  onAskHand,
+}: {
+  report: TournamentReport;
+  initialSpot?: string | null;
+  onTrainLeak?: (mode: string) => void;
+  onOpenRule?: (id: string) => void;
+  onAskHand?: (hand: ReportHand) => void;
+}) {
+  const [filter, setFilter] = useState<Filter>("todos");
+  const [fase, setFase] = useState("all");
+  const [spot, setSpot] = useState(initialSpot ?? "all");
+
+  useEffect(() => {
+    if (initialSpot) setSpot(initialSpot);
+  }, [initialSpot]);
+
+  const fases = useMemo(
+    () => [...new Set(report.maos.map((m) => m.fase).filter(Boolean))] as string[],
+    [report.maos],
+  );
+  const spots = useMemo(
+    () => [...new Set(report.maos.map((m) => m.spot).filter(Boolean))] as string[],
+    [report.maos],
+  );
+  const maos = useMemo(() => {
+    const pass = (m: ReportHand) => {
+      if (fase !== "all" && m.fase !== fase) return false;
+      if (spot !== "all" && m.spot !== spot) return false;
+      if (filter === "erros") return m.outcome === "erro";
+      if (filter === "graves") return m.nota != null && m.nota <= 4;
+      if (filter === "boas") return m.outcome === "decisao_boa";
+      if (filter === "coolers") return m.outcome === "cooler";
+      if (filter === "insuf") return m.outcome === "insuficiente";
+      return true;
+    };
+    return report.maos.filter(pass).sort((a, b) => (a.nota ?? 999) - (b.nota ?? 999));
+  }, [report.maos, filter, fase, spot]);
+
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-2">
+        <div className="flex flex-wrap gap-1.5">
+          {FILTERS.map((f) => (
+            <button key={f.key} onClick={() => setFilter(f.key)}
+              className={cn("rounded-full border px-3 py-1 text-2xs font-semibold transition-colors",
+                filter === f.key ? "border-gold/50 bg-gold/15 text-gold" : "border-border bg-surface-1 text-ink-dim hover:text-ink")}>
+              {f.label}
+            </button>
+          ))}
+        </div>
+        <div className="flex flex-wrap gap-2 text-2xs">
+          <Pick value={fase} onChange={setFase} all="Todas as fases"
+            options={fases.map((f) => ({ v: f, l: lbl(PHASE_LABEL, f) }))} />
+          <Pick value={spot} onChange={setSpot} all="Todos os spots"
+            options={spots.map((s) => ({ v: s, l: lbl(SPOT_LABEL, s) }))} />
+        </div>
+      </div>
+      <div className="flex flex-col gap-2">
+        {maos.map((m) => (
+          <HandCard key={m.hand_id} m={m} onTrainLeak={onTrainLeak} onOpenRule={onOpenRule} onAskHand={onAskHand} />
+        ))}
+        {maos.length === 0 && (
+          <Card className="p-4 text-center text-xs text-ink-faint">Nenhuma mão com esse filtro.</Card>
+        )}
+      </div>
+    </div>
   );
 }
 
