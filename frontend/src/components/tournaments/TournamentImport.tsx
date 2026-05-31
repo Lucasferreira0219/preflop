@@ -2,8 +2,7 @@
 import { CheckCircle2, Loader2, Upload, X } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { api } from "@/lib/api";
-import { useApp } from "@/state/AppProvider";
-import type { ImportTournamentFilesResult, Tournament } from "@/lib/types";
+import type { ImportTournamentFilesResult } from "@/lib/types";
 import { cn } from "@/lib/cn";
 
 function readAsText(file: File): Promise<string> {
@@ -16,7 +15,6 @@ function readAsText(file: File): Promise<string> {
 }
 
 export function TournamentImport({ onImported, className }: { onImported?: () => void; className?: string }) {
-  const { openTournament } = useApp();
   const inputRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(false);
   const [dragging, setDragging] = useState(false);
@@ -64,10 +62,10 @@ export function TournamentImport({ onImported, className }: { onImported?: () =>
           {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Upload className="h-5 w-5" />}
         </span>
         <span className="text-sm font-semibold text-ink">
-          {loading ? "Importando e analisando com o PKEâ€¦" : "Importar do PokerStars"}
+          {loading ? "Importando e analisando com o PKE..." : "Importar do PokerStars"}
         </span>
         <span className="text-2xs text-ink-faint">
-          Solte os arquivos .txt (torneios ou mÃ£os) aqui ou clique â€” o PKE analisa automaticamente
+          Solte os arquivos .txt (torneios ou maos) aqui ou clique - o PKE analisa automaticamente
         </span>
       </button>
 
@@ -87,34 +85,11 @@ export function TournamentImport({ onImported, className }: { onImported?: () =>
       />
 
       {result && (
-        <div className="mt-3 flex flex-col gap-2">
-          <div className="flex flex-wrap items-center gap-2 text-xs text-action-green">
-            <CheckCircle2 className="h-4 w-4 shrink-0" />
-            {result.tournaments.length} {result.tournaments.length === 1 ? "torneio importado" : "torneios importados"}
-          </div>
-          {result.tournaments.map((t) => (
-            <ImportedTournamentRow key={t.tournament_id} t={t} onOpen={() => openTournament(t.tournament_id)} />
-          ))}
+        <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-action-green">
+          <CheckCircle2 className="h-4 w-4 shrink-0" />
+          {result.tournaments.length} {result.tournaments.length === 1 ? "torneio importado" : "torneios importados"}
         </div>
       )}
     </Card>
-  );
-}
-
-function ImportedTournamentRow({ t, onOpen }: { t: Tournament; onOpen: () => void }) {
-  return (
-    <div className="flex items-center justify-between gap-2 rounded-ctl border border-border bg-surface-1 px-3 py-2">
-      <div className="min-w-0">
-        <div className="text-sm font-semibold text-ink">
-          {t.tournament_name || `Torneio #${t.tournament_id}`}
-        </div>
-      </div>
-      <button
-        onClick={onOpen}
-        className="shrink-0 rounded-full border border-gold/50 bg-gold/15 px-3 py-1 text-2xs font-semibold text-gold hover:bg-gold/25"
-      >
-        Abrir review
-      </button>
-    </div>
   );
 }

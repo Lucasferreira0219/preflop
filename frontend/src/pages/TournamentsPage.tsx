@@ -200,7 +200,7 @@ export function TournamentsPage() {
         />
       </header>
 
-      {/* Container â€” padding menor no mobile, max-width pra desktop */}
+      {/* Container — padding menor no mobile, max-width pra desktop */}
       <div className="mx-auto w-full max-w-5xl px-3 py-4 sm:px-6 sm:py-6">
         <div ref={importRef} className="scroll-mt-20">
           <TournamentImport onImported={() => refresh()} />
@@ -217,6 +217,7 @@ export function TournamentsPage() {
           <>
             <StatsBar overview={overview} currency={currency} pke={pkeKpis} />
             <BankrollChart overview={overview} currency={currency} tournaments={tournaments} />
+            <PositionDistribution overview={overview} />
             <EvolutionBlock
               sessions={sessions}
             />
@@ -245,7 +246,7 @@ export function TournamentsPage() {
           </>
         ) : (
           <Card className="mt-4 p-6 text-center text-sm text-ink-dim sm:p-8">
-            Solte os arquivos do PokerStars (.txt) acima para comeÃ§ar â€” ou use{" "}
+            Solte os arquivos do PokerStars (.txt) acima para começar — ou use{" "}
             <button
               onClick={() => setShowNew(true)}
               className="font-semibold text-gold underline-offset-2 hover:underline"
@@ -281,7 +282,7 @@ export function TournamentsPage() {
   );
 }
 
-// â”€â”€ Hero (Lucro grande) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// â"€â"€ Hero (Lucro grande) â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 
 function HeaderActions({
   canExport,
@@ -313,9 +314,9 @@ function HeaderActions({
   const item = "flex w-full items-center gap-2 rounded-ctl px-3 py-2 text-left text-sm text-ink-dim hover:bg-surface-2 hover:text-ink";
   return (
     <div className="relative flex items-center gap-1" ref={boxRef}>
-      <Button variant="primary" size="sm" onClick={onImport} aria-label="Importar mÃ£os">
+      <Button variant="primary" size="sm" onClick={onImport} aria-label="Importar mãos">
         <Upload className="h-4 w-4" />
-        <span className="hidden sm:inline">Importar mÃ£os</span>
+        <span className="hidden sm:inline">Importar mãos</span>
       </Button>
       <Button variant="ghost" size="sm" onClick={onFilters} aria-label="Filtros">
         <Filter className="h-4 w-4" />
@@ -338,7 +339,7 @@ function HeaderActions({
         type="button"
         onClick={() => setOpen((v) => !v)}
         className="grid h-8 w-8 place-items-center rounded-ctl text-ink-dim hover:bg-surface-2 hover:text-ink"
-        aria-label="Mais aÃ§Ãµes"
+        aria-label="Mais ações"
       >
         <MoreHorizontal className="h-4 w-4" />
       </button>
@@ -353,13 +354,13 @@ function HeaderActions({
             </button>
           )}
           <button className={item} onClick={() => { setOpen(false); navigate("/sessions"); }}>
-            <CalendarClock className="h-4 w-4" /> SessÃµes
+            <CalendarClock className="h-4 w-4" /> Sessões
           </button>
           <button className={item} onClick={() => { setOpen(false); navigate("/tournament-types"); }}>
             <Trophy className="h-4 w-4" /> Estruturas
           </button>
           <button className={item} onClick={() => { setOpen(false); navigate("/"); }}>
-            <ArrowLeft className="h-4 w-4" /> InÃ­cio
+            <ArrowLeft className="h-4 w-4" /> Início
           </button>
         </div>
       )}
@@ -391,14 +392,14 @@ function HeroLucro({
       </div>
       {overview.pending_prize > 0 && (
         <div className="mt-1 text-2xs text-ink-faint">
-          {overview.pending_prize} {overview.pending_prize === 1 ? "torneio" : "torneios"} sem prÃªmio confirmado Â· usando custo como base
+          {overview.pending_prize} {overview.pending_prize === 1 ? "torneio" : "torneios"} sem prêmio confirmado · usando custo como base
         </div>
       )}
     </Card>
   );
 }
 
-// â”€â”€ Tiles secundÃ¡rios â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// â"€â"€ Tiles secundários â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 
 function StatsBar({ overview, currency, pke }: {
   overview: TournamentOverview;
@@ -417,18 +418,18 @@ function StatsBar({ overview, currency, pke }: {
       <Tile label="Torneios" value={String(overview.n_tournaments)} />
       <Tile label="ROI" value={fmtPct(overview.roi_pct)} tone={overview.roi_pct != null && overview.roi_pct > 0 ? "green" : overview.roi_pct != null && overview.roi_pct < 0 ? "red" : "ink"} />
       <Tile label="ITM" value={fmtPct(overview.itm_pct, 0)} />
-      <Tile label="Nota mÃ©dia PKE" value={pke.media != null ? pke.media.toFixed(1) : "â€”"} tone={mediaTone} />
+      <Tile label="Nota média PKE" value={pke.media != null ? pke.media.toFixed(1) : "—"} tone={mediaTone} />
       <Tile label="Erros graves" value={String(pke.graves)} tone={pke.graves > 0 ? "red" : "ink"} />
       {overview.pending_prize > 0 && (
         <p className="col-span-2 text-2xs text-ink-faint sm:col-span-6">
-          {overview.pending_prize} {overview.pending_prize === 1 ? "torneio" : "torneios"} sem prÃªmio confirmado Â· usando custo como base.
+          {overview.pending_prize} {overview.pending_prize === 1 ? "torneio" : "torneios"} sem prêmio confirmado · usando custo como base.
         </p>
       )}
     </div>
   );
 }
 
-// â”€â”€ EvoluÃ§Ã£o tÃ©cnica (abas por dia: nota / erros / leaks) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// â"€â"€ Evolução técnica (abas por dia: nota / erros / leaks) â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 function EvolutionBlock({
   sessions,
 }: {
@@ -500,9 +501,9 @@ function pickInsight(days: TournamentSession[]): { text: string; tone: "warn" | 
     const s = days[i];
     if (s.media_notas == null) continue;
     if (s.profit_cents > 0 && s.media_notas < 6)
-      return { text: `${s.day}: vocÃª ganhou, mas a nota foi ${s.media_notas}. Cuidado com a variÃ¢ncia â€” resultado bom nÃ£o valida decisÃ£o.`, tone: "warn" };
+      return { text: `${s.day}: você ganhou, mas a nota foi ${s.media_notas}. Cuidado com a variância — resultado bom não valida decisão.`, tone: "warn" };
     if (s.profit_cents < 0 && s.media_notas >= 7)
-      return { text: `${s.day}: vocÃª perdeu, mas jogou bem (nota ${s.media_notas}). DecisÃµes boas â€” siga o processo.`, tone: "good" };
+      return { text: `${s.day}: você perdeu, mas jogou bem (nota ${s.media_notas}). Decisões boas — siga o processo.`, tone: "good" };
   }
   return null;
 }
@@ -540,7 +541,7 @@ function notaCls(n: number | null | undefined): string {
 }
 
 const SEM_MAOS_TITLE =
-  "Sem hand history importado. Importe o .txt do PokerStars para receber anÃ¡lise PKE.";
+  "Sem hand history importado. Importe o .txt do PokerStars para receber análise PKE.";
 
 function StatusChip({ t }: { t: Tournament }) {
   const st = tournamentStatus(t);
@@ -592,7 +593,7 @@ function Tile({
   );
 }
 
-// â”€â”€ DistribuiÃ§Ã£o de posiÃ§Ãµes â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// â"€â"€ Distribuição de posições â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 
 function PositionDistribution({ overview, compact }: { overview: TournamentOverview; compact?: boolean }) {
   const b = overview.position_buckets;
@@ -600,23 +601,22 @@ function PositionDistribution({ overview, compact }: { overview: TournamentOverv
   if (total === 0) return null;
 
   const bars = [
-    { key: "champion", label: "CampeÃ£o", icon: "1", n: b.champion, color: GOLD },
-    { key: "podium", label: "PÃ³dio (2Âºâ€“3Âº)", icon: "2-3", n: b.podium, color: "#7C8AA5" },
-    { key: "itm", label: "ITM", icon: "$", n: b.itm, color: GREEN },
-    { key: "out", label: "Fora", icon: "â€”", n: b.out, color: "#3A4757" },
+    { key: "champion", label: "1 lugar", n: b.champion, color: GOLD },
+    { key: "podium", label: "2-3 lugar", n: b.podium, color: "#7C8AA5" },
+    { key: "itm", label: "ITM", n: b.itm, color: GREEN },
+    { key: "out", label: "Fora", n: b.out, color: "#3A4757" },
   ];
 
   return (
     <Card className={cn("p-3 sm:p-4", !compact && "mt-2")}>
-      <SectionLabel>DistribuiÃ§Ã£o de posiÃ§Ãµes</SectionLabel>
+      <SectionLabel>Distribuição de posições</SectionLabel>
       <div className="mt-3 flex flex-col gap-2">
         {bars.map((bar) => {
           const pct = total ? (bar.n / total) * 100 : 0;
           return (
             <div key={bar.key} className="flex items-center gap-2">
-              <div className="flex w-28 shrink-0 items-center gap-1.5 text-xs text-ink-dim">
-                <span aria-hidden>{bar.icon}</span>
-                <span className="truncate">{bar.label}</span>
+              <div className="w-24 shrink-0 text-xs text-ink-dim truncate">
+                {bar.label}
               </div>
               <div className="h-3 flex-1 overflow-hidden rounded-full bg-surface-2">
                 <div
@@ -636,7 +636,7 @@ function PositionDistribution({ overview, compact }: { overview: TournamentOverv
   );
 }
 
-// â”€â”€ Bankroll cumulativo â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// â"€â"€ Bankroll cumulativo â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 
 function BankrollChart({
   overview,
@@ -731,7 +731,7 @@ function BankrollChart({
   );
 }
 
-// Dot sÃ³ nos pontos de Big Win (cravadas grandes) â€” destaca no grÃ¡fico.
+// Dot só nos pontos de Big Win (cravadas grandes) — destaca no gráfico.
 function BigWinDot(props: any) {
   const { cx, cy, payload } = props;
   if (!payload?.bigWin || cx == null || cy == null) return null;
@@ -747,13 +747,13 @@ function BkTooltip({ active, payload, currency }: any) {
         {fmtMoney(Math.round(p.running * 100), currency, { signed: true })}
       </div>
       <div className="mt-0.5 text-ink-faint nums">
-        #{p.idx} Â· {p.date}
+        #{p.idx} · {p.date}
       </div>
     </div>
   );
 }
 
-// â”€â”€ Filtros â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// â"€â"€ Filtros â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 
 function fmtDate(d: Date): string {
   const y = d.getFullYear();
@@ -768,7 +768,7 @@ const PRESETS: { key: PresetKey; label: string }[] = [
   { key: "today", label: "Hoje" },
   { key: "7d", label: "7 dias" },
   { key: "30d", label: "30 dias" },
-  { key: "month", label: "MÃªs" },
+  { key: "month", label: "Mês" },
   { key: "year", label: "Ano" },
   { key: "all", label: "Tudo" },
 ];
@@ -821,8 +821,8 @@ function Filters({
     filters.max_buyin != null ? String(filters.max_buyin / 100) : "",
   );
 
-  // MantÃ©m os inputs sincronizados quando os filtros mudam por fora
-  // (presets, clique em sessÃ£o, etc.).
+  // Mantém os inputs sincronizados quando os filtros mudam por fora
+  // (presets, clique em sessão, etc.).
   useEffect(() => {
     setFrom(filters.from_date ?? "");
     setTo(filters.to_date ?? "");
@@ -861,7 +861,7 @@ function Filters({
   const fmtOptions = [
     { value: FMT_ALL, label: "Todos os formatos" },
     ...formats.map((f) => ({ value: f, label: f })),
-    { value: "Sem rÃ³tulo", label: "Sem rÃ³tulo" },
+    { value: "Sem rótulo", label: "Sem rótulo" },
   ];
 
   const roomOptions = [
@@ -871,7 +871,7 @@ function Filters({
 
   return (
     <div className="flex flex-col gap-3">
-        {/* Presets de perÃ­odo â€” atalhos rÃ¡pidos */}
+        {/* Presets de período — atalhos rápidos */}
         <div className="flex flex-wrap gap-1.5">
           {PRESETS.map((p) => {
             const r = presetRange(p.key);
@@ -906,7 +906,7 @@ function Filters({
               className="filter-input"
             />
           </FilterField>
-          <FilterField label="AtÃ©">
+          <FilterField label="Até">
             <input
               value={to}
               onChange={(e) => setTo(e.target.value)}
@@ -979,14 +979,14 @@ function FilterField({
     <label className={cn("flex flex-col gap-1", colSpan)}>
       <span className="text-2xs uppercase tracking-[0.1em] text-ink-faint">
         {label}
-        {hint && <span className="ml-1 text-ink-faint/70 normal-case tracking-normal">Â· {hint}</span>}
+        {hint && <span className="ml-1 text-ink-faint/70 normal-case tracking-normal">· {hint}</span>}
       </span>
       {children}
     </label>
   );
 }
 
-// â”€â”€ Lista de torneios (mobile: cards / desktop: tabela) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// â"€â"€ Lista de torneios (mobile: cards / desktop: tabela) â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 
 function TournamentsList({
   tournaments,
@@ -1015,8 +1015,8 @@ function TournamentsList({
     <div className="mt-2">
       {hasSemMaos && (
         <p className="mb-2 text-2xs text-ink-faint">
-          Torneios marcados como <span className="text-ink-dim">"Sem mÃ£os"</span> nÃ£o tÃªm hand
-          history â€” importe o .txt do PokerStars para receber anÃ¡lise PKE.
+          Torneios marcados como <span className="text-ink-dim">"Sem mãos"</span> não têm hand
+          history — importe o .txt do PokerStars para receber análise PKE.
         </p>
       )}
       {/* MOBILE: cards empilhados */}
@@ -1071,7 +1071,7 @@ function TournamentsList({
   );
 }
 
-// â”€â”€ Card mobile â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// â"€â"€ Card mobile â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 
 function TournamentCard({
   t,
@@ -1111,31 +1111,31 @@ function TournamentCard({
           </div>
           <div className="mt-0.5 flex items-center gap-1.5 text-sm font-semibold text-ink">
             {medal && <span aria-hidden>{medal}</span>}
-            <span>{t.format ?? "Sem rÃ³tulo"}</span>
+            <span>{t.format ?? "Sem rótulo"}</span>
             {big && <BigWinBadge />}
           </div>
           <div className="truncate text-2xs text-ink-faint" title={t.tournament_name ?? ""}>
-            {t.tournament_name ?? "â€”"}
+            {t.tournament_name ?? "—"}
           </div>
         </div>
         <div className={cn("text-right text-base font-bold nums", profitTone)}>
-          {profit != null ? fmtMoney(profit, t.currency, { signed: true }) : "â€”"}
+          {profit != null ? fmtMoney(profit, t.currency, { signed: true }) : "—"}
         </div>
       </div>
 
-      {/* Linha 2: Buy-in Â· Pos Â· PrÃªmio */}
+      {/* Linha 2: Buy-in · Pos · Prêmio */}
       <div className="mt-2 grid grid-cols-3 gap-2 border-t border-border pt-2 text-xs">
         <Field label="Buy-in">
           <span className="nums text-ink">{fmtMoney(cost, t.currency)}</span>
         </Field>
-        <Field label="PosiÃ§Ã£o">
+        <Field label="Posição">
           <span className="text-ink">
             {t.finish_pos != null
               ? `${t.finish_pos}${t.n_entries ? `/${t.n_entries}` : ""}`
-              : "â€”"}
+              : "—"}
           </span>
         </Field>
-        <Field label="PrÃªmio">
+        <Field label="Prêmio">
           {t.prize_known ? (
             <span className="flex items-baseline gap-1">
               <span className="nums text-ink">{fmtMoney(t.prize_cents, t.currency)}</span>
@@ -1167,7 +1167,7 @@ function TournamentCard({
         {leak && <span className="text-gold">{leak}</span>}
       </div>
 
-      {/* Form de ediÃ§Ã£o expandido (mobile-friendly: inputs grandes, vertical) */}
+      {/* Form de edição expandido (mobile-friendly: inputs grandes, vertical) */}
       {editing && (
         <EditForm
           t={t}
@@ -1176,7 +1176,7 @@ function TournamentCard({
         />
       )}
 
-      {/* BotÃµes de aÃ§Ã£o no rodapÃ© do card â€” sÃ³ quando NÃƒO editando */}
+      {/* Botões de ação no rodapé do card — só quando NÃO editando */}
       {!editing && (
         <div className="mt-2 flex items-center gap-1">
           <Button size="sm" variant="primary" className="mr-auto" onClick={onOpen}>
@@ -1212,7 +1212,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
-// Form de ediÃ§Ã£o compartilhado entre mobile card e desktop table
+// Form de edição compartilhado entre mobile card e desktop table
 function EditForm({
   t,
   onSave,
@@ -1230,17 +1230,17 @@ function EditForm({
   return (
     <div className="mt-3 grid grid-cols-2 gap-2 border-t border-border pt-3">
       <label className="flex flex-col gap-1">
-        <span className="text-2xs uppercase tracking-[0.1em] text-ink-faint">PosiÃ§Ã£o final</span>
+        <span className="text-2xs uppercase tracking-[0.1em] text-ink-faint">Posição final</span>
         <input
           value={pos}
           onChange={(e) => setPos(e.target.value)}
           inputMode="numeric"
-          placeholder="â€”"
+          placeholder="—"
           className="filter-input"
         />
       </label>
       <label className="flex flex-col gap-1">
-        <span className="text-2xs uppercase tracking-[0.1em] text-ink-faint">PrÃªmio ({t.currency})</span>
+        <span className="text-2xs uppercase tracking-[0.1em] text-ink-faint">Prêmio ({t.currency})</span>
         <input
           value={prize}
           onChange={(e) => setPrize(e.target.value)}
@@ -1273,7 +1273,7 @@ function EditForm({
   );
 }
 
-// â”€â”€ Tabela desktop â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// â"€â"€ Tabela desktop â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 
 function Th({
   children,
@@ -1326,7 +1326,7 @@ function TableRow({
       <tr className="border-b border-border/60">
         <td colSpan={7} className="px-3 py-3">
           <div className="mb-2 text-xs text-ink-dim">
-            {fmtShortDate(t.played_at)} Â· {t.tournament_name ?? "â€”"}
+            {fmtShortDate(t.played_at)} · {t.tournament_name ?? "—"}
           </div>
           <EditForm t={t} onSave={onSave} onCancel={onCancelEdit} />
         </td>
@@ -1340,7 +1340,7 @@ function TableRow({
         <div>{fmtShortDate(t.played_at)}</div>
         <div className="mt-0.5"><RoomTag room={t.room} /></div>
         <div className="mt-0.5 truncate text-2xs text-ink-faint" title={t.tournament_name ?? ""}>
-          {t.tournament_name ?? "â€”"}
+          {t.tournament_name ?? "—"}
         </div>
       </td>
       <td className="px-3 py-2 text-right text-xs nums text-ink-dim">
@@ -1350,16 +1350,16 @@ function TableRow({
         <div className="flex items-center gap-1.5 text-xs text-ink">
           {medal && <span aria-hidden>{medal}</span>}
           <span className={cn("font-semibold nums", profitTone)}>
-            {profit != null ? fmtMoney(profit, t.currency, { signed: true }) : "â€”"}
+            {profit != null ? fmtMoney(profit, t.currency, { signed: true }) : "—"}
           </span>
           {big && <BigWinBadge />}
         </div>
         <div className="mt-0.5 text-2xs text-ink-faint">
           {t.finish_pos != null
             ? `${t.finish_pos}${t.n_entries ? `/${t.n_entries}` : ""}`
-            : "sem posiÃ§Ã£o"}
-          {" Â· "}
-          {t.format ?? "Sem rÃ³tulo"}
+            : "sem posição"}
+          {" · "}
+          {t.format ?? "Sem rótulo"}
         </div>
         {leak ? (
           <div className="mt-0.5 text-2xs text-gold">{leak}</div>
@@ -1368,10 +1368,10 @@ function TableRow({
         )}
       </td>
       <td className={cn("px-3 py-2 text-right text-xs nums font-bold", notaCls(t.pke_score_avg))}>
-        {t.pke_score_avg != null ? t.pke_score_avg.toFixed(1) : "â€”"}
+        {t.pke_score_avg != null ? t.pke_score_avg.toFixed(1) : "—"}
       </td>
       <td className="px-3 py-2 text-right text-xs nums text-action-red">
-        {t.pke_grave_errors ? t.pke_grave_errors : "â€”"}
+        {t.pke_grave_errors ? t.pke_grave_errors : "—"}
       </td>
       <td className="px-3 py-2"><StatusChip t={t} /></td>
       <td className="px-3 py-2" onClick={stop}>
@@ -1397,7 +1397,7 @@ function TableRow({
   );
 }
 
-// â”€â”€ SessÃµes (por dia) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// â"€â"€ Sessões (por dia) â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 
 function hhmm(s: string | null): string {
   if (!s || s.length < 16) return "";
@@ -1436,7 +1436,7 @@ function SessionsCard({
         <SectionLabel>
           <span className="inline-flex items-center gap-1.5">
             <CalendarDays className="h-3.5 w-3.5" />
-            SessÃµes (por dia)
+            Sessões (por dia)
           </span>
         </SectionLabel>
         <span className="text-2xs text-ink-faint">
@@ -1468,7 +1468,7 @@ function SessionsCard({
                   <div className="text-xs font-semibold text-ink nums">{fmtShortDate(s.day)}</div>
                   <div className="mt-0.5 text-2xs text-ink-faint nums">
                     {s.n} {s.n === 1 ? "torneio" : "torneios"}
-                    {s.roi_pct != null && ` Â· ROI ${fmtPct(s.roi_pct, 0)}`}
+                    {s.roi_pct != null && ` · ROI ${fmtPct(s.roi_pct, 0)}`}
                   </div>
                 </div>
                 <div className={cn("shrink-0 text-right text-sm font-bold nums", tone)}>
@@ -1476,16 +1476,16 @@ function SessionsCard({
                 </div>
               </div>
               <div className="mt-2 grid grid-cols-2 gap-2 text-2xs">
-                <SessionMini label="Nota PKE" value={s.media_notas != null ? s.media_notas.toFixed(1) : "â€”"} tone={s.media_notas != null && s.media_notas < 5 ? "red" : s.media_notas != null && s.media_notas >= 7 ? "green" : "ink"} />
+                <SessionMini label="Nota PKE" value={s.media_notas != null ? s.media_notas.toFixed(1) : "—"} tone={s.media_notas != null && s.media_notas < 5 ? "red" : s.media_notas != null && s.media_notas >= 7 ? "green" : "ink"} />
                 <SessionMini label="Erros graves" value={String(s.erros_graves ?? 0)} tone={(s.erros_graves ?? 0) > 0 ? "red" : "ink"} />
                 <div className="col-span-2 text-2xs text-ink-faint">
-                  {start && <span><Clock className="mr-1 inline h-2.5 w-2.5" />{start}{end && end !== start ? `â€“${end}` : ""} Â· </span>}
-                  Leak principal: <span className="text-gold">{s.main_leak ? leakLabel(s.main_leak) : "â€”"}</span>
+                  {start && <span><Clock className="mr-1 inline h-2.5 w-2.5" />{start}{end && end !== start ? `–${end}` : ""} · </span>}
+                  Leak principal: <span className="text-gold">{s.main_leak ? leakLabel(s.main_leak) : "—"}</span>
                 </div>
               </div>
               <div className="mt-3 flex gap-2">
                 <Button size="sm" variant="ghost" className="flex-1" onClick={() => onPickDay(s.day)}>
-                  Revisar sessÃ£o
+                  Revisar sessão
                 </Button>
                 <Button size="sm" variant="primary" className="flex-1" onClick={() => navigate("/treinar?mode=leaks&from=leak")}>
                   Treinar leaks
