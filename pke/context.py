@@ -100,11 +100,12 @@ class HandContext:
     spot: str | None = None
 
     def is_ip_vs(self, villain_pos: str | None) -> bool:
-        """Hero está em posição contra o vilão? (ordem de ação pós-flop)."""
+        """Hero está em posição contra o vilão? (ordem de ação PÓS-FLOP:
+        SB age primeiro, BTN por último → quem age depois é IP)."""
         if not villain_pos:
             return True
-        order = POSITIONS  # aproximação: posição mais à direita age por último
+        postflop = ["SB", "BB", "UTG", "UTG1", "UTG2", "MP", "HJ", "CO", "BTN"]
         try:
-            return order.index(self.hero_pos) > order.index(villain_pos)
+            return postflop.index(self.hero_pos) > postflop.index(villain_pos)
         except ValueError:
             return True

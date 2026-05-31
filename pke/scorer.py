@@ -78,8 +78,28 @@ def score_decision(ctx: HandContext, rec: Recommendation, hero_action: str,
         mods.append({"fator": "call em vez de resteal (sem fold equity)", "delta": "cap 3"})
 
     score = max(0, min(10, score))
+
+    # ── notas mais cautelosas quando a decisão é APROXIMADA (sem range exato) ──
+    approximate = getattr(rec, "approximate", False)
+    if approximate:
+        if hero == primary:
+            score = min(score, 8)            # acerto em spot aproximado não é "10 cravado"
+            mods.append({"fator": "spot aproximado (sem range exato)", "delta": "máx 8"})
+        elif hero in forbidden:
+            score = max(3, score)            # violação clara ainda pune, mas sem extremo
+        else:
+            # erro óbvio de ICM (call loose na bolha) pode ir baixo; senão, moderado
+            if ctx.spot == "bubble_call" and hero == "call" and primary == "fold":
+                score = 3
+                error_type = error_type or "call_loose_bolha_icm"
+                mods.append({"fator": "call loose na bolha (ICM) — erro claro", "delta": "→3"})
+            else:
+                score = max(4, min(score, 6))
+                error_type = error_type or "decisao_close_aproximada"
+                mods.append({"fator": "spot aproximado — decisão close", "delta": "4–6"})
+
     return {"score": score, "base": base, "gravity": _gravity(score),
-            "error_type": error_type, "modifiers": mods,
+            "error_type": error_type, "modifiers": mods, "approximate": approximate,
             "rationale": _rationale(hero, primary, base, mods)}
 
 

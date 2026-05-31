@@ -168,6 +168,21 @@ def analyze_hand(h: dict) -> dict:
               f"nota={decision.get('nota')} regra={decision.get('regra_pdf')} "
               f"outcome={outcome} crit={is_crit}{' INSUF:'+str(debug['insuficiente_porque']) if decision.get('insuficiente') else ''}")
 
+    # dados da mão (hand history) para o card expandido da review
+    hh_fields = (
+        "blinds", "ante", "n_players", "played_at",
+        "hero_stack_chips", "hero_stack_bb", "effective_stack_bb",
+        "villain_stack_chips", "villain_stack_bb",
+        "opener_pos", "opener_action", "opener_size_chips", "opener_size_bb",
+        "villain_position", "villain_action", "n_limpers",
+        "hero_action", "hero_action_size_chips", "hero_action_size_bb",
+        "faced_allin", "allin_amount_chips", "allin_amount_bb",
+        "preflop_action_summary", "street", "board",
+        "went_to_showdown", "hero_won", "pot_total", "hero_net_chips",
+        "hero_busted", "villain_cards", "hero_cards",
+    )
+    hh = {k: h.get(k) for k in hh_fields}
+
     return {
         "hand_id": h.get("hand_id"),
         "is_critical": is_crit,
@@ -175,6 +190,7 @@ def analyze_hand(h: dict) -> dict:
         "outcome": outcome,
         "decision": decision,
         "debug": debug,
+        "hh": hh,
     }
 
 

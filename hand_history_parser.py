@@ -42,6 +42,8 @@ _RE_RAISE   = re.compile(r"^(.+?):\s+aumenta\s+(\d+)\s+para\s+(\d+)")
 # Resultado da mão (seção resumo/showdown)
 _RE_POT      = re.compile(r"Total pote\s+(\d+)")
 _RE_SHOWDOWN = re.compile(r"\*\*\*\s*SHOW\s*DOWN")
+_RE_SHOW     = re.compile(r"^(.+?):\s+mostra\s+\[(\w\w)\s+(\w\w)\]")
+_RE_BOARD    = re.compile(r"Mesa\s+\[([2-9TJQKAtjqka][cdhs](?:\s+[2-9TJQKAtjqka][cdhs])*)\]")
 
 
 def canonical_hand(c1, c2):
@@ -192,37 +194,64 @@ def parse_text(text):
         stack_chips = seats.get(hero, 0)
         stack_bb = round(stack_chips / bb) if bb else None
         scenario, hero_action, hero_all_in, gradeable, motivo = _classify(hero, preflop)
-        opener_pos, villain_action, faced_allin, n_limpers = _preflop_context(hero, preflop, positions)
+        pc = _preflop_context(hero, preflop, positions)
         result = _parse_result(block, hero)
         hero_voluntary = hero_action in ('call', 'raise')
+
+        def _bb(v):
+            return round(v / bb, 1) if (bb and v is not None) else None
+
+        villain_chips = seats.get(pc["opener_name"]) if pc["opener_name"] else None
+        eff_chips = min(stack_chips, villain_chips) if villain_chips else stack_chips
+        eff_bb = round(eff_chips / bb) if bb else None
+        hero_net = -stack_chips if result["hero_busted"] else None  # melhor esforço
 
         hands.append({
             'hand_id': hand_id,
             'tournament_id': tournament_id,
             'played_at': played_at,
             'sb': sb, 'bb': bb,
+            'blinds': f"{sb}/{bb}",
             'hero': hero,
             'hero_pos': hero_pos,
             'hero_cards': hero_cards,
             'stack_bb': stack_bb,
             'stack_chips': stack_chips,
+            'hero_stack_chips': stack_chips,
+            'hero_stack_bb': stack_bb,
+            'effective_stack_bb': eff_bb,
+            'villain_stack_chips': villain_chips,
+            'villain_stack_bb': _bb(villain_chips),
             'scenario': scenario,
             'hero_action': hero_action,
+            'hero_action_size_chips': pc["hero_action_size_chips"],
+            'hero_action_size_bb': _bb(pc["hero_action_size_chips"]),
             'hero_all_in': hero_all_in,
             'gradeable': gradeable,
             'motivo': motivo,
             'n_players': len(seats),
-            # contexto da ação antes do herói (pro PKE)
-            'opener_pos': opener_pos,
-            'villain_action': villain_action,
-            'faced_allin': faced_allin,
-            'n_limpers': n_limpers,
+            'street': 'preflop',
+            # contexto da ação antes do herói (pro PKE + UI)
+            'opener_pos': pc["opener_pos"],
+            'opener_action': pc["villain_action"],
+            'opener_size_chips': pc["opener_size_chips"],
+            'opener_size_bb': _bb(pc["opener_size_chips"]),
+            'villain_position': pc["opener_pos"],
+            'villain_action': pc["villain_action"],
+            'faced_allin': pc["faced_allin"],
+            'allin_amount_chips': pc["allin_amount_chips"],
+            'allin_amount_bb': _bb(pc["allin_amount_chips"]),
+            'n_limpers': pc["n_limpers"],
             'hero_voluntary': hero_voluntary,
-            # resultado da mão (pro relatório / cooler-badbeat)
+            'preflop_action_summary': _summary_text(preflop, positions, hero, bb),
+            # resultado da mão
             'went_to_showdown': result['went_to_showdown'],
             'hero_won': result['hero_won'],
             'pot_total': result['pot_total'],
+            'hero_net_chips': hero_net,
             'hero_busted': result['hero_busted'],
+            'board': result['board'],
+            'villain_cards': result['villain_cards'],
             'raw': '\n'.join(block),
         })
     return hands
@@ -255,35 +284,45 @@ def _hero_position(block, hero, button_seat, n_players):
 
 
 def _preflop_context(hero, preflop, positions):
-    """A partir da sequência pré-flop, devolve fatos sobre a AÇÃO ANTES do herói:
-       opener_pos, villain_action (raise/limp/shove), faced_allin, n_limpers.
+    """Fatos da AÇÃO ANTES do herói + tamanhos (chips) para a UI.
+    Devolve dict com opener_*, villain_action, faced_allin, n_limpers,
+    hero_action_size_chips, allin_amount_chips, opener_name.
     """
-    opener_pos = None
+    opener_pos = opener_name = None
     villain_action = None
+    opener_size = None
     faced_allin = False
+    allin_amount = None
     n_limpers = 0
-    for actor, act, _val, all_in in preflop:
+    hero_size = None
+    for actor, act, val, all_in in preflop:
         if actor == hero:
+            if act in ('raise', 'call'):
+                hero_size = val
             break
         if all_in:
             faced_allin = True
+            allin_amount = val
         if act == 'raise':
-            if opener_pos is None:
-                opener_pos = positions.get(actor)
-                villain_action = 'shove' if all_in else 'raise'
-            else:
-                villain_action = 'shove' if all_in else 'raise'  # último agressor
-                opener_pos = positions.get(actor)
-        elif act == 'call':  # limp (sem raise antes) conta como limp
+            opener_pos = positions.get(actor)
+            opener_name = actor
+            opener_size = val
+            villain_action = 'shove' if all_in else 'raise'
+        elif act == 'call':  # limp (sem raise antes)
             n_limpers += 1
             if opener_pos is None and villain_action is None:
                 opener_pos = positions.get(actor)
+                opener_name = actor
+                opener_size = val
                 villain_action = 'limp'
-    return opener_pos, villain_action, faced_allin, n_limpers
+    return {"opener_pos": opener_pos, "opener_name": opener_name, "opener_size_chips": opener_size,
+            "villain_action": villain_action, "faced_allin": faced_allin,
+            "allin_amount_chips": allin_amount, "n_limpers": n_limpers,
+            "hero_action_size_chips": hero_size}
 
 
 def _parse_result(block, hero):
-    """Resultado da mão: showdown, hero ganhou/perdeu, pote total, hero bustou."""
+    """Resultado: showdown, ganhou/perdeu, pote, bustou, board, cartas do vilão."""
     text = '\n'.join(block)
     pot = None
     mp = _RE_POT.search(text)
@@ -292,6 +331,17 @@ def _parse_result(block, hero):
     showdown = bool(_RE_SHOWDOWN.search(text))
     hero_won = None
     busted = False
+    villain_cards = None
+    board = None
+    mboard = _RE_BOARD.search(text)
+    if mboard:
+        board = mboard.group(1).split()
+    # cartas mostradas (vilão = quem mostrou e não é o hero)
+    for line in block:
+        ms = _RE_SHOW.match(line)
+        if ms and ms.group(1).strip() != (hero or ''):
+            villain_cards = canonical_hand(ms.group(2), ms.group(3))
+            break
     if hero:
         h = re.escape(hero)
         if re.search(rf"{h}\b.*?\bganhou\b", text) or re.search(rf"{h}\s+recebeu\s+\d+\s+do pote", text):
@@ -299,8 +349,32 @@ def _parse_result(block, hero):
         elif re.search(rf"{h}\b.*?\bperdeu\b", text):
             hero_won = False
         busted = bool(re.search(rf"{h}\s+terminou o torneio", text))
-    return {"went_to_showdown": showdown, "hero_won": hero_won,
-            "pot_total": pot, "hero_busted": busted}
+    return {"went_to_showdown": showdown, "hero_won": hero_won, "pot_total": pot,
+            "hero_busted": busted, "board": board, "villain_cards": villain_cards}
+
+
+_VERB = {"raise": "abriu", "call": "pagou", "fold": "fold"}
+
+
+def _summary_text(preflop, positions, hero, bb):
+    """Linha humana da ação pré-flop. Ex.: 'CO abriu 2bb, BTN fold, Hero SB pagou, BB fold.'"""
+    parts = []
+    seen_raise = False
+    for actor, act, val, all_in in preflop:
+        pos = positions.get(actor) or actor
+        who = f"Hero {pos}" if actor == hero else pos
+        if act == 'raise':
+            amt = f" {round(val / bb, 1)}bb" if bb and val else ""
+            if all_in:
+                parts.append(f"{who} shovou{amt}")
+            else:
+                parts.append(f"{who} {'re-raise' if seen_raise else 'abriu'}{amt}")
+            seen_raise = True
+        elif act == 'call':
+            parts.append(f"{who} {'pagou' if seen_raise else 'limpou'}")
+        elif act == 'fold':
+            parts.append(f"{who} fold")
+    return ", ".join(parts) + "." if parts else ""
 
 
 if __name__ == '__main__':

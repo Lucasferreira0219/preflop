@@ -466,41 +466,23 @@ function HandCard({
             <span>{lbl(PHASE_LABEL, m.fase)}</span>
             {m.eff_bb != null && <><span>·</span><span>{Math.round(m.eff_bb)}bb</span></>}
           </div>
-          <div className="truncate text-xs text-ink">{m.resumo}</div>
+          <div className="mt-0.5 flex flex-wrap items-center gap-1">
+            <span className={cn("rounded-full px-2 py-0.5 text-2xs font-semibold", dec.cls)}>
+              {m.shown_label ?? dec.label}
+            </span>
+            {imp && (
+              <span className={cn("rounded-full px-2 py-0.5 text-2xs font-medium", imp.cls)}>
+                {m.shown_impact ?? imp.label}
+              </span>
+            )}
+          </div>
         </div>
-        <span className={cn("shrink-0 rounded-full px-2 py-0.5 text-2xs font-semibold", out.cls)}>{out.label}</span>
         <ChevronDown className={cn("h-4 w-4 shrink-0 text-ink-faint transition-transform", open && "rotate-180")} />
       </button>
 
       {open && (
         <div className="border-t border-border bg-surface-1/50 p-3 text-xs">
-          <div className="grid grid-cols-2 gap-2">
-            <Field label="Você jogou">{lbl(ACT, m.linha)}</Field>
-            <Field label="Recomendado">
-              {m.insuficiente ? <span className="text-ink-faint">—</span> : lbl(ACT, m.recomendado)}
-              {m.size_recomendado && <span className="text-ink-faint"> ({m.size_recomendado})</span>}
-            </Field>
-          </div>
-          {m.regra.length > 0 && (
-            <div className="mt-2">
-              <span className="text-ink-faint">Regra: </span>
-              {m.regra.map((r) => (
-                <span key={r} className="mr-1 rounded bg-surface-2 px-1.5 py-0.5 text-[10px] text-ink-dim">{r}</span>
-              ))}
-            </div>
-          )}
-          {m.explicacao && <p className="mt-2 leading-relaxed text-ink-dim">{m.explicacao}</p>}
-          {m.insuficiente && m.falta_info.length > 0 && (
-            <p className="mt-1 text-ink-faint">Falta: {m.falta_info.join(", ")}</p>
-          )}
-          {m.outcome === "cooler" && (
-            <p className="mt-2 flex items-center gap-1.5 rounded-ctl bg-action-blue/10 px-2 py-1.5 text-action-blue">
-              <Sparkles className="h-3.5 w-3.5" /> Decisão correta — você perdeu a mão, mas jogou certo (cooler).
-            </p>
-          )}
-          {m.ajuste_exploratorio && (
-            <p className="mt-2 text-ink-faint">Ajuste exploratório: {m.ajuste_exploratorio}</p>
-          )}
+          <HandDetail m={m} />
 
           {(onAskHand || (ruleId && onOpenRule) || (mode && onTrainLeak)) && (
             <div className="mt-3 flex flex-wrap gap-1.5 border-t border-border pt-3">
@@ -548,5 +530,102 @@ function Pick({ value, onChange, all, options }: {
       <option value="all">{all}</option>
       {options.map((o) => <option key={o.v} value={o.v}>{o.l}</option>)}
     </select>
+  );
+}
+
+// ── Detalhe completo da mão crítica (resumo de hand history) ─────────────────────
+function HandDetail({ m }: { m: ReportHand }) {
+  const hh = m.hh ?? {};
+  const chips = (n: number | null | undefined) => (n == null ? "—" : Number(n).toLocaleString("pt-BR"));
+  const bbv = (n: number | null | undefined) => (n == null ? null : `${n}bb`);
+  const approx = m.source_type === "DERIVED_FROM_PDF" || m.source_type === "HEURISTIC_LOW_STAKES";
+  const wonTxt = hh.hero_won === true ? "ganhou" : hh.hero_won === false ? "perdeu" : "—";
+
+  return (
+    <div className="grid gap-3 sm:grid-cols-2">
+      {/* esquerda: situação + ação */}
+      <div className="flex flex-col gap-3">
+        <Block title="Situação">
+          <Row k="Blinds" v={`${hh.blinds ?? "—"}${hh.ante ? " · com ante" : ""}`} />
+          <Row k="Jogadores" v={hh.n_players != null ? `${hh.n_players} restantes` : "—"} />
+          <Row k="Stack Hero" v={`${chips(hh.hero_stack_chips)} fichas${bbv(hh.hero_stack_bb) ? ` / ${bbv(hh.hero_stack_bb)}` : ""}`} />
+          <Row k={`Stack ${hh.villain_position ?? "vilão"}`} v={hh.villain_stack_chips != null ? `${chips(hh.villain_stack_chips)} fichas / ${bbv(hh.villain_stack_bb)}` : "não disponível"} />
+          <Row k="Stack efetivo" v={bbv(hh.effective_stack_bb ?? m.eff_bb) ?? "—"} />
+          {m.fase === "bubble" && <Row k="Situação" v="Bolha (ICM ativo)" />}
+        </Block>
+        <Block title="Ação da mão">
+          <p className="text-ink-dim">{hh.preflop_action_summary || "—"}</p>
+          {hh.faced_allin && (
+            <p className="mt-1 text-ink-faint">All-in enfrentado: {bbv(hh.allin_amount_bb) ?? "—"}</p>
+          )}
+        </Block>
+      </div>
+
+      {/* direita: decisão + regra + resultado */}
+      <div className="flex flex-col gap-3">
+        <Block title="Decisão">
+          <Row k="Você jogou" v={lbl(ACT, m.linha)} />
+          <Row k="Recomendado" v={m.insuficiente ? "—" : `${lbl(ACT, m.recomendado)}${m.size_recomendado ? ` (${m.size_recomendado})` : ""}`} />
+          {m.explicacao && <p className="mt-1 leading-relaxed text-ink-dim">{m.explicacao}</p>}
+          {approx && (
+            <p className="mt-1 rounded bg-gold/10 px-2 py-1 text-[11px] text-gold">
+              Aproximação ({m.confidence}). {m.warning ?? "Para precisão exata, usar HRC/ICMizer."}
+            </p>
+          )}
+          {m.outcome === "cooler" && (
+            <p className="mt-1 flex items-center gap-1.5 rounded bg-action-blue/10 px-2 py-1 text-action-blue">
+              <Sparkles className="h-3.5 w-3.5" /> Decisão correta — perdeu a mão, mas jogou certo.
+            </p>
+          )}
+          {m.insuficiente && m.falta_info.length > 0 && (
+            <p className="mt-1 text-ink-faint">Falta: {m.falta_info.join(", ")}</p>
+          )}
+        </Block>
+
+        {m.regra.length > 0 && (
+          <Block title="Regra usada">
+            <div className="flex flex-wrap gap-1">
+              {m.regra.map((r) => (
+                <span key={r} className="rounded bg-surface-2 px-1.5 py-0.5 text-[10px] text-ink-dim">{r}</span>
+              ))}
+            </div>
+          </Block>
+        )}
+
+        <Block title="Resultado">
+          {hh.went_to_showdown == null && hh.pot_total == null ? (
+            <p className="text-ink-faint">Não disponível.</p>
+          ) : (
+            <>
+              <Row k="Showdown" v={hh.went_to_showdown ? "sim" : "não"} />
+              <Row k="Hero" v={wonTxt} />
+              <Row k="Pote" v={hh.pot_total != null ? `${chips(hh.pot_total)} fichas` : "—"} />
+              {hh.hero_net_chips != null && <Row k="Saldo Hero" v={`${chips(hh.hero_net_chips)} fichas`} />}
+              <Row k="Vilão mostrou" v={hh.villain_cards ?? (hh.went_to_showdown ? "não revelado" : "—")} />
+              {hh.board && hh.board.length > 0 && <Row k="Board" v={hh.board.join(" ")} />}
+              <Row k="Hero bustou" v={hh.hero_busted ? "sim" : "não"} />
+            </>
+          )}
+        </Block>
+      </div>
+    </div>
+  );
+}
+
+function Block({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="rounded-ctl border border-border/60 bg-surface-1 p-2.5">
+      <div className="mb-1.5 text-2xs font-semibold uppercase tracking-[0.1em] text-ink-faint">{title}</div>
+      {children}
+    </div>
+  );
+}
+
+function Row({ k, v }: { k: string; v: React.ReactNode }) {
+  return (
+    <div className="flex items-baseline justify-between gap-2 py-0.5">
+      <span className="text-2xs text-ink-faint">{k}</span>
+      <span className="text-right text-xs text-ink">{v}</span>
+    </div>
   );
 }

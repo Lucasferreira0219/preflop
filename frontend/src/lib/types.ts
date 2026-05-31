@@ -300,6 +300,38 @@ export interface SimSession {
 
 // ── Relatório do PokerKnowledgeEngine (análise de torneio) ─────────────────────
 
+export interface ReportHandHH {
+  blinds?: string | null;
+  ante?: boolean | null;
+  n_players?: number | null;
+  hero_stack_chips?: number | null;
+  hero_stack_bb?: number | null;
+  effective_stack_bb?: number | null;
+  villain_stack_chips?: number | null;
+  villain_stack_bb?: number | null;
+  opener_pos?: string | null;
+  opener_action?: string | null;
+  opener_size_chips?: number | null;
+  opener_size_bb?: number | null;
+  villain_position?: string | null;
+  villain_action?: string | null;
+  n_limpers?: number | null;
+  hero_action?: string | null;
+  hero_action_size_bb?: number | null;
+  faced_allin?: boolean | null;
+  allin_amount_bb?: number | null;
+  preflop_action_summary?: string | null;
+  street?: string | null;
+  board?: string[] | null;
+  went_to_showdown?: boolean | null;
+  hero_won?: boolean | null;
+  pot_total?: number | null;
+  hero_net_chips?: number | null;
+  hero_busted?: boolean | null;
+  villain_cards?: string | null;
+  hero_cards?: string | null;
+}
+
 export interface ReportHand {
   hand_id: string;
   fase: string | null;
@@ -321,6 +353,18 @@ export interface ReportHand {
   motivos_criticos: string[];
   insuficiente: boolean;
   falta_info: string[];
+  source_type?: string | null;
+  confidence?: string | null;
+  range_status?: string | null;
+  warning?: string | null;
+  hh?: ReportHandHH;
+  // classificação por mão (sem nota numérica na UI da mão)
+  decision_label?: string;   // correct | minor_error | medium_error | major_error | cooler | insufficient
+  impact_label?: string;     // low | medium | high | critical
+  impact_weight?: number;
+  internal_score?: number | null;  // só cálculo/debug — não exibir como nota
+  shown_label?: string;      // "Acerto" | "Erro leve" | ...
+  shown_impact?: string;     // "Impacto baixo" | ...
 }
 
 export interface ReportLeak {

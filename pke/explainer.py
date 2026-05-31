@@ -49,6 +49,12 @@ def build_decision(ctx: HandContext, rec: Recommendation, hero_action: str,
         "conflitos": [],
         "insuficiente": rec.insufficient,
         "falta_info": rec.ask,
+        # camada de síntese / aproximação
+        "source_type": rec.source_type,
+        "confidence": rec.confidence,
+        "range_status": rec.range_status,
+        "used_proxy": rec.used_proxy,
+        "warning": rec.warning,
         "proveniencia": {
             "acao_recomendada": rec.provenance,
             "ajuste_exploratorio": "EXPLORATORY",

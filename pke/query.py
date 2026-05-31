@@ -185,8 +185,13 @@ def _build_ctx(question: str, context: dict):
         opener_pos=opener,
         villains=[{"pos": opener, "action": "raise"}] if opener else [],
     )
-    has_core = pos is not None and stack is not None
-    return ctx, _candidate_action(q), has_core
+    missing = []
+    if pos is None:
+        missing.append("hero_position")
+    if stack is None:
+        missing.append("effective_stack_bb")
+    has_core = not missing
+    return ctx, _candidate_action(q), has_core, missing
 
 
 # ── respostas ─────────────────────────────────────────────────────────────────────
@@ -229,6 +234,8 @@ def _decision_answer(ctx: HandContext, cand: str | None) -> dict:
             "recommended_action": None,
             # só falta a mão → medium (resposta parcial); sem base nenhuma → insufficient
             "confidence": "medium" if rec.ask else "insufficient",
+            "source_type": rec.source_type, "range_status": rec.range_status,
+            "used_proxy": rec.used_proxy, "warning": rec.warning,
             "rule_refs": _cite(rec.rule_ids),
             "provenance": {"main_answer": rec.provenance, "phase": "INFERENCE", "explanation": "PEDAGOGICAL"},
             "missing_info": rec.ask,
@@ -250,44 +257,53 @@ def _decision_answer(ctx: HandContext, cand: str | None) -> dict:
         else:
             answer = f"{_ACT_LABEL(primary)} é a recomendação. {_ACT_LABEL(cand)} é inferior."
 
+    if rec.warning:
+        answer = answer.rstrip(".") + ". " + rec.warning
+
     return {
         "answer": answer,
         "recommended_action": primary,
-        "confidence": "high" if rec.range_ref or rec.rule_ids else "medium",
+        "confidence": rec.confidence,
+        "source_type": rec.source_type,
+        "range_status": rec.range_status,
+        "used_proxy": rec.used_proxy,
+        "warning": rec.warning,
         "rule_refs": _cite(rec.rule_ids),
-        "provenance": {"main_answer": rec.provenance, "phase": "INFERENCE", "explanation": "PEDAGOGICAL"},
+        "provenance": {"main_answer": rec.source_type, "phase": "INFERENCE", "explanation": "PEDAGOGICAL"},
         "missing_info": [],
         "beginner_explanation": rec.explain,
         "common_mistake": common,
     }
 
 
-def _rule_level_answer(spot: str, ctx: HandContext, cand: str | None) -> dict:
+def _rule_level_answer(spot: str, ctx: HandContext, cand: str | None, missing_core=None) -> dict:
     kb = _kb()
     rule_id = _SPOT_RULE.get(spot)
     r = kb.rule(rule_id) if rule_id else None
-    if spot == "bubble_call":
-        return _insufficient(
-            "Na bolha o range de call de shove encolhe muito (risk premium alto): pague só o topo. "
-            "Range exato de call não está cadastrado — não dá pra cravar a mão sem mais dados.",
-            missing=["hero_cards", "stack do vilão"], rule_ids=[rule_id])
     if not r:
         return _insufficient("Não há regra cadastrada para esse contexto.")
     action = _SPOT_ACTION.get(spot)
-    missing = []
-    if ctx.hero_cards is None:
+    # essenciais ausentes (posição/stack) → insufficient; mão ausente → resposta parcial
+    missing = list(missing_core or [])
+    if ctx.hero_cards is None and "hero_cards" not in missing:
         missing.append("hero_cards")
-    if ctx.hero_pos is None:
-        missing.append("hero_position")
-    if ctx.eff_stack_bb is None:
-        missing.append("effective_stack_bb")
+    essential_missing = any(m in ("hero_position", "effective_stack_bb") for m in missing)
     answer = r.get("explain_pt", "")
     if action:
         answer = f"{_ACT_LABEL(action)}. " + answer
+    if essential_missing:
+        answer += " Mas preciso de " + " e ".join(
+            "posição" if m == "hero_position" else "stack efetivo" if m == "effective_stack_bb" else "mão"
+            for m in missing) + " para a recomendação exata."
+    elif "hero_cards" in missing:
+        answer += " Me diga a mão para a decisão exata."
     return {
-        "answer": answer + (" Me diga a mão para a decisão exata." if "hero_cards" in missing else ""),
+        "answer": answer,
         "recommended_action": action,
-        "confidence": "medium",
+        "confidence": "insufficient" if essential_missing else "medium",
+        "source_type": "INSUFFICIENT" if essential_missing else "CANONICAL_RULE",
+        "range_status": "approximate",
+        "used_proxy": None, "warning": None,
         "rule_refs": _cite([rule_id]),
         "provenance": {"main_answer": "RULE", "phase": "INFERENCE", "explanation": "PEDAGOGICAL"},
         "missing_info": missing,
@@ -314,17 +330,17 @@ def run_query(question: str, context: dict | None = None) -> dict:
     if concept and (_is_definition(q) or (q.startswith(("por que", "porque", "pq")) and "hero_cards" not in context)):
         return _concept_answer(concept)
 
-    ctx, cand, has_core = _build_ctx(question, context)
+    ctx, cand, has_core, missing_core = _build_ctx(question, context)
     spot = _detect_spot(q, ctx)
     ctx.spot = None  # deixa o motor reclassificar
 
     # caminho completo: temos posição + stack (mão é opcional; motor pede se faltar)
     if has_core:
         return _decision_answer(ctx, cand)
-    # caminho regra-nível: dá pra identificar o spot mas falta peça
+    # falta info ESSENCIAL (posição/stack): insufficient, mas ainda dá a dica da regra do spot
     if spot:
-        return _rule_level_answer(spot, ctx, cand)
+        return _rule_level_answer(spot, ctx, cand, missing_core)
     if concept:
         return _concept_answer(concept)
     return _insufficient("Faltou contexto: me diga posição, stack e a mão.",
-                         missing=["hero_position", "effective_stack_bb", "hero_cards"])
+                         missing=missing_core or ["hero_position", "effective_stack_bb", "hero_cards"])
