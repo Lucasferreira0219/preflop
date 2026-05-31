@@ -12,3 +12,13 @@ class HandsApi:
     def get_hands_summary(self, tournament_id: str = None):
         """Estatísticas agregadas das mãos importadas."""
         return he.summary(tournament_id or None)
+
+    def analyze_tournament(self, tournament_id: str):
+        """Relatório do PokerKnowledgeEngine para um torneio (notas, leaks, treino)."""
+        if not tournament_id:
+            return {'error': 'tournament_id obrigatório.'}
+        return he.analyze_tournament(tournament_id)
+
+    def study_overview(self):
+        """Resumo da Home: último torneio analisado, média e top leaks."""
+        return he.study_overview()

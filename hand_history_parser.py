@@ -39,6 +39,9 @@ _RE_HERO    = re.compile(r"^(.+?)\s+recebe\s+\[(\w\w)\s+(\w\w)\]")
 _RE_FOLD    = re.compile(r"^(.+?):\s+desiste")
 _RE_CALL    = re.compile(r"^(.+?):\s+iguala\s+(\d+)")
 _RE_RAISE   = re.compile(r"^(.+?):\s+aumenta\s+(\d+)\s+para\s+(\d+)")
+# Resultado da mão (seção resumo/showdown)
+_RE_POT      = re.compile(r"Total pote\s+(\d+)")
+_RE_SHOWDOWN = re.compile(r"\*\*\*\s*SHOW\s*DOWN")
 
 
 def canonical_hand(c1, c2):
@@ -182,12 +185,16 @@ def parse_text(text):
                     preflop.append((mf.group(1), 'fold', None, False))
                     continue
 
-        # Posição do herói via assento relativo ao botão
-        hero_pos = _hero_position(block, hero, button_seat, len(seats))
+        # Posições de todos via assento relativo ao botão
+        positions = _positions_map(block, button_seat)
+        hero_pos = positions.get(hero)
 
         stack_chips = seats.get(hero, 0)
         stack_bb = round(stack_chips / bb) if bb else None
         scenario, hero_action, hero_all_in, gradeable, motivo = _classify(hero, preflop)
+        opener_pos, villain_action, faced_allin, n_limpers = _preflop_context(hero, preflop, positions)
+        result = _parse_result(block, hero)
+        hero_voluntary = hero_action in ('call', 'raise')
 
         hands.append({
             'hand_id': hand_id,
@@ -198,38 +205,102 @@ def parse_text(text):
             'hero_pos': hero_pos,
             'hero_cards': hero_cards,
             'stack_bb': stack_bb,
+            'stack_chips': stack_chips,
             'scenario': scenario,
             'hero_action': hero_action,
             'hero_all_in': hero_all_in,
             'gradeable': gradeable,
             'motivo': motivo,
             'n_players': len(seats),
+            # contexto da ação antes do herói (pro PKE)
+            'opener_pos': opener_pos,
+            'villain_action': villain_action,
+            'faced_allin': faced_allin,
+            'n_limpers': n_limpers,
+            'hero_voluntary': hero_voluntary,
+            # resultado da mão (pro relatório / cooler-badbeat)
+            'went_to_showdown': result['went_to_showdown'],
+            'hero_won': result['hero_won'],
+            'pot_total': result['pot_total'],
+            'hero_busted': result['hero_busted'],
             'raw': '\n'.join(block),
         })
     return hands
 
 
-def _hero_position(block, hero, button_seat, n_players):
-    """Descobre a posição do herói pelo assento relativo ao botão."""
-    if hero is None or button_seat is None:
-        return None
+def _positions_map(block, button_seat):
+    """name -> posição (SB, BB, UTG, ..., BTN), pelo assento relativo ao botão."""
+    if button_seat is None:
+        return {}
     seat_of = {}
     for line in block:
         ms = _RE_SEAT.match(line)
         if ms:
             seat_of[ms.group(2)] = int(ms.group(1))
-    if hero not in seat_of:
-        return None
     seats_sorted = sorted(seat_of.values())
-    n = len(seats_sorted)
-    order = _SEAT_ORDER.get(n)
-    if not order:
-        return None
-    # ordem de assento começando logo após o botão
+    order = _SEAT_ORDER.get(len(seats_sorted))
+    if not order or button_seat not in seats_sorted:
+        return {}
     start = seats_sorted.index(button_seat)
     rotated = seats_sorted[start + 1:] + seats_sorted[:start + 1]
     seat_to_pos = {seat: order[i] for i, seat in enumerate(rotated)}
-    return seat_to_pos.get(seat_of[hero])
+    return {name: seat_to_pos.get(seat) for name, seat in seat_of.items()}
+
+
+def _hero_position(block, hero, button_seat, n_players):
+    """Compat: posição só do herói."""
+    if hero is None:
+        return None
+    return _positions_map(block, button_seat).get(hero)
+
+
+def _preflop_context(hero, preflop, positions):
+    """A partir da sequência pré-flop, devolve fatos sobre a AÇÃO ANTES do herói:
+       opener_pos, villain_action (raise/limp/shove), faced_allin, n_limpers.
+    """
+    opener_pos = None
+    villain_action = None
+    faced_allin = False
+    n_limpers = 0
+    for actor, act, _val, all_in in preflop:
+        if actor == hero:
+            break
+        if all_in:
+            faced_allin = True
+        if act == 'raise':
+            if opener_pos is None:
+                opener_pos = positions.get(actor)
+                villain_action = 'shove' if all_in else 'raise'
+            else:
+                villain_action = 'shove' if all_in else 'raise'  # último agressor
+                opener_pos = positions.get(actor)
+        elif act == 'call':  # limp (sem raise antes) conta como limp
+            n_limpers += 1
+            if opener_pos is None and villain_action is None:
+                opener_pos = positions.get(actor)
+                villain_action = 'limp'
+    return opener_pos, villain_action, faced_allin, n_limpers
+
+
+def _parse_result(block, hero):
+    """Resultado da mão: showdown, hero ganhou/perdeu, pote total, hero bustou."""
+    text = '\n'.join(block)
+    pot = None
+    mp = _RE_POT.search(text)
+    if mp:
+        pot = int(mp.group(1))
+    showdown = bool(_RE_SHOWDOWN.search(text))
+    hero_won = None
+    busted = False
+    if hero:
+        h = re.escape(hero)
+        if re.search(rf"{h}\b.*?\bganhou\b", text) or re.search(rf"{h}\s+recebeu\s+\d+\s+do pote", text):
+            hero_won = True
+        elif re.search(rf"{h}\b.*?\bperdeu\b", text):
+            hero_won = False
+        busted = bool(re.search(rf"{h}\s+terminou o torneio", text))
+    return {"went_to_showdown": showdown, "hero_won": hero_won,
+            "pot_total": pot, "hero_busted": busted}
 
 
 if __name__ == '__main__':

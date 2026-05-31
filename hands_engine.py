@@ -15,6 +15,8 @@ import sqlite3
 from contextlib import contextmanager
 
 import simulator_engine as se
+import tournament_analysis as ta
+import tournaments_engine as te
 from hand_history_parser import parse_text
 
 _BASE    = os.path.dirname(os.path.abspath(__file__))
@@ -65,9 +67,39 @@ def _init_schema():
         CREATE INDEX IF NOT EXISTS idx_ih_scenario   ON imported_hands(scenario);
         CREATE INDEX IF NOT EXISTS idx_ih_correct    ON imported_hands(is_correct);
         """)
+        # Migração defensiva: colunas do PokerKnowledgeEngine (avaliação por mão).
+        cols = {r["name"] for r in c.execute("PRAGMA table_info(imported_hands)")}
+        for col, decl in [
+            ("is_critical", "INTEGER"), ("pke_outcome", "TEXT"), ("pke_score", "INTEGER"),
+            ("pke_recommended", "TEXT"), ("pke_rule", "TEXT"), ("pke_error_type", "TEXT"),
+            ("pke_gravity", "TEXT"), ("pke_explain", "TEXT"),
+        ]:
+            if col not in cols:
+                c.execute(f"ALTER TABLE imported_hands ADD COLUMN {col} {decl}")
 
 
 _init_schema()
+
+
+def _store_pke(c, hand_id: str, analysis: dict) -> None:
+    """Salva o resultado do PKE junto da mão (só mãos críticas têm decision)."""
+    d = (analysis.get("decision") or {})
+    c.execute("""
+        UPDATE imported_hands SET
+          is_critical = ?, pke_outcome = ?, pke_score = ?, pke_recommended = ?,
+          pke_rule = ?, pke_error_type = ?, pke_gravity = ?, pke_explain = ?
+        WHERE hand_id = ?
+    """, (
+        1 if analysis.get("is_critical") else 0,
+        analysis.get("outcome"),
+        d.get("nota"),
+        d.get("acao_recomendada"),
+        " | ".join(d.get("regra_pdf") or []) or None,
+        d.get("tipo_erro"),
+        d.get("gravidade"),
+        d.get("resumo"),
+        hand_id,
+    ))
 
 
 # ── Avaliação (nota pelo curso) ───────────────────────────────────────────────
@@ -153,6 +185,15 @@ def import_text(text, mode=GRADE_MODE):
                 summary['duplicates'] += 1
                 continue
 
+            # PokerKnowledgeEngine: filtra mão crítica e avalia (estratégia fica no PKE)
+            try:
+                analysis = ta.screen_and_analyze(h)
+                _store_pke(c, h['hand_id'], analysis)
+            except Exception as e:  # nunca quebrar o import por causa da análise
+                analysis = None
+                if os.environ.get("PKE_DEBUG"):
+                    print(f"[PKE] erro ao analisar {h['hand_id']}: {e}")
+
             summary['new'] += 1
             if is_correct is not None:
                 summary['graded'] += 1
@@ -174,6 +215,119 @@ def import_text(text, mode=GRADE_MODE):
             })
 
     return summary
+
+
+_LAST_TID = None  # último torneio analisado (pro modo "Meus leaks")
+
+
+def last_analyzed_tid():
+    return _LAST_TID
+
+
+def analyze_tournament(tournament_id):
+    """Relatório PKE do torneio: re-parseia o raw_text das mãos, filtra críticas,
+    avalia no PKE e agrega (médias, piores/melhores, leaks, fase, treino).
+
+    Re-parsear o raw garante contexto completo (opener, all-in, resultado) sem
+    depender de colunas extras no banco.
+    """
+    with _conn() as c:
+        rows = c.execute(
+            "SELECT hand_id, raw_text FROM imported_hands "
+            "WHERE tournament_id = ? AND raw_text IS NOT NULL ORDER BY played_at ASC",
+            (tournament_id,),
+        ).fetchall()
+
+    analyzed = []
+    for r in rows:
+        parsed = parse_text(r["raw_text"])
+        if not parsed:
+            continue
+        res = ta.screen_and_analyze(parsed[0])
+        if res.get("is_critical"):
+            analyzed.append(res)
+
+    report = ta.build_report(tournament_id, analyzed)
+    report["maos_no_torneio"] = len(rows)
+    global _LAST_TID
+    _LAST_TID = tournament_id  # vira a fonte do modo "Meus leaks"
+    _persist_pke_summary(tournament_id, report)
+    return report
+
+
+def _persist_pke_summary(tournament_id, report):
+    """Grava o resumo denormalizado do PKE na linha do torneio (Meus Torneios)."""
+    leaks = report.get("leaks") or []
+    try:
+        te.set_pke_summary(tournament_id, {
+            "pke_analyzed": True,
+            "pke_score_avg": report.get("media_notas"),
+            "pke_critical_hands": report.get("maos_criticas"),
+            "pke_grave_errors": report.get("erros_graves"),
+            "pke_main_leak": (leaks[0].get("id") if leaks else None),
+            "pke_leaks": leaks[:3],
+            "pke_last_analyzed_at": int(time.time()),
+        })
+    except Exception:  # persistência é aditiva; nunca quebrar a análise
+        if os.environ.get("PKE_DEBUG"):
+            import traceback; traceback.print_exc()
+
+
+def latest_tid_with_hands():
+    """Torneio mais recente que tem mãos importadas (fallback da Home quando o
+    processo ainda não analisou nada nesta sessão)."""
+    with _conn() as c:
+        row = c.execute(
+            "SELECT tournament_id FROM imported_hands "
+            "WHERE tournament_id IS NOT NULL AND raw_text IS NOT NULL "
+            "ORDER BY imported_ts DESC, played_at DESC LIMIT 1").fetchone()
+    return row["tournament_id"] if row else None
+
+
+def study_overview():
+    """Resumo leve para a Home: último torneio analisado + leaks + média.
+    Reaproveita analyze_tournament (que também fixa o _LAST_TID p/ "Meus leaks")."""
+    tid = _LAST_TID or latest_tid_with_hands()
+    if not tid:
+        return {"tem_torneio": False, "last_tid": None, "media_notas": None,
+                "erros_graves": 0, "leaks": [], "tem_revisao": False}
+    rep = analyze_tournament(tid)
+    return {
+        "tem_torneio": True,
+        "last_tid": tid,
+        "media_notas": rep.get("media_notas"),
+        "erros_graves": rep.get("erros_graves", 0),
+        "leaks": (rep.get("leaks") or [])[:3],
+        "tem_revisao": (rep.get("erros_graves", 0) or 0) > 0,
+    }
+
+
+def leak_weights(tournament_id=None):
+    """Pesos de treino derivados dos leaks. Por padrão usa o ÚLTIMO torneio
+    analisado (modo "Meus leaks"); sem isso, agrega todas as mãos importadas.
+    Mapeia leak.exercicio -> peso (mais leaks = mais treino). {} se não houver."""
+    tid = tournament_id or _LAST_TID
+    with _conn() as c:
+        if tid:
+            rows = c.execute(
+                "SELECT raw_text FROM imported_hands "
+                "WHERE tournament_id = ? AND raw_text IS NOT NULL", (tid,)).fetchall()
+        else:
+            rows = c.execute(
+                "SELECT raw_text FROM imported_hands WHERE raw_text IS NOT NULL").fetchall()
+    analyzed = []
+    for r in rows:
+        parsed = parse_text(r["raw_text"])
+        if parsed:
+            res = ta.screen_and_analyze(parsed[0])
+            if res.get("is_critical"):
+                analyzed.append(res)
+    weights = {}
+    for l in ta.detect_leaks(analyzed):
+        cat = l.get("exercicio")
+        if cat:
+            weights[cat] = weights.get(cat, 0) + max(15, l["frequencia_hits"] * 8)
+    return weights
 
 
 def summary(tournament_id=None):

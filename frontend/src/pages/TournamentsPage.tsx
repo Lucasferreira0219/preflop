@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Area,
@@ -11,26 +11,45 @@ import {
 } from "recharts";
 import {
   ArrowLeft,
-  CheckCircle2,
+  BarChart3,
+  CalendarDays,
+  CalendarClock,
   ChevronDown,
+  Clock,
+  Download,
+  Dumbbell,
   Info,
-  Loader2,
   Pencil,
+  Plus,
+  RotateCcw,
   Trash2,
   Trophy,
-  Upload,
   X,
 } from "lucide-react";
 import { BrandBar } from "@/components/layout/BrandBar";
 import { Button } from "@/components/ui/Button";
 import { Card, SectionLabel } from "@/components/ui/Card";
 import { Select } from "@/components/ui/Select";
+import {
+  BIG_WIN_MULT,
+  BigWinBadge,
+  RoomTag,
+  isBigWin,
+  medalFor,
+} from "@/components/tournaments/badges";
+import { NewTournamentModal } from "@/components/tournaments/NewTournamentModal";
+import { TournamentImport } from "@/components/tournaments/TournamentImport";
+import { PkeBadge } from "@/components/PkeBadge";
+import { useApp } from "@/state/AppProvider";
+import { leakLabel, tournamentStatus, STATUS_LABEL, STATUS_CLS } from "@/lib/pke";
 import { api } from "@/lib/api";
 import { fmtMoney, fmtPct, fmtShortDate, parseCentsInput } from "@/lib/money";
 import type {
+  ManualTournamentInput,
   Tournament,
   TournamentFilters,
   TournamentOverview,
+  TournamentSession,
 } from "@/lib/types";
 import { cn } from "@/lib/cn";
 
@@ -38,39 +57,35 @@ const GOLD = "#D2A54A";
 const GREEN = "#2BA672";
 const RED = "#D6535B";
 const FMT_ALL = "__all__";
-
-function readAsText(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result ?? ""));
-    reader.onerror = () => reject(reader.error);
-    reader.readAsText(file, "utf-8");
-  });
-}
+const ROOM_ALL = "__all__";
 
 export function TournamentsPage() {
   const navigate = useNavigate();
-  const inputRef = useRef<HTMLInputElement>(null);
-  const [loading, setLoading] = useState(false);
-  const [dragging, setDragging] = useState(false);
-  const [lastImport, setLastImport] = useState<{ new: number; updated: number; duplicates: number } | null>(null);
+  const { openTournament } = useApp();
   const [error, setError] = useState<string | null>(null);
 
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [overview, setOverview] = useState<TournamentOverview | null>(null);
   const [formats, setFormats] = useState<string[]>([]);
+  const [rooms, setRooms] = useState<string[]>([]);
+  const [sessions, setSessions] = useState<TournamentSession[]>([]);
   const [filters, setFilters] = useState<TournamentFilters>({});
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [showNew, setShowNew] = useState(false);
 
   async function refresh(f = filters) {
-    const [list, ov, fmts] = await Promise.all([
+    const [list, ov, fmts, rms, sess] = await Promise.all([
       api.listTournaments(f),
       api.tournamentsOverview(f),
       api.listTournamentFormats(),
+      api.listRooms(),
+      api.tournamentsSessions(f),
     ]);
     setTournaments(list);
     setOverview(ov);
     setFormats(fmts);
+    setRooms(rms);
+    setSessions(sess);
   }
 
   useEffect(() => {
@@ -79,27 +94,6 @@ export function TournamentsPage() {
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  async function handleFiles(files: FileList | null) {
-    if (!files || files.length === 0) return;
-    setLoading(true);
-    setError(null);
-    try {
-      const texts = await Promise.all(Array.from(files).map(readAsText));
-      const res = await api.importTournaments(texts.join("\n\n\n"));
-      if ("error" in res && res.error) {
-        setError(res.error);
-      } else {
-        setLastImport({ new: res.new, updated: res.updated, duplicates: res.duplicates });
-        await refresh();
-      }
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Falha ao ler os arquivos.");
-    } finally {
-      setLoading(false);
-      if (inputRef.current) inputRef.current.value = "";
-    }
-  }
 
   async function applyFilters(f: TournamentFilters) {
     setFilters(f);
@@ -122,15 +116,84 @@ export function TournamentsPage() {
     await refresh();
   }
 
+  async function addManual(data: ManualTournamentInput) {
+    const res = await api.addTournament(data);
+    if (res && "error" in res && res.error) {
+      setError(res.error);
+      return;
+    }
+    setShowNew(false);
+    setError(null);
+    await refresh();
+  }
+
+  function exportCsv() {
+    if (tournaments.length === 0) return;
+    const header = [
+      "data", "sala", "tipo", "torneio", "buy_in", "fee",
+      "moeda", "posicao", "participantes", "premio", "lucro", "origem",
+    ];
+    const esc = (v: unknown) => {
+      const s = v == null ? "" : String(v);
+      return /[",;\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+    const c = (cents: number | null | undefined) =>
+      cents == null ? "" : (cents / 100).toFixed(2);
+    const rows = [...tournaments].reverse().map((t) => [
+      t.played_at ?? "", t.room ?? "", t.format ?? "", t.tournament_name ?? "",
+      c(t.buy_in_cents), c(t.fee_cents), t.currency, t.finish_pos ?? "",
+      t.n_entries ?? "", c(t.prize_cents), c(t.profit_cents), t.origin ?? "",
+    ]);
+    const csv = [header, ...rows].map((r) => r.map(esc).join(";")).join("\r\n");
+    const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "torneios.csv";
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
   const currency = tournaments[0]?.currency ?? "USD";
+
+  const pkeKpis = useMemo(() => {
+    let soma = 0, maos = 0, graves = 0, analisados = 0;
+    for (const t of tournaments) {
+      if (!t.pke_analyzed) continue;
+      analisados++;
+      const ch = t.pke_critical_hands ?? 0;
+      if (t.pke_score_avg != null && ch) { soma += t.pke_score_avg * ch; maos += ch; }
+      graves += t.pke_grave_errors ?? 0;
+    }
+    return { media: maos ? Math.round((soma / maos) * 10) / 10 : null, graves, analisados };
+  }, [tournaments]);
+
+  async function analyzeOne(tid: string) {
+    await api.analyzeTournament(tid);
+    await refresh();
+  }
 
   return (
     <div className="min-h-full">
       <header className="sticky top-0 z-30 border-b border-border bg-bg/85 backdrop-blur-md">
         <BrandBar
-          title="Torneios"
+          title="Meus Torneios"
           actions={
             <div className="flex items-center gap-1">
+              <Button variant="ghost" size="sm" onClick={() => setShowNew(true)}>
+                <Plus className="h-4 w-4" />
+                <span className="hidden sm:inline">Novo torneio</span>
+              </Button>
+              {tournaments.length > 0 && (
+                <Button variant="ghost" size="sm" onClick={exportCsv}>
+                  <Download className="h-4 w-4" />
+                  <span className="hidden sm:inline">CSV</span>
+                </Button>
+              )}
+              <Button variant="ghost" size="sm" onClick={() => navigate("/sessions")}>
+                <CalendarClock className="h-4 w-4" />
+                <span className="hidden sm:inline">Sessões</span>
+              </Button>
               <Button
                 variant="ghost"
                 size="sm"
@@ -150,24 +213,7 @@ export function TournamentsPage() {
 
       {/* Container — padding menor no mobile, max-width pra desktop */}
       <div className="mx-auto w-full max-w-5xl px-3 py-4 sm:px-6 sm:py-6">
-        <Dropzone
-          loading={loading}
-          dragging={dragging}
-          onDragOver={(e) => {
-            e.preventDefault();
-            setDragging(true);
-          }}
-          onDragLeave={() => setDragging(false)}
-          onDrop={(e) => {
-            e.preventDefault();
-            setDragging(false);
-            handleFiles(e.dataTransfer.files);
-          }}
-          onClick={() => inputRef.current?.click()}
-          inputRef={inputRef}
-          onChange={(e) => handleFiles(e.target.files)}
-          lastImport={lastImport}
-        />
+        <TournamentImport onImported={() => refresh()} />
 
         {error && (
           <Card className="mt-3 flex items-center gap-2 border-action-red/30 p-3 text-sm text-action-red">
@@ -179,11 +225,26 @@ export function TournamentsPage() {
         {overview && overview.n_tournaments > 0 ? (
           <>
             <HeroLucro overview={overview} currency={currency} />
-            <StatsRow overview={overview} currency={currency} />
-            <BankrollChart overview={overview} currency={currency} />
+            <StatsRow overview={overview} currency={currency} pke={pkeKpis} />
+            <EvolutionBlock sessions={sessions} />
+            <PositionDistribution overview={overview} />
+            <BankrollChart overview={overview} currency={currency} tournaments={tournaments} />
+            <SessionsCard
+              sessions={sessions}
+              currency={currency}
+              activeDay={filters.from_date && filters.from_date === filters.to_date ? filters.from_date : null}
+              onPickDay={(day) =>
+                applyFilters(
+                  filters.from_date === day && filters.to_date === day
+                    ? { ...filters, from_date: null, to_date: null }
+                    : { ...filters, from_date: day, to_date: day },
+                )
+              }
+            />
             <Filters
               filters={filters}
               formats={formats}
+              rooms={rooms}
               onApply={applyFilters}
             />
             <TournamentsList
@@ -193,87 +254,32 @@ export function TournamentsPage() {
               onCancelEdit={() => setEditingId(null)}
               onSave={savePrize}
               onDelete={removeTournament}
+              onOpen={openTournament}
+              onAnalyze={analyzeOne}
             />
           </>
         ) : (
           <Card className="mt-4 p-6 text-center text-sm text-ink-dim sm:p-8">
-            Solte os arquivos do PokerStars (.txt) acima para começar.
+            Solte os arquivos do PokerStars (.txt) acima para começar — ou use{" "}
+            <button
+              onClick={() => setShowNew(true)}
+              className="font-semibold text-gold underline-offset-2 hover:underline"
+            >
+              Novo torneio
+            </button>{" "}
+            pra cadastrar manualmente.
           </Card>
         )}
       </div>
-    </div>
-  );
-}
 
-// ── Dropzone ──────────────────────────────────────────────────────────────────
-
-function Dropzone({
-  loading,
-  dragging,
-  onDragOver,
-  onDragLeave,
-  onDrop,
-  onClick,
-  inputRef,
-  onChange,
-  lastImport,
-}: {
-  loading: boolean;
-  dragging: boolean;
-  onDragOver: (e: React.DragEvent) => void;
-  onDragLeave: () => void;
-  onDrop: (e: React.DragEvent) => void;
-  onClick: () => void;
-  inputRef: React.RefObject<HTMLInputElement>;
-  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  lastImport: { new: number; updated: number; duplicates: number } | null;
-}) {
-  return (
-    <div className="flex flex-col gap-2 sm:flex-row sm:items-stretch">
-      <button
-        type="button"
-        onClick={onClick}
-        onDragOver={onDragOver}
-        onDragLeave={onDragLeave}
-        onDrop={onDrop}
-        disabled={loading}
-        className={cn(
-          "flex flex-1 items-center gap-3 rounded-card border-2 border-dashed px-3 py-3 text-left transition-colors active:bg-surface-2 sm:px-4",
-          dragging
-            ? "border-gold/60 bg-gold/10"
-            : "border-border bg-surface-1 hover:border-border-strong hover:bg-surface-2",
-          loading && "cursor-wait opacity-60",
-        )}
-      >
-        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl border border-border bg-surface-2 text-ink-dim">
-          {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-        </span>
-        <div className="min-w-0 flex-1">
-          <div className="text-sm font-semibold text-ink">
-            {loading ? "Processando…" : "Importar do PokerStars"}
-          </div>
-          <div className="text-2xs text-ink-faint">
-            Toque pra escolher ou arraste o .txt
-          </div>
-        </div>
-        <input
-          ref={inputRef}
-          type="file"
-          accept=".txt,text/plain"
-          multiple
-          className="hidden"
-          onChange={onChange}
+      {showNew && (
+        <NewTournamentModal
+          rooms={rooms}
+          formats={formats}
+          defaultCurrency={currency}
+          onCancel={() => setShowNew(false)}
+          onSave={addManual}
         />
-      </button>
-
-      {lastImport && (
-        <Card className="flex items-center gap-2 px-3 py-2 text-xs text-ink-dim sm:w-auto">
-          <CheckCircle2 className="h-4 w-4 text-action-green" />
-          <span className="nums">
-            +{lastImport.new} novos · {lastImport.updated} atualizados
-            {lastImport.duplicates > 0 && ` · ${lastImport.duplicates} já existiam`}
-          </span>
-        </Card>
       )}
     </div>
   );
@@ -308,14 +314,154 @@ function HeroLucro({
 
 // ── Tiles secundários ─────────────────────────────────────────────────────────
 
-function StatsRow({ overview, currency }: { overview: TournamentOverview; currency: string }) {
+function StatsRow({ overview, currency, pke }: {
+  overview: TournamentOverview;
+  currency: string;
+  pke: { media: number | null; graves: number; analisados: number };
+}) {
+  const avgProfit = overview.avg_profit_cents;
+  const mediaTone = pke.media == null ? "ink" : pke.media >= 7 ? "green" : pke.media < 5 ? "red" : "ink";
   return (
-    <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
+    <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
       <Tile label="Torneios" value={String(overview.n_tournaments)} />
       <Tile label="ROI" value={fmtPct(overview.roi_pct)} tone={overview.roi_pct != null && overview.roi_pct > 0 ? "green" : overview.roi_pct != null && overview.roi_pct < 0 ? "red" : "ink"} />
       <Tile label="ITM" value={fmtPct(overview.itm_pct, 0)} />
-      <Tile label="Buy-in médio" value={fmtMoney(overview.avg_buyin_cents, currency)} />
+      <Tile label="Nota média PKE" value={pke.media != null ? pke.media.toFixed(1) : "—"} tone={mediaTone} />
+      <Tile label="Erros graves" value={String(pke.graves)} tone={pke.graves > 0 ? "red" : "ink"} />
+      <Tile
+        label="$/torneio"
+        value={fmtMoney(avgProfit, currency, { signed: true })}
+        tone={avgProfit != null && avgProfit > 0 ? "green" : avgProfit != null && avgProfit < 0 ? "red" : "ink"}
+      />
     </div>
+  );
+}
+
+// ── Evolução técnica (abas por dia: nota / erros / leaks) ─────────────────────
+function EvolutionBlock({ sessions }: { sessions: TournamentSession[] }) {
+  type Tab = "nota" | "graves" | "leaks";
+  const [tab, setTab] = useState<Tab>("nota");
+  const TABS: { key: Tab; label: string }[] = [
+    { key: "nota", label: "Nota PKE" },
+    { key: "graves", label: "Erros graves" },
+    { key: "leaks", label: "Leaks por dia" },
+  ];
+  const days = useMemo(
+    () => [...sessions].filter((s) => s.day !== "Sem data" && (s.analisados ?? 0) > 0).reverse(),
+    [sessions],
+  );
+  const insight = useMemo(() => pickInsight(days), [days]);
+
+  if (days.length === 0) return null;
+
+  return (
+    <Card className="mt-2 p-3 sm:p-4">
+      <div className="mb-3 flex items-center gap-2">
+        <SectionLabel className="flex items-center gap-1.5">
+          <BarChart3 className="h-3.5 w-3.5" /> Evolução técnica
+        </SectionLabel>
+        <PkeBadge variant="analisado" />
+      </div>
+      <div className="mb-3 flex flex-wrap gap-1.5">
+        {TABS.map((t) => (
+          <button key={t.key} onClick={() => setTab(t.key)}
+            className={cn("rounded-full border px-3 py-1 text-2xs font-semibold transition-colors",
+              tab === t.key ? "border-gold/50 bg-gold/15 text-gold"
+                : "border-border bg-surface-1 text-ink-dim hover:text-ink")}>
+            {t.label}
+          </button>
+        ))}
+      </div>
+      {tab === "nota" && (
+        <DayBars days={days} value={(s) => s.media_notas ?? null} max={10}
+          fmt={(v) => v.toFixed(1)} color={(v) => v >= 7 ? "#2BA672" : v < 5 ? "#D6535B" : "#D2A54A"} />
+      )}
+      {tab === "graves" && (
+        <DayBars days={days} value={(s) => s.erros_graves ?? null}
+          fmt={(v) => String(v)} color={() => "#D6535B"} />
+      )}
+      {tab === "leaks" && (
+        <div className="flex flex-col gap-1.5">
+          {[...days].reverse().filter((s) => s.main_leak).map((s) => (
+            <div key={s.day} className="flex items-center justify-between rounded-ctl border border-border/60 bg-surface-1 px-3 py-1.5 text-xs">
+              <span className="text-ink-dim">{s.day}</span>
+              <span className="font-semibold text-gold">{leakLabel(s.main_leak)}</span>
+            </div>
+          ))}
+        </div>
+      )}
+      {insight && (
+        <p className={cn("mt-3 rounded-ctl px-3 py-2 text-xs",
+          insight.tone === "warn" ? "bg-action-red/10 text-action-red" : "bg-action-green/10 text-action-green")}>
+          {insight.text}
+        </p>
+      )}
+    </Card>
+  );
+}
+
+function pickInsight(days: TournamentSession[]): { text: string; tone: "warn" | "good" } | null {
+  for (let i = days.length - 1; i >= 0; i--) {
+    const s = days[i];
+    if (s.media_notas == null) continue;
+    if (s.profit_cents > 0 && s.media_notas < 6)
+      return { text: `${s.day}: você ganhou, mas a nota foi ${s.media_notas}. Cuidado com a variância — resultado bom não valida decisão.`, tone: "warn" };
+    if (s.profit_cents < 0 && s.media_notas >= 7)
+      return { text: `${s.day}: você perdeu, mas jogou bem (nota ${s.media_notas}). Decisões boas — siga o processo.`, tone: "good" };
+  }
+  return null;
+}
+
+function DayBars({ days, value, fmt, color, max }: {
+  days: TournamentSession[];
+  value: (s: TournamentSession) => number | null;
+  fmt: (v: number) => string;
+  color: (v: number) => string;
+  max?: number;
+}) {
+  const pts = days.map((s) => ({ day: s.day, v: value(s) })).filter((p) => p.v != null) as { day: string; v: number }[];
+  if (!pts.length) return <p className="py-6 text-center text-xs text-ink-faint">Sem dados ainda.</p>;
+  const top = max ?? Math.max(1, ...pts.map((p) => p.v));
+  return (
+    <div className="flex items-end gap-1.5 overflow-x-auto pb-1">
+      {pts.map((p) => (
+        <div key={p.day} className="flex min-w-[36px] flex-1 flex-col items-center gap-1">
+          <span className="text-2xs nums text-ink-dim">{fmt(p.v)}</span>
+          <div className="flex w-full items-end" style={{ height: 70 }}>
+            <div className="w-full rounded-t" style={{ height: `${Math.max(4, (p.v / top) * 70)}px`, background: color(p.v) }} />
+          </div>
+          <span className="text-2xs text-ink-faint">{p.day.slice(5)}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function notaCls(n: number | null | undefined): string {
+  if (n == null) return "text-ink-faint";
+  if (n >= 7) return "text-action-green";
+  if (n < 5) return "text-action-red";
+  return "text-gold";
+}
+
+function StatusChip({ t }: { t: Tournament }) {
+  const st = tournamentStatus(t);
+  return <span className={cn("rounded-full px-2 py-0.5 text-2xs font-semibold", STATUS_CLS[st])}>{STATUS_LABEL[st]}</span>;
+}
+
+function AnalyzeBtn({ t, onAnalyze }: { t: Tournament; onAnalyze: (tid: string) => Promise<void> }) {
+  const [busy, setBusy] = useState(false);
+  const st = tournamentStatus(t);
+  if (st === "sem_maos") return null;
+  const label = st === "nao_analisado" ? "Analisar" : "Reanalisar";
+  return (
+    <button
+      onClick={async (e) => { e.stopPropagation(); setBusy(true); try { await onAnalyze(t.tournament_id); } finally { setBusy(false); } }}
+      disabled={busy}
+      className="inline-flex items-center gap-1 rounded-full border border-gold/40 bg-gold/10 px-2 py-0.5 text-2xs font-semibold text-gold hover:bg-gold/20 disabled:opacity-50"
+    >
+      {busy ? <RotateCcw className="h-3 w-3 animate-spin" /> : <Dumbbell className="h-3 w-3" />} {label}
+    </button>
   );
 }
 
@@ -341,23 +487,76 @@ function Tile({
   );
 }
 
+// ── Distribuição de posições ──────────────────────────────────────────────────
+
+function PositionDistribution({ overview }: { overview: TournamentOverview }) {
+  const b = overview.position_buckets;
+  const total = b.champion + b.podium + b.itm + b.out;
+  if (total === 0) return null;
+
+  const bars = [
+    { key: "champion", label: "Campeão", icon: "🥇", n: b.champion, color: GOLD },
+    { key: "podium", label: "Pódio (2º–3º)", icon: "🥈", n: b.podium, color: "#7C8AA5" },
+    { key: "itm", label: "ITM", icon: "💰", n: b.itm, color: GREEN },
+    { key: "out", label: "Fora", icon: "—", n: b.out, color: "#3A4757" },
+  ];
+
+  return (
+    <Card className="mt-2 p-3 sm:p-4">
+      <SectionLabel>Distribuição de posições</SectionLabel>
+      <div className="mt-3 flex flex-col gap-2">
+        {bars.map((bar) => {
+          const pct = total ? (bar.n / total) * 100 : 0;
+          return (
+            <div key={bar.key} className="flex items-center gap-2">
+              <div className="flex w-28 shrink-0 items-center gap-1.5 text-xs text-ink-dim">
+                <span aria-hidden>{bar.icon}</span>
+                <span className="truncate">{bar.label}</span>
+              </div>
+              <div className="h-3 flex-1 overflow-hidden rounded-full bg-surface-2">
+                <div
+                  className="h-full rounded-full transition-all"
+                  style={{ width: `${pct}%`, backgroundColor: bar.color }}
+                />
+              </div>
+              <div className="w-16 shrink-0 text-right text-xs nums text-ink">
+                {bar.n}
+                <span className="ml-1 text-2xs text-ink-faint">{pct.toFixed(0)}%</span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </Card>
+  );
+}
+
 // ── Bankroll cumulativo ───────────────────────────────────────────────────────
 
 function BankrollChart({
   overview,
   currency,
+  tournaments,
 }: {
   overview: TournamentOverview;
   currency: string;
+  tournaments: Tournament[];
 }) {
+  const bigWinIds = useMemo(() => {
+    const s = new Set<string>();
+    for (const t of tournaments) if (isBigWin(t)) s.add(t.tournament_id);
+    return s;
+  }, [tournaments]);
+
   const data = useMemo(
     () =>
       overview.cumulative.map((p, i) => ({
         idx: i + 1,
         running: (p.running ?? 0) / 100,
         date: fmtShortDate(p.played_at),
+        bigWin: bigWinIds.has(p.tournament_id),
       })),
-    [overview.cumulative],
+    [overview.cumulative, bigWinIds],
   );
 
   if (data.length < 2) {
@@ -415,13 +614,27 @@ function BankrollChart({
               stroke={tone}
               strokeWidth={2}
               fill="url(#bkFill)"
-              dot={false}
+              dot={<BigWinDot />}
               activeDot={{ r: 4, fill: tone, stroke: "#0B1016", strokeWidth: 2 }}
             />
           </AreaChart>
         </ResponsiveContainer>
       </div>
     </Card>
+  );
+}
+
+// Dot só nos pontos de Big Win (cravadas grandes) — destaca no gráfico.
+function BigWinDot(props: any) {
+  const { cx, cy, payload } = props;
+  if (!payload?.bigWin || cx == null || cy == null) return null;
+  return (
+    <g>
+      <circle cx={cx} cy={cy} r={5} fill={GOLD} stroke="#0B1016" strokeWidth={2} />
+      <text x={cx} y={cy - 9} textAnchor="middle" fontSize={11}>
+        🔥
+      </text>
+    </g>
   );
 }
 
@@ -442,19 +655,66 @@ function BkTooltip({ active, payload, currency }: any) {
 
 // ── Filtros ──────────────────────────────────────────────────────────────────
 
+function fmtDate(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}/${m}/${day}`;
+}
+
+type PresetKey = "today" | "7d" | "30d" | "month" | "year" | "all";
+
+const PRESETS: { key: PresetKey; label: string }[] = [
+  { key: "today", label: "Hoje" },
+  { key: "7d", label: "7 dias" },
+  { key: "30d", label: "30 dias" },
+  { key: "month", label: "Mês" },
+  { key: "year", label: "Ano" },
+  { key: "all", label: "Tudo" },
+];
+
+function presetRange(key: PresetKey): { from: string | null; to: string | null } {
+  const now = new Date();
+  const to = fmtDate(now);
+  switch (key) {
+    case "today":
+      return { from: to, to };
+    case "7d": {
+      const d = new Date(now);
+      d.setDate(d.getDate() - 6);
+      return { from: fmtDate(d), to };
+    }
+    case "30d": {
+      const d = new Date(now);
+      d.setDate(d.getDate() - 29);
+      return { from: fmtDate(d), to };
+    }
+    case "month":
+      return { from: fmtDate(new Date(now.getFullYear(), now.getMonth(), 1)), to };
+    case "year":
+      return { from: fmtDate(new Date(now.getFullYear(), 0, 1)), to };
+    case "all":
+    default:
+      return { from: null, to: null };
+  }
+}
+
 function Filters({
   filters,
   formats,
+  rooms,
   onApply,
 }: {
   filters: TournamentFilters;
   formats: string[];
+  rooms: string[];
   onApply: (f: TournamentFilters) => void;
 }) {
   const [open, setOpen] = useState(false);
   const [from, setFrom] = useState(filters.from_date ?? "");
   const [to, setTo] = useState(filters.to_date ?? "");
   const [fmt, setFmt] = useState(filters.format ?? FMT_ALL);
+  const [room, setRoom] = useState(filters.room ?? ROOM_ALL);
   const [min, setMin] = useState(
     filters.min_buyin != null ? String(filters.min_buyin / 100) : "",
   );
@@ -462,11 +722,28 @@ function Filters({
     filters.max_buyin != null ? String(filters.max_buyin / 100) : "",
   );
 
+  // Mantém os inputs sincronizados quando os filtros mudam por fora
+  // (presets, clique em sessão, etc.).
+  useEffect(() => {
+    setFrom(filters.from_date ?? "");
+    setTo(filters.to_date ?? "");
+    setFmt(filters.format ?? FMT_ALL);
+    setRoom(filters.room ?? ROOM_ALL);
+    setMin(filters.min_buyin != null ? String(filters.min_buyin / 100) : "");
+    setMax(filters.max_buyin != null ? String(filters.max_buyin / 100) : "");
+  }, [filters]);
+
+  function applyPreset(key: PresetKey) {
+    const { from: f, to: t } = presetRange(key);
+    onApply({ ...filters, from_date: f, to_date: t });
+  }
+
   function apply() {
     onApply({
       from_date: from || null,
       to_date: to || null,
       format: fmt && fmt !== FMT_ALL ? fmt : null,
+      room: room && room !== ROOM_ALL ? room : null,
       min_buyin: min ? parseCentsInput(min) : null,
       max_buyin: max ? parseCentsInput(max) : null,
     });
@@ -477,6 +754,7 @@ function Filters({
     setFrom("");
     setTo("");
     setFmt(FMT_ALL);
+    setRoom(ROOM_ALL);
     setMin("");
     setMax("");
     onApply({});
@@ -489,8 +767,13 @@ function Filters({
     { value: "Sem rótulo", label: "Sem rótulo" },
   ];
 
+  const roomOptions = [
+    { value: ROOM_ALL, label: "Todas as salas" },
+    ...rooms.map((r) => ({ value: r, label: r })),
+  ];
+
   const activeCount = [
-    filters.from_date, filters.to_date, filters.format,
+    filters.from_date, filters.to_date, filters.format, filters.room,
     filters.min_buyin, filters.max_buyin,
   ].filter((v) => v != null && v !== "").length;
 
@@ -520,6 +803,31 @@ function Filters({
       </button>
 
       <div className={cn("sm:block", open ? "block" : "hidden")}>
+        {/* Presets de período — atalhos rápidos */}
+        <div className="flex flex-wrap gap-1.5 px-3 pt-3">
+          {PRESETS.map((p) => {
+            const r = presetRange(p.key);
+            const active =
+              (filters.from_date ?? null) === r.from &&
+              (filters.to_date ?? null) === r.to;
+            return (
+              <button
+                key={p.key}
+                type="button"
+                onClick={() => applyPreset(p.key)}
+                className={cn(
+                  "rounded-full border px-3 py-1 text-2xs font-semibold transition-colors",
+                  active
+                    ? "border-gold/50 bg-gold/15 text-gold"
+                    : "border-border bg-surface-2 text-ink-dim hover:border-border-strong hover:text-ink",
+                )}
+              >
+                {p.label}
+              </button>
+            );
+          })}
+        </div>
+
         <div className="grid grid-cols-2 gap-2 p-3 sm:grid-cols-6">
           <FilterField label="De" hint="aaaa/mm/dd">
             <input
@@ -548,6 +856,15 @@ function Filters({
               className="w-full"
             />
           </FilterField>
+          <FilterField label="Sala" colSpan="col-span-2 sm:col-span-1">
+            <Select
+              value={room}
+              onValueChange={setRoom}
+              options={roomOptions}
+              ariaLabel="Filtrar por sala"
+              className="w-full"
+            />
+          </FilterField>
           <FilterField label="Buy-in min">
             <input
               value={min}
@@ -566,8 +883,8 @@ function Filters({
               className="filter-input"
             />
           </FilterField>
-          <div className="col-span-2 flex items-end gap-2 sm:col-span-1">
-            <Button size="sm" variant="primary" onClick={apply} className="flex-1">
+          <div className="col-span-2 flex items-end gap-2 sm:col-span-6">
+            <Button size="sm" variant="primary" onClick={apply} className="flex-1 sm:flex-none">
               Aplicar
             </Button>
             <Button size="sm" variant="ghost" onClick={clear}>
@@ -611,6 +928,8 @@ function TournamentsList({
   onCancelEdit,
   onSave,
   onDelete,
+  onOpen,
+  onAnalyze,
 }: {
   tournaments: Tournament[];
   editingId: string | null;
@@ -618,12 +937,21 @@ function TournamentsList({
   onCancelEdit: () => void;
   onSave: (t: Tournament, prizeCents: number | null, finishPos: number | null) => void;
   onDelete: (id: string) => void;
+  onOpen: (tid: string) => void;
+  onAnalyze: (tid: string) => Promise<void>;
 }) {
   // Engine traz asc por data, mostra desc (mais recente primeiro)
   const rows = [...tournaments].reverse();
+  const hasSemMaos = tournaments.some((t) => tournamentStatus(t) === "sem_maos");
 
   return (
     <div className="mt-2">
+      {hasSemMaos && (
+        <p className="mb-2 text-2xs text-ink-faint">
+          Torneios marcados como <span className="text-ink-dim">"Sem mãos"</span> não têm hand
+          history — importe o .txt do PokerStars para receber análise PKE.
+        </p>
+      )}
       {/* MOBILE: cards empilhados */}
       <div className="flex flex-col gap-2 sm:hidden">
         {rows.map((t) => (
@@ -635,6 +963,8 @@ function TournamentsList({
             onCancelEdit={onCancelEdit}
             onSave={onSave}
             onDelete={() => onDelete(t.tournament_id)}
+            onOpen={() => onOpen(t.tournament_id)}
+            onAnalyze={onAnalyze}
           />
         ))}
       </div>
@@ -648,8 +978,10 @@ function TournamentsList({
               <Th>Tipo</Th>
               <Th right>Buy-in</Th>
               <Th right>Pos.</Th>
-              <Th right>Prêmio</Th>
               <Th right>Lucro</Th>
+              <Th right>Nota</Th>
+              <Th right>Graves</Th>
+              <Th>Status</Th>
               <Th />
             </tr>
           </thead>
@@ -663,6 +995,8 @@ function TournamentsList({
                 onCancelEdit={onCancelEdit}
                 onSave={onSave}
                 onDelete={() => onDelete(t.tournament_id)}
+                onOpen={() => onOpen(t.tournament_id)}
+                onAnalyze={onAnalyze}
               />
             ))}
           </tbody>
@@ -681,6 +1015,8 @@ function TournamentCard({
   onCancelEdit,
   onSave,
   onDelete,
+  onOpen,
+  onAnalyze,
 }: {
   t: Tournament;
   editing: boolean;
@@ -688,20 +1024,30 @@ function TournamentCard({
   onCancelEdit: () => void;
   onSave: (t: Tournament, prizeCents: number | null, finishPos: number | null) => void;
   onDelete: () => void;
+  onOpen: () => void;
+  onAnalyze: (tid: string) => Promise<void>;
 }) {
   const cost = (t.buy_in_cents ?? 0) + (t.fee_cents ?? 0);
   const profit = t.profit_cents;
   const profitTone = profit == null ? "text-ink-faint" : profit > 0 ? "text-action-green" : profit < 0 ? "text-action-red" : "text-ink";
   const borderTone = profit == null ? "" : profit > 0 ? "border-action-green/20" : profit < 0 ? "border-action-red/20" : "";
+  const medal = medalFor(t.finish_pos);
+  const big = isBigWin(t);
+  const leak = leakLabel(t.pke_main_leak);
 
   return (
-    <Card className={cn("p-3", borderTone)}>
-      {/* Linha 1: data + tipo + lucro */}
-      <div className="flex items-start justify-between gap-2">
+    <Card className={cn("p-3", big ? "border-gold/40" : borderTone)}>
+      {/* Linha 1: data + tipo + lucro (toque abre a review) */}
+      <div className="flex cursor-pointer items-start justify-between gap-2" onClick={onOpen}>
         <div className="min-w-0">
-          <div className="text-xs text-ink-dim nums">{fmtShortDate(t.played_at)}</div>
-          <div className="mt-0.5 text-sm font-semibold text-ink">
-            {t.format ?? "Sem rótulo"}
+          <div className="flex items-center gap-1.5 text-xs text-ink-dim nums">
+            <span>{fmtShortDate(t.played_at)}</span>
+            <RoomTag room={t.room} />
+          </div>
+          <div className="mt-0.5 flex items-center gap-1.5 text-sm font-semibold text-ink">
+            {medal && <span aria-hidden>{medal}</span>}
+            <span>{t.format ?? "Sem rótulo"}</span>
+            {big && <BigWinBadge />}
           </div>
           <div className="truncate text-2xs text-ink-faint" title={t.tournament_name ?? ""}>
             {t.tournament_name ?? "—"}
@@ -746,6 +1092,16 @@ function TournamentCard({
         </Field>
       </div>
 
+      {/* Linha PKE: nota + erros graves + status + leak (toque abre a review) */}
+      <div className="mt-2 flex cursor-pointer flex-wrap items-center gap-2 text-2xs" onClick={onOpen}>
+        <span className={cn("font-bold nums", notaCls(t.pke_score_avg))}>
+          {t.pke_score_avg != null ? `nota ${t.pke_score_avg.toFixed(1)}` : "sem nota"}
+        </span>
+        {(t.pke_grave_errors ?? 0) > 0 && <span className="text-action-red">{t.pke_grave_errors} graves</span>}
+        <StatusChip t={t} />
+        {leak && <span className="text-gold">{leak}</span>}
+      </div>
+
       {/* Form de edição expandido (mobile-friendly: inputs grandes, vertical) */}
       {editing && (
         <EditForm
@@ -757,7 +1113,8 @@ function TournamentCard({
 
       {/* Botões de ação no rodapé do card — só quando NÃO editando */}
       {!editing && (
-        <div className="mt-2 flex justify-end gap-1">
+        <div className="mt-2 flex items-center justify-end gap-1">
+          <AnalyzeBtn t={t} onAnalyze={onAnalyze} />
           <button
             onClick={onStartEdit}
             className="rounded-ctl p-2 text-ink-faint active:bg-surface-2 active:text-ink"
@@ -876,6 +1233,8 @@ function TableRow({
   onCancelEdit,
   onSave,
   onDelete,
+  onOpen,
+  onAnalyze,
 }: {
   t: Tournament;
   editing: boolean;
@@ -883,15 +1242,21 @@ function TableRow({
   onCancelEdit: () => void;
   onSave: (t: Tournament, prizeCents: number | null, finishPos: number | null) => void;
   onDelete: () => void;
+  onOpen: () => void;
+  onAnalyze: (tid: string) => Promise<void>;
 }) {
   const cost = (t.buy_in_cents ?? 0) + (t.fee_cents ?? 0);
   const profit = t.profit_cents;
   const profitTone = profit == null ? "text-ink-faint" : profit > 0 ? "text-action-green" : profit < 0 ? "text-action-red" : "text-ink";
+  const medal = medalFor(t.finish_pos);
+  const big = isBigWin(t);
+  const leak = leakLabel(t.pke_main_leak);
+  const stop = (e: React.MouseEvent) => e.stopPropagation();
 
   if (editing) {
     return (
       <tr className="border-b border-border/60">
-        <td colSpan={7} className="px-3 py-3">
+        <td colSpan={9} className="px-3 py-3">
           <div className="mb-2 text-xs text-ink-dim">
             {fmtShortDate(t.played_at)} · {t.tournament_name ?? "—"}
           </div>
@@ -902,13 +1267,24 @@ function TableRow({
   }
 
   return (
-    <tr className="border-b border-border/60 last:border-b-0 hover:bg-surface-2/60">
-      <td className="px-3 py-2 text-xs text-ink-dim nums">{fmtShortDate(t.played_at)}</td>
+    <tr className="cursor-pointer border-b border-border/60 last:border-b-0 hover:bg-surface-2/60" onClick={onOpen}>
+      <td className="px-3 py-2 text-xs text-ink-dim nums">
+        <div>{fmtShortDate(t.played_at)}</div>
+        <div className="mt-0.5"><RoomTag room={t.room} /></div>
+      </td>
       <td className="px-3 py-2">
-        <div className="text-xs text-ink">{t.format ?? "Sem rótulo"}</div>
-        <div className="truncate text-2xs text-ink-faint" title={t.tournament_name ?? ""}>
-          {t.tournament_name ?? "—"}
+        <div className="flex items-center gap-1.5 text-xs text-ink">
+          {medal && <span aria-hidden>{medal}</span>}
+          <span>{t.format ?? "Sem rótulo"}</span>
+          {big && <BigWinBadge />}
         </div>
+        {leak ? (
+          <div className="text-2xs text-gold">{leak}</div>
+        ) : (
+          <div className="truncate text-2xs text-ink-faint" title={t.tournament_name ?? ""}>
+            {t.tournament_name ?? "—"}
+          </div>
+        )}
       </td>
       <td className="px-3 py-2 text-right text-xs nums text-ink-dim">
         {fmtMoney(cost, t.currency)}
@@ -918,34 +1294,19 @@ function TableRow({
           ? `${t.finish_pos}${t.n_entries ? `/${t.n_entries}` : ""}`
           : "—"}
       </td>
-      <td className="px-3 py-2 text-right nums">
-        {t.prize_known ? (
-          <span className="inline-flex items-baseline gap-1">
-            <span className="text-xs text-ink">{fmtMoney(t.prize_cents, t.currency)}</span>
-            {t.prize_source === "auto" && (
-              <span
-                className="text-[10px] text-ink-faint"
-                title="Calculado pela estrutura de payout"
-              >
-                auto
-              </span>
-            )}
-          </span>
-        ) : (
-          <button
-            onClick={onStartEdit}
-            className="inline-flex items-center gap-1 rounded-ctl border border-gold/30 bg-gold/10 px-2 py-0.5 text-2xs text-gold hover:bg-gold/15"
-          >
-            <Info className="h-3 w-3" />
-            informar
-          </button>
-        )}
-      </td>
       <td className={cn("px-3 py-2 text-right text-xs nums font-semibold", profitTone)}>
         {profit != null ? fmtMoney(profit, t.currency, { signed: true }) : "—"}
       </td>
-      <td className="px-3 py-2 text-right">
-        <div className="flex justify-end gap-1">
+      <td className={cn("px-3 py-2 text-right text-xs nums font-bold", notaCls(t.pke_score_avg))}>
+        {t.pke_score_avg != null ? t.pke_score_avg.toFixed(1) : "—"}
+      </td>
+      <td className="px-3 py-2 text-right text-xs nums text-action-red">
+        {t.pke_grave_errors ? t.pke_grave_errors : "—"}
+      </td>
+      <td className="px-3 py-2"><StatusChip t={t} /></td>
+      <td className="px-3 py-2" onClick={stop}>
+        <div className="flex items-center justify-end gap-1">
+          <AnalyzeBtn t={t} onAnalyze={onAnalyze} />
           <button
             onClick={onStartEdit}
             className="rounded-ctl p-1 text-ink-faint hover:bg-surface-2 hover:text-ink"
@@ -965,3 +1326,97 @@ function TableRow({
     </tr>
   );
 }
+
+// ── Sessões (por dia) ─────────────────────────────────────────────────────────
+
+function hhmm(s: string | null): string {
+  if (!s || s.length < 16) return "";
+  return s.slice(11, 16);
+}
+
+function SessionsCard({
+  sessions,
+  currency,
+  activeDay,
+  onPickDay,
+}: {
+  sessions: TournamentSession[];
+  currency: string;
+  activeDay: string | null;
+  onPickDay: (day: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  if (sessions.length === 0) return null;
+  const shown = open ? sessions : sessions.slice(0, 5);
+
+  return (
+    <Card className="mt-2 overflow-hidden">
+      <div className="flex items-center justify-between gap-3 px-3 pt-3">
+        <SectionLabel>
+          <span className="inline-flex items-center gap-1.5">
+            <CalendarDays className="h-3.5 w-3.5" />
+            Sessões (por dia)
+          </span>
+        </SectionLabel>
+        <span className="text-2xs text-ink-faint">
+          {sessions.length} {sessions.length === 1 ? "dia" : "dias"}
+        </span>
+      </div>
+      <div className="mt-1 flex flex-col">
+        {shown.map((s) => {
+          const start = hhmm(s.start_at);
+          const end = hhmm(s.end_at);
+          const tone =
+            s.pending > 0 && s.cashed === 0
+              ? "text-ink-faint"
+              : s.profit_cents > 0
+                ? "text-action-green"
+                : s.profit_cents < 0
+                  ? "text-action-red"
+                  : "text-ink";
+          return (
+            <button
+              key={s.day}
+              type="button"
+              onClick={() => onPickDay(s.day)}
+              className={cn(
+                "flex items-center justify-between gap-3 border-t border-border/60 px-3 py-2 text-left transition-colors hover:bg-surface-2/60",
+                activeDay === s.day && "bg-gold/10",
+              )}
+            >
+              <div className="min-w-0">
+                <div className="text-xs font-semibold text-ink nums">
+                  {fmtShortDate(s.day)}
+                </div>
+                <div className="flex items-center gap-1 text-2xs text-ink-faint nums">
+                  {start && (
+                    <>
+                      <Clock className="h-2.5 w-2.5" />
+                      <span>{start}{end && end !== start ? `–${end}` : ""}</span>
+                      <span>·</span>
+                    </>
+                  )}
+                  <span>{s.n} {s.n === 1 ? "torneio" : "torneios"}</span>
+                  {s.roi_pct != null && <span>· ROI {fmtPct(s.roi_pct, 0)}</span>}
+                </div>
+              </div>
+              <div className={cn("shrink-0 text-right text-sm font-bold nums", tone)}>
+                {fmtMoney(s.profit_cents, currency, { signed: true })}
+              </div>
+            </button>
+          );
+        })}
+      </div>
+      {sessions.length > 5 && (
+        <button
+          type="button"
+          onClick={() => setOpen((v) => !v)}
+          className="w-full border-t border-border px-3 py-2 text-2xs font-semibold text-ink-dim hover:text-ink"
+        >
+          {open ? "Mostrar menos" : `Ver todos os ${sessions.length} dias`}
+        </button>
+      )}
+    </Card>
+  );
+}
+

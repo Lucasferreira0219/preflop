@@ -2,10 +2,20 @@
 import type {
   Analytics,
   ImportSummary,
+  ImportTournamentFilesResult,
+  GrindBlock,
   Improvement,
   Insights,
+  ManualTournamentInput,
   Mode,
+  PkeQueryContext,
+  PkeQueryResponse,
+  PkeRule,
   Question,
+  StudyOverview,
+  SimCorrection,
+  SimSession,
+  SimSpot,
   RangeResponse,
   Scenario,
   Stats,
@@ -14,6 +24,8 @@ import type {
   TournamentFilters,
   TournamentImportResult,
   TournamentOverview,
+  TournamentReport,
+  TournamentSession,
   TournamentType,
 } from "./types";
 
@@ -26,6 +38,17 @@ async function call<T>(method: string, args: unknown[] = []): Promise<T> {
     body: JSON.stringify(args),
   });
   if (!res.ok) throw new Error(`API ${method} HTTP ${res.status}`);
+  return (await res.json()) as T;
+}
+
+// POST com body objeto (endpoints /api/pke/* que não usam o array padrão).
+async function _postObj<T>(path: string, body: unknown): Promise<T> {
+  const res = await fetch(`${BASE}${path}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error(`API ${path} HTTP ${res.status}`);
   return (await res.json()) as T;
 }
 
@@ -79,9 +102,37 @@ export const api = {
   importHands: (text: string, mode: Mode = "sng") =>
     call<ImportSummary>("import_hands", [text, mode]),
 
+  analyzeTournament: (tournamentId: string) =>
+    call<TournamentReport>("analyze_tournament", [tournamentId]),
+
+  // Consulta PKE: body é um objeto {question, context} (não o array padrão).
+  pkeQuery: async (question: string, context: PkeQueryContext) => {
+    const res = await fetch(`${BASE}/api/pke/query`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ question, context }),
+    });
+    if (!res.ok) throw new Error(`API pke/query HTTP ${res.status}`);
+    return (await res.json()) as PkeQueryResponse;
+  },
+
+  // ── Simulador PKE (bodies são objetos) ──────────────────────────────────────
+  pkeSimNew: (mode: string, category?: string) =>
+    _postObj<SimSpot>("/api/pke/sim/new", { mode, category }),
+  pkeSimAnswer: (spotId: string, heroAnswer: string) =>
+    _postObj<SimCorrection>("/api/pke/sim/answer", { spot_id: spotId, hero_answer: heroAnswer }),
+  pkeSimSession: () => _postObj<SimSession>("/api/pke/sim/session", {}),
+  pkeSimReset: () => _postObj<{ ok: boolean }>("/api/pke/sim/reset", {}),
+  pkeRule: (id: string) => _postObj<PkeRule>("/api/pke/rule", { id }),
+
+  studyOverview: () => call<StudyOverview>("study_overview", []),
+
   // ── Planilha de torneios ────────────────────────────────────────────────────
   importTournaments: (text: string) =>
     call<TournamentImportResult>("import_tournaments", [text]),
+
+  importTournamentFiles: (text: string) =>
+    call<ImportTournamentFilesResult>("import_tournament_files", [text]),
 
   listTournaments: (filters: TournamentFilters = {}) =>
     call<Tournament[]>("list_tournaments", [filters]),
@@ -106,6 +157,23 @@ export const api = {
     call<{ deleted: number; error?: string }>("delete_tournament", [tournamentId]),
 
   listTournamentFormats: () => call<string[]>("list_tournament_formats", []),
+
+  listRooms: () => call<string[]>("list_rooms", []),
+
+  addTournament: (data: ManualTournamentInput) =>
+    call<Tournament | { error: string }>("add_tournament", [data]),
+
+  tournamentsSessions: (filters: TournamentFilters = {}) =>
+    call<TournamentSession[]>("tournaments_sessions", [filters]),
+
+  // ── Cronômetro de grind ───────────────────────────────────────────────────
+  grindActive: () => call<GrindBlock | null>("grind_active", []),
+  grindStart: () => call<GrindBlock>("grind_start", []),
+  grindStop: () => call<GrindBlock | Record<string, never>>("grind_stop", []),
+  grindBlocksForDay: (day: string) =>
+    call<GrindBlock[]>("grind_blocks_for_day", [day]),
+  deleteGrindBlock: (id: number) =>
+    call<{ deleted: number }>("delete_grind_block", [id]),
 
   listTournamentTypes: () => call<TournamentType[]>("list_tournament_types", []),
 

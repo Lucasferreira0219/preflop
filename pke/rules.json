@@ -1,0 +1,142 @@
+{
+  "schema_version": 1,
+  "source_master": "guia_de_bolso",
+  "priorities": { "guia_de_bolso": 100, "especifico": 50 },
+  "rules": [
+    {
+      "id": "RFI.SIZE", "rev": 1, "type": "RULE",
+      "source": { "pdf": "guia_de_bolso", "page": 5, "priority": 100 },
+      "scope": { "spot": "rfi" },
+      "size_table_bb": [ { "min": 75, "size": "3bb" }, { "min": 40, "size": "2.5bb" }, { "min": 0, "size": "2bb" } ],
+      "explain_pt": "Open: 3bb (75bb+), 2.5bb (40-75bb), 2bb (até 40bb)."
+    },
+    {
+      "id": "RFI.RANGE", "rev": 1, "type": "RULE",
+      "source": { "pdf": "guia_de_bolso", "page": 3, "priority": 100 },
+      "scope": { "spot": "rfi" },
+      "range_ref": "ranges/sng/ranges_{bucket}bb.json#positions.{pos}.RFI",
+      "explain_pt": "Abrir os ranges teóricos por posição em early game."
+    },
+    {
+      "id": "VSRFI.3BET_ONLY", "rev": 1, "type": "RULE",
+      "source": { "pdf": "guia_de_bolso", "page": 5, "priority": 100 },
+      "scope": { "spot": "vs_open" },
+      "when": { "hero_pos_not_in": ["BTN", "BB"] },
+      "then": { "primary_action": "3bet", "forbid": ["call"], "hand_preference": "nao_naipadas" },
+      "exceptions": ["VSRFI.DEEP_LOWPAIR_CALL"],
+      "common_mistake": "dar call em vez de 3-bet fora de BTN/BB",
+      "explain_pt": "Fora de BTN e BB: 3-bet ou fold. Sem call (te deixa em spot difícil OOP)."
+    },
+    {
+      "id": "VSRFI.SHORT_NOCALL", "rev": 1, "type": "RULE",
+      "source": { "pdf": "guia_de_bolso", "page": 5, "priority": 100 },
+      "scope": { "spot": "vs_open", "eff_bb_max": 30 },
+      "when": { "hero_pos_not_in": ["BB"] },
+      "then": { "forbid": ["call"] },
+      "explain_pt": "Abaixo de 30bb nunca dar call (exceto BB): todo range vira 3-bet ou shove."
+    },
+    {
+      "id": "VSRFI.DEEP_LOWPAIR_CALL", "rev": 1, "type": "RULE",
+      "source": { "pdf": "guia_de_bolso", "page": 5, "priority": 100 },
+      "scope": { "spot": "vs_open", "eff_bb_min": 50 },
+      "explain_pt": "Exceção (deep): parzinhos baixos (66-) podem dar call."
+    },
+    {
+      "id": "THREEBET.SIZE", "rev": 1, "type": "RULE",
+      "source": { "pdf": "guia_de_bolso", "page": 5, "priority": 100 },
+      "scope": { "spot": "vs_open", "action": "3bet" },
+      "size_table_bb": [
+        { "min": 30, "ip": "3x", "oop": "3.5x" },
+        { "min": 20, "ip": "2.7x", "oop": "3.2x" },
+        { "min": 17, "ip": "2.5x", "oop": "3x" },
+        { "min": 0, "ip": "all-in", "oop": "all-in" }
+      ],
+      "explain_pt": "3-bet: 30bb+ 3x/3.5x; 20-30 2.7x/3.2x; 17-20 2.5x/3x; abaixo de 17bb = all-in."
+    },
+    {
+      "id": "BB.NOFOLD_SUITED", "rev": 1, "type": "RULE",
+      "source": { "pdf": "guia_de_bolso", "page": 7, "priority": 100 },
+      "scope": { "spot": "bb_defense" },
+      "then": { "forbid_when_suited": ["fold"] },
+      "exceptions": ["ICM forte / bolha pressionada"],
+      "common_mistake": "foldar mãos naipadas do BB no começo do torneio",
+      "explain_pt": "BB vs open: não foldar naipadas. Exceção: ICM forte (bolha)."
+    },
+    {
+      "id": "LIMP.PUNISH", "rev": 1, "type": "RULE",
+      "source": { "pdf": "guia_de_bolso", "page": 7, "priority": 100 },
+      "scope": { "spot": "vs_limp" },
+      "then": { "primary_action": "raise", "forbid": ["limp"], "range_from": "open_range_of_limper_position" },
+      "common_mistake": "dar limp atrás (não punir) ou foldar mão que abriria",
+      "explain_pt": "Punir limp com RAISE usando o range de open da posição do limpador (ou foldar). Sem limp atrás (exceto SB)."
+    },
+    {
+      "id": "LIMP.SIZE", "rev": 1, "type": "RULE",
+      "source": { "pdf": "guia_de_bolso", "page": 8, "priority": 100 },
+      "scope": { "spot": "vs_limp" },
+      "size_table_bb": [ { "min": 40, "size": "3bb+1/limp" }, { "min": 20, "size": "2.5bb+1/limp" }, { "min": 10, "size": "2bb+1/limp" } ],
+      "explain_pt": "Iso-raise: 40bb+ 3bb; 20-40 2.5bb; 10-20 2bb — sempre +1bb por limpador."
+    },
+    {
+      "id": "SB.RAISE_ONLY", "rev": 1, "type": "RULE",
+      "source": { "pdf": "guia_de_bolso", "page": 8, "priority": 100 },
+      "scope": { "spot": "blind_war_sb" },
+      "then": { "primary_action": "raise", "forbid": ["limp"] },
+      "size_table_bb": [ { "min": 30, "size": "3.5x" }, { "min": 20, "size": "3x" }, { "min": 10, "size": "2.25x" } ],
+      "explain_pt": "SB na blind war: todo range em raise (sem limp). 3.5x (30bb+), 3x (20-30), 2.25x (10-20)."
+    },
+    {
+      "id": "OPENSHOVE.10BB", "rev": 1, "type": "RULE",
+      "source": { "pdf": "guia_de_bolso", "page": 12, "priority": 100 },
+      "scope": { "spot": "push_fold", "eff_bb_max": 10 },
+      "then": { "actions": ["shove", "fold"], "forbid": ["raise", "limp", "call"] },
+      "range_ref": "ranges/sng/ranges_10bb.json#positions.{pos}._RFI_shove",
+      "common_mistake": "dar raise/fold com menos de 10bb em vez de all-in/fold",
+      "explain_pt": "Com 10bb ou menos: all-in ou fold (nada de min-raise). Use o grid de shove da posição."
+    },
+    {
+      "id": "RESTEAL.SHORT", "rev": 1, "type": "RULE",
+      "source": { "pdf": "guia_de_bolso", "page": 14, "priority": 100 },
+      "scope": { "spot": "resteal_short", "eff_bb_max": 20 },
+      "when": { "opener_pos_in": ["CO", "BTN"], "hero_pos_in": ["BTN", "SB", "BB"] },
+      "then": { "primary_action": "shove", "forbid": ["call"], "hand_predicate": "pairs_or_suited_broadway_or_suited_ace" },
+      "common_mistake": "dar call (jogar OOP sem fold equity) em vez de resteal-shove",
+      "explain_pt": "≤20bb, vilão abriu de CO/BTN, você no BTN/SB/BB: resteal-shove com pares, broadways naipadas e ases naipados."
+    },
+    {
+      "id": "CBET.IP_BB", "rev": 1, "type": "RULE",
+      "source": { "pdf": "guia_de_bolso", "page": 13, "priority": 100 },
+      "scope": { "spot": "postflop_cbet_ip", "street": "flop" },
+      "then": { "primary_action": "bet", "size": "33%", "frequency": "100%" },
+      "explain_pt": "Abriu pré e só o BB pagou, você IP: c-bet 100% no flop com 33%, qualquer mão/board. Turn: 2º barril ~66% em carta boa."
+    },
+    {
+      "id": "BETVMISSED", "rev": 1, "type": "RULE",
+      "source": { "pdf": "guia_de_bolso", "page": 13, "priority": 100 },
+      "scope": { "spot": "bet_vs_missed", "street": "flop" },
+      "then": { "primary_action": "bet", "size": "33%", "frequency": "100%" },
+      "explain_pt": "Vilão abriu CO, você pagou do BTN, blinds foldaram e ele deu check (missed c-bet): aposte sempre 33%."
+    },
+    {
+      "id": "PROBE", "rev": 1, "type": "RULE",
+      "source": { "pdf": "guia_de_bolso", "page": 14, "priority": 100 },
+      "scope": { "spot": "probe", "street": "turn" },
+      "then": { "primary_action": "bet", "size": "66%" },
+      "explain_pt": "Vilão abriu CO, você pagou do BB, flop check-check: no turn favorável, aposte ~66%."
+    },
+    {
+      "id": "BUBBLE.PLAN", "rev": 1, "type": "RULE",
+      "source": { "pdf": "guia_de_bolso", "page": 15, "priority": 100 },
+      "scope": { "phase": ["bubble"] },
+      "explain_pt": "Bolha: chip leader expande e pressiona; stack do meio joga apertado (pressionado); short joga agressivo buscando a dobra."
+    },
+    {
+      "id": "HU.BTN", "rev": 1, "type": "RULE",
+      "source": { "pdf": "guia_de_bolso", "page": 15, "priority": 100 },
+      "scope": { "spot": "heads_up", "eff_bb_min": 10 },
+      "when": { "hero_pos_in": ["BTN", "SB"] },
+      "then": { "forbid": ["fold"] },
+      "explain_pt": "HU no BTN com 10bb+: nunca foldar (100% das mãos), pode adicionar limp; IP segue c-bet 100% no flop."
+    }
+  ]
+}

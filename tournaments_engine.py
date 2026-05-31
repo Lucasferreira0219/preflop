@@ -14,6 +14,7 @@ Valores monetários ficam em CENTAVOS (int) pra evitar float.
 import os
 import json
 import time
+import uuid
 import hashlib
 import sqlite3
 from contextlib import contextmanager
@@ -23,6 +24,9 @@ from tournament_parser import parse_text, _RE_HH_HEADER, _parse_hand_history
 _BASE    = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(_BASE, "data")
 DB_PATH  = os.path.join(DATA_DIR, "preflop.db")
+
+# Um torneio é "Big Win" quando o prêmio é >= N× o custo (buy-in + fee).
+BIG_WIN_MULTIPLIER = 30
 
 
 @contextmanager
@@ -58,6 +62,8 @@ def _init_schema():
             finish_pos      INTEGER,
             prize_cents     INTEGER,
             prize_known     INTEGER NOT NULL DEFAULT 0,  -- 1 se veio do summary OU foi editado MANUALMENTE
+            room            TEXT,                          -- sala/site (PokerStars, GGPoker, …)
+            origin          TEXT,                          -- 'import' | 'manual'
             notes           TEXT,
             raw_text        TEXT,                          -- conteúdo bruto pra reprocessamento
             imported_ts     INTEGER NOT NULL,
@@ -77,11 +83,40 @@ def _init_schema():
             payouts_json   TEXT NOT NULL,   -- JSON array [pos1_cents, pos2_cents, ...]
             updated_ts     INTEGER NOT NULL
         );
+
+        -- Cronômetro de grind: cada start→stop é um bloco. Vários blocos por dia
+        -- somam o tempo total de grind daquele dia. ended_ts NULL = em andamento.
+        CREATE TABLE IF NOT EXISTS grind_blocks (
+            id          INTEGER PRIMARY KEY AUTOINCREMENT,
+            day         TEXT NOT NULL,       -- YYYY/MM/DD (hora local) do start
+            started_ts  INTEGER NOT NULL,    -- epoch (segundos)
+            ended_ts    INTEGER,             -- epoch; NULL enquanto roda
+            note        TEXT
+        );
+        CREATE INDEX IF NOT EXISTS idx_grind_day ON grind_blocks(day);
         """)
-        # Migração defensiva: adiciona raw_text se o banco é anterior à coluna.
+        # Migração defensiva: adiciona colunas novas se o banco é anterior a elas.
         cols = {r["name"] for r in c.execute("PRAGMA table_info(tournaments)")}
         if "raw_text" not in cols:
             c.execute("ALTER TABLE tournaments ADD COLUMN raw_text TEXT")
+        if "room" not in cols:
+            c.execute("ALTER TABLE tournaments ADD COLUMN room TEXT")
+            # Tudo que já existia veio do importador PokerStars.
+            c.execute("UPDATE tournaments SET room = 'PokerStars' WHERE room IS NULL")
+        if "origin" not in cols:
+            c.execute("ALTER TABLE tournaments ADD COLUMN origin TEXT")
+            c.execute("UPDATE tournaments SET origin = 'import' WHERE origin IS NULL")
+        # Resumo do PokerKnowledgeEngine persistido por torneio (aditivo).
+        for col, decl in [
+            ("pke_analyzed", "INTEGER"), ("pke_score_avg", "REAL"),
+            ("pke_critical_hands", "INTEGER"), ("pke_grave_errors", "INTEGER"),
+            ("pke_main_leak", "TEXT"), ("pke_leaks_json", "TEXT"),
+            ("pke_last_analyzed_at", "INTEGER"),
+        ]:
+            if col not in cols:
+                c.execute(f"ALTER TABLE tournaments ADD COLUMN {col} {decl}")
+        # Índice de room criado após garantir que a coluna existe.
+        c.execute("CREATE INDEX IF NOT EXISTS idx_t_room ON tournaments(room)")
 
 
 _init_schema()
@@ -135,15 +170,16 @@ def import_text(text: str) -> dict:
                 INSERT INTO tournaments
                   (tournament_id, played_at, hero, tournament_name, game_type, format,
                    buy_in_cents, fee_cents, currency, n_entries, prize_pool_cents,
-                   finish_pos, prize_cents, prize_known, notes, raw_text,
+                   finish_pos, prize_cents, prize_known, room, origin, notes, raw_text,
                    imported_ts, updated_ts)
-                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
             """, (
                 tid, t.get("played_at"), t.get("hero"),
                 t.get("tournament_name"), t.get("game_type"), t.get("format"),
                 t.get("buy_in_cents"), t.get("fee_cents"), t.get("currency"),
                 t.get("n_entries"), t.get("prize_pool_cents"),
                 t.get("finish_pos"), prize_cents, prize_known,
+                t.get("room") or "PokerStars", "import",
                 None, t.get("raw_text"), ts, ts,
             ))
             summary["new"] += 1
@@ -153,6 +189,164 @@ def import_text(text: str) -> dict:
             summary["tournaments"].append(_row_to_public(final_row))
 
     return summary
+
+
+# ── Cadastro manual ────────────────────────────────────────────────────────────
+# Catálogo de salas sugeridas (o usuário pode digitar outra). A primeira é o
+# default do importador. Espelha as salas mais comuns vistas no MyGrind.
+DEFAULT_ROOMS = [
+    "PokerStars", "GGPoker", "PartyPoker", "888poker", "WPN", "ACR",
+    "iPoker", "Winamax", "Bodog", "WPT Global", "BetFair",
+]
+
+
+def list_rooms() -> list[str]:
+    """Salas do catálogo + quaisquer salas já usadas em torneios, sem repetir."""
+    with _conn() as c:
+        rows = c.execute(
+            "SELECT DISTINCT room FROM tournaments "
+            "WHERE room IS NOT NULL AND room <> ''"
+        ).fetchall()
+    used = [r["room"] for r in rows]
+    out = list(DEFAULT_ROOMS)
+    for r in used:
+        if r not in out:
+            out.append(r)
+    return out
+
+
+def add_manual(data: dict) -> dict:
+    """Cadastra um torneio manualmente (sem arquivo .txt).
+
+    Complementa — nunca substitui — o fluxo de importação. Recebe um dict com:
+      tournament_name, room, format, played_at (YYYY/MM/DD [HH:MM:SS]),
+      buy_in_cents, fee_cents, currency, n_entries, finish_pos, prize_cents.
+    prize_known=1 quando prize_cents é informado.
+    """
+    d = data or {}
+    buy_in = d.get("buy_in_cents")
+    if buy_in is None:
+        return {"error": "Buy-in é obrigatório."}
+    try:
+        buy_in = int(buy_in)
+    except (TypeError, ValueError):
+        return {"error": "Buy-in inválido."}
+
+    fee = d.get("fee_cents")
+    fee = int(fee) if fee not in (None, "") else 0
+    prize = d.get("prize_cents")
+    prize = int(prize) if prize not in (None, "") else None
+    finish_pos = d.get("finish_pos")
+    finish_pos = int(finish_pos) if finish_pos not in (None, "") else None
+    n_entries = d.get("n_entries")
+    n_entries = int(n_entries) if n_entries not in (None, "") else None
+
+    played_at = (d.get("played_at") or "").strip() or None
+    # Normaliza "YYYY/MM/DD" → acrescenta hora 00:00:00 pra ordenar/filtrar igual.
+    if played_at and len(played_at) == 10:
+        played_at = played_at + " 00:00:00"
+
+    tid = "man_" + uuid.uuid4().hex[:14]
+    ts = int(time.time())
+    prize_known = 1 if prize is not None else 0
+    name = (d.get("tournament_name") or "").strip() or "Torneio manual"
+    fmt = (d.get("format") or "").strip() or None
+    room = (d.get("room") or "").strip() or "PokerStars"
+    currency = (d.get("currency") or "USD").strip() or "USD"
+
+    with _conn() as c:
+        c.execute("""
+            INSERT INTO tournaments
+              (tournament_id, played_at, hero, tournament_name, game_type, format,
+               buy_in_cents, fee_cents, currency, n_entries, prize_pool_cents,
+               finish_pos, prize_cents, prize_known, room, origin, notes, raw_text,
+               imported_ts, updated_ts)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+        """, (
+            tid, played_at, None, name, None, fmt,
+            buy_in, fee, currency, n_entries, None,
+            finish_pos, prize, prize_known, room, "manual",
+            (d.get("notes") or None), None, ts, ts,
+        ))
+        row = c.execute(
+            "SELECT * FROM tournaments WHERE tournament_id = ?", (tid,)
+        ).fetchone()
+    return _row_to_public(dict(row))
+
+
+# ── Cronômetro de grind (start/stop) ──────────────────────────────────────────
+
+def _local_day(ts: int) -> str:
+    """Epoch → 'YYYY/MM/DD' no fuso local da máquina."""
+    return time.strftime("%Y/%m/%d", time.localtime(ts))
+
+
+def grind_active() -> dict | None:
+    """Bloco de grind em andamento (ended_ts NULL), se houver."""
+    with _conn() as c:
+        r = c.execute(
+            "SELECT * FROM grind_blocks WHERE ended_ts IS NULL "
+            "ORDER BY started_ts DESC LIMIT 1"
+        ).fetchone()
+    return dict(r) if r else None
+
+
+def grind_start() -> dict:
+    """Inicia o cronômetro. Se já houver um bloco rodando, devolve ele
+    (evita dois cronômetros simultâneos)."""
+    act = grind_active()
+    if act:
+        return act
+    ts = int(time.time())
+    with _conn() as c:
+        cur = c.execute(
+            "INSERT INTO grind_blocks (day, started_ts, ended_ts) VALUES (?,?,NULL)",
+            (_local_day(ts), ts),
+        )
+        r = c.execute(
+            "SELECT * FROM grind_blocks WHERE id = ?", (cur.lastrowid,)
+        ).fetchone()
+    return dict(r)
+
+
+def grind_stop() -> dict:
+    """Para o cronômetro em andamento. Devolve o bloco fechado (ou {} se nada
+    estava rodando)."""
+    ts = int(time.time())
+    with _conn() as c:
+        act = c.execute(
+            "SELECT * FROM grind_blocks WHERE ended_ts IS NULL "
+            "ORDER BY started_ts DESC LIMIT 1"
+        ).fetchone()
+        if not act:
+            return {}
+        c.execute("UPDATE grind_blocks SET ended_ts = ? WHERE id = ?", (ts, act["id"]))
+        r = c.execute("SELECT * FROM grind_blocks WHERE id = ?", (act["id"],)).fetchone()
+    return dict(r)
+
+
+def grind_by_day() -> dict[str, int]:
+    """{dia: segundos} somando blocos JÁ FECHADOS de cada dia."""
+    with _conn() as c:
+        rows = c.execute(
+            "SELECT day, SUM(ended_ts - started_ts) AS secs FROM grind_blocks "
+            "WHERE ended_ts IS NOT NULL GROUP BY day"
+        ).fetchall()
+    return {r["day"]: int(r["secs"] or 0) for r in rows}
+
+
+def grind_blocks_for_day(day: str) -> list[dict]:
+    with _conn() as c:
+        rows = c.execute(
+            "SELECT * FROM grind_blocks WHERE day = ? ORDER BY started_ts ASC", (day,)
+        ).fetchall()
+    return [dict(r) for r in rows]
+
+
+def delete_grind_block(block_id: int) -> dict:
+    with _conn() as c:
+        cur = c.execute("DELETE FROM grind_blocks WHERE id = ?", (int(block_id),))
+    return {"deleted": cur.rowcount}
 
 
 # ── Consultas ─────────────────────────────────────────────────────────────────
@@ -194,6 +388,9 @@ def list_tournaments(filters: dict | None = None) -> list[dict]:
     if f.get("format"):
         where.append("format = ?")
         params.append(f["format"])
+    if f.get("room"):
+        where.append("room = ?")
+        params.append(f["room"])
     if f.get("min_buyin") is not None:
         where.append("buy_in_cents >= ?")
         params.append(int(f["min_buyin"]))
@@ -202,7 +399,9 @@ def list_tournaments(filters: dict | None = None) -> list[dict]:
         params.append(int(f["max_buyin"]))
 
     sql = (
-        "SELECT * FROM tournaments WHERE "
+        "SELECT *, (SELECT COUNT(*) FROM imported_hands ih "
+        "WHERE ih.tournament_id = tournaments.tournament_id) AS hands_count "
+        "FROM tournaments WHERE "
         + " AND ".join(where)
         + " ORDER BY played_at ASC"
     )
@@ -233,6 +432,9 @@ def overview(filters: dict | None = None) -> dict:
     cumulative = []
     running = 0
     by_format: dict[str, dict] = {}
+    # Distribuição de posições (só conta torneios com posição final conhecida).
+    pos_buckets = {"champion": 0, "podium": 0, "itm": 0, "out": 0}
+    big_wins = 0
 
     for t in tournaments:
         cost = (t.get("buy_in_cents") or 0) + (t.get("fee_cents") or 0)
@@ -244,6 +446,8 @@ def overview(filters: dict | None = None) -> dict:
             prize_total += prize
             if prize > 0:
                 itm += 1
+            if cost > 0 and prize >= cost * BIG_WIN_MULTIPLIER:
+                big_wins += 1
             running += prize - cost
         else:
             pending_prize += 1
@@ -265,10 +469,24 @@ def overview(filters: dict | None = None) -> dict:
             if (t.get("prize_cents") or 0) > 0:
                 b["itm"] += 1
 
+        # Bucket de posição (independe de prêmio conhecido — usa finish_pos).
+        fp = t.get("finish_pos")
+        prize_val = t.get("prize_cents") or 0
+        if fp is not None:
+            if fp == 1:
+                pos_buckets["champion"] += 1
+            elif fp in (2, 3):
+                pos_buckets["podium"] += 1
+            elif known and prize_val > 0:
+                pos_buckets["itm"] += 1
+            else:
+                pos_buckets["out"] += 1
+
     profit = prize_total - cost_total
     roi = (profit / cost_total) if cost_total else None
     itm_rate = (itm / cashed) if cashed else None
     avg_buyin = (cost_total / n) if n else None
+    avg_profit = (profit / n) if n else None
 
     return {
         "n_tournaments": n,
@@ -278,11 +496,104 @@ def overview(filters: dict | None = None) -> dict:
         "roi_pct":            roi * 100 if roi is not None else None,
         "itm_pct":            itm_rate * 100 if itm_rate is not None else None,
         "avg_buyin_cents":    avg_buyin,
+        "avg_profit_cents":   round(avg_profit) if avg_profit is not None else None,
         "pending_prize":      pending_prize,
         "cashed":             cashed,
+        "big_wins":           big_wins,
+        "big_win_multiplier": BIG_WIN_MULTIPLIER,
+        "position_buckets":   pos_buckets,
         "cumulative":         cumulative,
         "by_format":          by_format,
     }
+
+
+def sessions(filters: dict | None = None) -> list[dict]:
+    """Agrupa torneios por DIA (sessão), com KPIs e janela de início/fim.
+
+    Retorna lista ordenada do dia mais recente pro mais antigo. Cada item:
+      day (YYYY/MM/DD), start_at, end_at, n, cost_cents, prize_cents,
+      profit_cents, roi_pct, itm_pct, cashed, pending.
+    """
+    tournaments = list_tournaments(filters)
+    by_day: dict[str, dict] = {}
+
+    def _blank_day(day, pa=None):
+        return {
+            "day": day, "start_at": pa, "end_at": pa,
+            "n": 0, "cost_cents": 0, "prize_cents": 0,
+            "itm": 0, "cashed": 0, "pending": 0,
+            "analisados": 0, "erros_graves": 0,
+            "_pke_soma": 0.0, "_pke_maos": 0, "_leaks": {},
+        }
+
+    for t in tournaments:
+        pa = t.get("played_at")
+        day = pa[:10] if pa else "Sem data"
+        s = by_day.setdefault(day, _blank_day(day, pa))
+        s["n"] += 1
+        if t.get("pke_analyzed"):
+            s["analisados"] += 1
+            ch = t.get("pke_critical_hands") or 0
+            sa = t.get("pke_score_avg")
+            if sa is not None and ch:
+                s["_pke_soma"] += sa * ch
+                s["_pke_maos"] += ch
+            s["erros_graves"] += t.get("pke_grave_errors") or 0
+            ml = t.get("pke_main_leak")
+            if ml:
+                s["_leaks"][ml] = s["_leaks"].get(ml, 0) + 1
+        if pa:
+            if not s["start_at"] or pa < s["start_at"]:
+                s["start_at"] = pa
+            if not s["end_at"] or pa > s["end_at"]:
+                s["end_at"] = pa
+        cost = (t.get("buy_in_cents") or 0) + (t.get("fee_cents") or 0)
+        s["cost_cents"] += cost
+        if t.get("prize_source") is not None:
+            s["cashed"] += 1
+            prize = t.get("prize_cents") or 0
+            s["prize_cents"] += prize
+            if prize > 0:
+                s["itm"] += 1
+        else:
+            s["pending"] += 1
+
+    # Tempo de grind por dia (blocos fechados). Inclui dias que tiveram grind
+    # mas nenhum torneio importado/cadastrado.
+    grind = grind_by_day()
+    for day in grind:
+        by_day.setdefault(day, _blank_day(day))
+
+    out = []
+    for s in by_day.values():
+        profit = s["prize_cents"] - s["cost_cents"]
+        roi = (profit / s["cost_cents"]) if s["cost_cents"] else None
+        itm_rate = (s["itm"] / s["cashed"]) if s["cashed"] else None
+        out.append({
+            "day":          s["day"],
+            "start_at":     s["start_at"],
+            "end_at":       s["end_at"],
+            "n":            s["n"],
+            "cost_cents":   s["cost_cents"],
+            "prize_cents":  s["prize_cents"],
+            "profit_cents": profit,
+            "roi_pct":      roi * 100 if roi is not None else None,
+            "itm_pct":      itm_rate * 100 if itm_rate is not None else None,
+            "cashed":       s["cashed"],
+            "pending":      s["pending"],
+            "grind_seconds": grind.get(s["day"], 0),
+            "analisados":   s.get("analisados", 0),
+            "erros_graves": s.get("erros_graves", 0),
+            "media_notas":  (round(s["_pke_soma"] / s["_pke_maos"], 1)
+                             if s.get("_pke_maos") else None),
+            "main_leak":    (max(s["_leaks"], key=s["_leaks"].get)
+                             if s.get("_leaks") else None),
+        })
+    # Dias reais primeiro (mais recente → mais antigo); "Sem data" por último.
+    dated = sorted((x for x in out if x["day"] != "Sem data"),
+                   key=lambda x: x["day"], reverse=True)
+    undated = [x for x in out if x["day"] == "Sem data"]
+    return dated + undated
 
 
 def set_prize(tournament_id: str, prize_cents: int | None,
@@ -361,8 +672,53 @@ def _row_to_public(row: dict) -> dict:
         "prize_known":    bool(source),
         "prize_source":   source,                       # 'manual' | 'auto' | None
         "profit_cents":   profit,
+        "room":           row.get("room") or "PokerStars",
+        "origin":         row.get("origin") or "import",
         "notes":          row.get("notes"),
+        # PKE (aditivo)
+        "pke_analyzed":       bool(row.get("pke_analyzed")),
+        "pke_score_avg":      row.get("pke_score_avg"),
+        "pke_critical_hands": row.get("pke_critical_hands"),
+        "pke_grave_errors":   row.get("pke_grave_errors"),
+        "pke_main_leak":      row.get("pke_main_leak"),
+        "pke_leaks":          _parse_leaks(row.get("pke_leaks_json")),
+        "pke_last_analyzed_at": row.get("pke_last_analyzed_at"),
+        "hands_count":        row.get("hands_count"),
     }
+
+
+def _parse_leaks(s):
+    if not s:
+        return []
+    try:
+        return json.loads(s)
+    except (ValueError, TypeError):
+        return []
+
+
+def set_pke_summary(tournament_id: str, summary: dict) -> None:
+    """Persiste o resumo do PKE na linha do torneio (no-op se não existir)."""
+    if not tournament_id:
+        return
+    leaks = summary.get("pke_leaks")
+    with _conn() as c:
+        c.execute(
+            "UPDATE tournaments SET pke_analyzed = ?, pke_score_avg = ?, "
+            "pke_critical_hands = ?, pke_grave_errors = ?, pke_main_leak = ?, "
+            "pke_leaks_json = ?, pke_last_analyzed_at = ?, updated_ts = ? "
+            "WHERE tournament_id = ?",
+            (
+                1 if summary.get("pke_analyzed") else 0,
+                summary.get("pke_score_avg"),
+                summary.get("pke_critical_hands"),
+                summary.get("pke_grave_errors"),
+                summary.get("pke_main_leak"),
+                json.dumps(leaks, ensure_ascii=False) if leaks else None,
+                summary.get("pke_last_analyzed_at") or int(time.time()),
+                int(time.time()),
+                tournament_id,
+            ),
+        )
 
 
 # ── Tipos de torneio (estruturas de payout) ───────────────────────────────────

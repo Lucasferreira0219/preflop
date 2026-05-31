@@ -118,6 +118,7 @@ def _parse_hand_history(text: str) -> dict:
             d = by_tid.setdefault(current_tid, {
                 "tournament_id": current_tid,
                 "source_files": {"hh"},
+                "room": "PokerStars",
             })
             # IMPORTANTE: acumula a linha do cabeçalho também, pra raw_text
             # ser auto-suficiente (re-parseável sem header sintético).
@@ -212,7 +213,7 @@ def _parse_summary(text: str) -> dict:
     if not tid:
         return {}
 
-    fact = {"tournament_id": tid, "source_files": {"summary"}}
+    fact = {"tournament_id": tid, "source_files": {"summary"}, "room": "PokerStars"}
 
     # buy-in
     mb = _RE_SUM_BUYIN.search(text)

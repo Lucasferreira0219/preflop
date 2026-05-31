@@ -13,6 +13,12 @@ interface AppCtx {
   setDrawerOpen: (v: boolean) => void;
   glossaryOpen: boolean;
   setGlossaryOpen: (v: boolean) => void;
+  ruleId: string | null;
+  openRule: (id: string | null) => void;
+  closeRule: () => void;
+  tournamentDetailId: string | null;
+  openTournament: (id: string | null) => void;
+  closeTournament: () => void;
   studyMode: boolean;
   setStudyMode: (v: boolean) => void;
 }
@@ -23,7 +29,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [mode, setModeState] = useState<Mode>(() => readMode());
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [glossaryOpen, setGlossaryOpen] = useState(false);
+  const [ruleId, setRuleId] = useState<string | null>(null);
   const [studyMode, setStudyModeState] = useState<boolean>(() => lsGet<boolean>(STUDY_KEY, true));
+
+  const openRule = useCallback((id: string | null) => setRuleId(id), []);
+  const closeRule = useCallback(() => setRuleId(null), []);
+  const [tournamentDetailId, setTournamentDetailId] = useState<string | null>(null);
+  const openTournament = useCallback((id: string | null) => setTournamentDetailId(id), []);
+  const closeTournament = useCallback(() => setTournamentDetailId(null), []);
 
   const setMode = useCallback((m: Mode) => {
     persistMode(m);
@@ -40,9 +53,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       mode, setMode, stacks: stacksForMode(mode),
       drawerOpen, setDrawerOpen,
       glossaryOpen, setGlossaryOpen,
+      ruleId, openRule, closeRule,
+      tournamentDetailId, openTournament, closeTournament,
       studyMode, setStudyMode,
     }),
-    [mode, setMode, drawerOpen, glossaryOpen, studyMode, setStudyMode],
+    [mode, setMode, drawerOpen, glossaryOpen, ruleId, openRule, closeRule,
+     tournamentDetailId, openTournament, closeTournament, studyMode, setStudyMode],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

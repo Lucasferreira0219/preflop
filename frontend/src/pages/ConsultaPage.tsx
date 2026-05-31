@@ -218,7 +218,7 @@ export function ConsultaPage() {
     <div className="min-h-full">
       <header className="sticky top-0 z-30 border-b border-border bg-bg/85 backdrop-blur-md">
         <BrandBar
-          title="Consulta"
+          title="Ranges e Regras"
           center={
             <SegmentedControl<Mode>
               size="sm"

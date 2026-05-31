@@ -194,6 +194,177 @@ export interface ImportSummary {
   error?: string;
 }
 
+// ── Consulta PKE (pergunta em linguagem natural) ───────────────────────────────
+
+export interface PkeRuleRef {
+  id: string;
+  source: string | null;
+  page: number | null;
+}
+
+// Texto canônico de uma regra (modal "Ver regra").
+export interface PkeRule {
+  found: boolean;
+  id: string;
+  source?: { pdf: string | null; page: number | null } | null;
+  source_label?: string | null;
+  explain_pt?: string | null;
+  common_mistake?: string | null;
+  scope?: Record<string, unknown> | null;
+}
+
+export interface PkeQueryContext {
+  hero_cards?: string;
+  hero_position?: string;
+  effective_stack_bb?: number;
+  players_left?: number;
+  phase?: string;
+  action_before_hero?: string;
+  opener_position?: string;
+  ante?: boolean;
+}
+
+export interface PkeQueryResponse {
+  answer: string;
+  recommended_action: string | null;
+  confidence: string; // high | medium | insufficient
+  rule_refs: PkeRuleRef[];
+  provenance: { main_answer: string; phase: string; explanation: string };
+  missing_info: string[];
+  beginner_explanation: string | null;
+  common_mistake: string | null;
+}
+
+// ── Simulador PKE ───────────────────────────────────────────────────────────────
+
+export interface SimSpot {
+  spot_id: string;
+  category: string;
+  phase: string | null;
+  players_left: number;
+  blinds: string;
+  ante: boolean;
+  hero_position: string;
+  hero_cards: string;
+  effective_stack_bb: number;
+  action_before_hero: string;
+  opener_position: string | null;
+  question: string;
+  options: string[];
+  expected_concept: string | null;
+  error?: string;
+}
+
+export interface SimCorrection {
+  correct: boolean;
+  score: number | null;
+  recommended_action: string | null;
+  rule_refs: PkeRuleRef[];
+  explanation: string | null;
+  common_mistake: string | null;
+  next_training_weight: Record<string, string>;
+  category: string;
+  error?: string;
+}
+
+export interface SimError {
+  category: string;
+  hero_position: string;
+  hero_cards: string;
+  effective_stack_bb: number;
+  phase: string | null;
+  action_before_hero: string;
+  opener_position: string | null;
+  hero_answer: string;
+  recommended_action: string | null;
+  score: number | null;
+  rule_refs: PkeRuleRef[];
+  explanation: string | null;
+}
+
+export interface SimSession {
+  maos: number;
+  acertos: number;
+  media_notas: number | null;
+  por_categoria: { category: string; n: number; correct: number; media: number }[];
+  pior_categoria: string | null;
+  melhor_categoria: string | null;
+  leaks_treino: { category: string; n: number; correct: number; media: number }[];
+  recomendar_treinar: string | null;
+  erros: SimError[];
+  leak_focus: string[];
+  source_tid: string | null;
+  desempenho_leaks: { category: string; n: number; media: number | null; verdict: string }[];
+  tem_revisao: boolean;
+}
+
+// ── Relatório do PokerKnowledgeEngine (análise de torneio) ─────────────────────
+
+export interface ReportHand {
+  hand_id: string;
+  fase: string | null;
+  spot: string | null;
+  cards: string | null;
+  pos: string | null;
+  eff_bb: number | null;
+  linha: string | null;
+  recomendado: string | null;
+  size_recomendado: string | null;
+  nota: number | null;
+  outcome: string; // decisao_boa | erro | cooler | insuficiente
+  gravidade: string | null;
+  erro: string | null;
+  regra: string[];
+  explicacao: string | null;
+  resumo: string | null;
+  ajuste_exploratorio: string | null;
+  motivos_criticos: string[];
+  insuficiente: boolean;
+  falta_info: string[];
+}
+
+export interface ReportLeak {
+  id: string;
+  label: string;
+  frequencia_hits: number;
+  gravidade: string;
+  perda_media_nota: number;
+  fase_predominante: string | null;
+  exemplo: string | null;
+  regra_violada: string | null;
+  como_corrigir: string;
+  exercicio: string | null;
+}
+
+export interface TournamentReport {
+  tournament_id: string;
+  maos_no_torneio: number | null;
+  maos_criticas: number;
+  maos_com_nota: number;
+  media_notas: number | null;
+  erros_graves: number;
+  fase_com_mais_erros: string | null;
+  erros_por_fase: Record<string, number>;
+  tipos_erro_top: { tipo: string; n: number }[];
+  contagem_outcome: Record<string, number>;
+  maos: ReportHand[];
+  piores_decisoes: ReportHand[];
+  melhores_decisoes: ReportHand[];
+  leaks: ReportLeak[];
+  treino_sugerido: string[];
+  error?: string;
+}
+
+// Resumo da Home ("Continuar estudo" + "Plano de estudo de hoje").
+export interface StudyOverview {
+  tem_torneio: boolean;
+  last_tid: string | null;
+  media_notas: number | null;
+  erros_graves: number;
+  leaks: ReportLeak[];
+  tem_revisao?: boolean;
+}
+
 // ── Planilha de torneios ──────────────────────────────────────────────────────
 
 export type PrizeSource = "manual" | "auto" | null;
@@ -215,7 +386,31 @@ export interface Tournament {
   prize_known: boolean;
   prize_source: PrizeSource;
   profit_cents: number | null;
+  room: string;
+  origin?: string; // 'import' | 'manual'
   notes: string | null;
+  // PKE persistido por torneio (aditivo).
+  pke_analyzed?: boolean;
+  pke_score_avg?: number | null;
+  pke_critical_hands?: number | null;
+  pke_grave_errors?: number | null;
+  pke_main_leak?: string | null;
+  pke_leaks?: ReportLeak[];
+  pke_last_analyzed_at?: number | null;
+  hands_count?: number | null;
+}
+
+export interface ManualTournamentInput {
+  tournament_name?: string | null;
+  room?: string | null;
+  format?: string | null;
+  played_at?: string | null;
+  buy_in_cents?: number | null;
+  fee_cents?: number | null;
+  currency?: string | null;
+  n_entries?: number | null;
+  finish_pos?: number | null;
+  prize_cents?: number | null;
 }
 
 export interface FinishPositionUsage {
@@ -247,12 +442,57 @@ export interface TournamentImportResult {
   error?: string;
 }
 
+// Import unificado (financeiro + mãos/PKE + análise por torneio).
+export interface ImportTournamentFilesResult {
+  tournaments: Tournament[];
+  hands: ImportSummary;
+  financeiro: { parsed: number; new: number; updated: number; duplicates: number };
+  tids: string[];
+  error?: string;
+}
+
 export interface TournamentFilters {
   from_date?: string | null;
   to_date?: string | null;
   format?: string | null;
+  room?: string | null;
   min_buyin?: number | null;
   max_buyin?: number | null;
+}
+
+export interface PositionBuckets {
+  champion: number; // 1º lugar
+  podium: number; // 2º–3º
+  itm: number; // premiado, fora do pódio
+  out: number; // sem prêmio
+}
+
+export interface TournamentSession {
+  day: string; // YYYY/MM/DD
+  start_at: string | null;
+  end_at: string | null;
+  n: number;
+  cost_cents: number;
+  prize_cents: number;
+  profit_cents: number;
+  roi_pct: number | null;
+  itm_pct: number | null;
+  cashed: number;
+  pending: number;
+  grind_seconds: number;
+  // PKE por dia (aditivo).
+  analisados?: number;
+  media_notas?: number | null;
+  erros_graves?: number;
+  main_leak?: string | null;
+}
+
+export interface GrindBlock {
+  id: number;
+  day: string; // YYYY/MM/DD
+  started_ts: number; // epoch (s)
+  ended_ts: number | null; // null = em andamento
+  note: string | null;
 }
 
 export interface TournamentFormatBreakdown {
@@ -277,8 +517,12 @@ export interface TournamentOverview {
   roi_pct: number | null;
   itm_pct: number | null;
   avg_buyin_cents: number | null;
+  avg_profit_cents: number | null;
   pending_prize: number;
   cashed: number;
+  big_wins: number;
+  big_win_multiplier: number;
+  position_buckets: PositionBuckets;
   cumulative: CumulativePoint[];
   by_format: Record<string, TournamentFormatBreakdown>;
 }
