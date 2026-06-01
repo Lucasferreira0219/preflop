@@ -142,6 +142,9 @@ def _migrate_composite_tids(c):
     ).fetchall()
     for r in rows:
         old_tid = r["tournament_id"]
+        # torneios manuais (man_*) não têm número do PokerStars — não mexer.
+        if old_tid.startswith("man_"):
+            continue
         ps_id = old_tid.split("_")[0] if "_" in old_tid else old_tid
         c.execute(
             "UPDATE tournaments SET ps_tournament_id = ? WHERE tournament_id = ?",
