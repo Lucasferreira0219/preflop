@@ -19,8 +19,22 @@ class TournamentsApi:
             return {"error": "Arquivo vazio ou inválido."}
         fin = te.import_text(text)                 # financeiro (cria/atualiza tournaments)
         hands = he.import_text(text)               # mãos + pke_* por mão
+
+        # tids dos registros novos
         tids = {t.get("tournament_id") for t in fin.get("tournaments", []) if t.get("tournament_id")}
         tids |= {h.get("tournament_id") for h in hands.get("hands", []) if h.get("tournament_id")}
+
+        # Se tids ainda vazio mas o arquivo foi parseado (duplicatas), extrai direto do parser
+        if not tids and (fin.get("parsed", 0) > 0 or fin.get("duplicates", 0) > 0):
+            from tournament_parser import parse_text as _tp
+            from hand_history_parser import parse_text as _hh
+            for t in _tp(text):
+                if t.get("tournament_id"):
+                    tids.add(t["tournament_id"])
+            for h in _hh(text):
+                if h.get("tournament_id"):
+                    tids.add(h["tournament_id"])
+
         for tid in tids:
             try:
                 he.analyze_tournament(tid)         # persiste resumo PKE no torneio

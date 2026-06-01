@@ -93,7 +93,11 @@ export function TournamentImport({ onImported, className }: { onImported?: () =>
           {result && (
             <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-action-green">
               <CheckCircle2 className="h-4 w-4 shrink-0" />
-              {result.tournaments.length} {result.tournaments.length === 1 ? "torneio importado" : "torneios importados"}
+              {result.financeiro.new > 0
+                ? `${result.financeiro.new} ${result.financeiro.new === 1 ? "torneio importado" : "torneios importados"}`
+                : result.tids.length > 0
+                  ? `${result.tids.length} ${result.tids.length === 1 ? "torneio ja no banco" : "torneios ja no banco"}`
+                  : "nenhum torneio reconhecido"}
             </div>
           )}
         </div>
