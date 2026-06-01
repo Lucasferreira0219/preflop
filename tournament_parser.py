@@ -165,7 +165,10 @@ def _parse_hand_history(text: str) -> dict:
             # data: primeira mão é a referência (= início do torneio pro jogador)
             md = _RE_HH_DATE.search(line)
             if md and "played_at" not in d:
-                d["played_at"] = md.group(1)
+                raw_dt = md.group(1)
+                date_part, time_part = raw_dt.split(" ", 1)
+                h, rest = time_part.split(":", 1)
+                d["played_at"] = f"{date_part} {int(h):02d}:{rest}"
             continue
 
         if current_tid is None:
