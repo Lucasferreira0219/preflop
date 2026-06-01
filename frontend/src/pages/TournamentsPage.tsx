@@ -11,12 +11,13 @@ import {
 } from "recharts";
 import {
   ArrowLeft,
+  ArrowUpDown,
   BarChart3,
   CalendarDays,
   CalendarClock,
+  ChevronDown,
   Clock,
   Download,
-  Dumbbell,
   Filter,
   Info,
   MoreHorizontal,
@@ -37,6 +38,7 @@ import {
   BIG_WIN_MULT,
   BigWinBadge,
   RoomTag,
+  fmtDuration,
   isBigWin,
   medalFor,
 } from "@/components/tournaments/badges";
@@ -61,6 +63,121 @@ const GREEN = "#2BA672";
 const RED = "#D6535B";
 const FMT_ALL = "__all__";
 const ROOM_ALL = "__all__";
+
+type SortKey =
+  | "data_desc" | "data_asc"
+  | "lucro_desc" | "lucro_asc"
+  | "nota_desc" | "nota_asc"
+  | "graves_desc" | "graves_asc"
+  | "buyin_desc" | "buyin_asc";
+
+const SORT_OPTIONS: { value: SortKey; label: string }[] = [
+  { value: "data_desc", label: "Data mais recente" },
+  { value: "data_asc", label: "Data mais antiga" },
+  { value: "lucro_desc", label: "Maior lucro" },
+  { value: "lucro_asc", label: "Menor lucro" },
+  { value: "nota_desc", label: "Melhor Nota PKE" },
+  { value: "nota_asc", label: "Pior Nota PKE" },
+  { value: "graves_desc", label: "Mais erros graves" },
+  { value: "graves_asc", label: "Menos erros graves" },
+  { value: "buyin_desc", label: "Maior buy-in" },
+  { value: "buyin_asc", label: "Menor buy-in" },
+];
+
+const buyinOf = (t: Tournament) => (t.buy_in_cents ?? 0) + (t.fee_cents ?? 0);
+
+function sortTournaments(tournaments: Tournament[], key: SortKey): Tournament[] {
+  // engine entrega asc por data → índice maior = mais recente
+  const arr = tournaments.map((t, i) => ({ t, i }));
+  const cmps: Record<SortKey, (a: { t: Tournament; i: number }, b: { t: Tournament; i: number }) => number> = {
+    data_desc: (a, b) => b.i - a.i,
+    data_asc: (a, b) => a.i - b.i,
+    lucro_desc: (a, b) => (b.t.profit_cents ?? -Infinity) - (a.t.profit_cents ?? -Infinity),
+    lucro_asc: (a, b) => (a.t.profit_cents ?? Infinity) - (b.t.profit_cents ?? Infinity),
+    nota_desc: (a, b) => (b.t.pke_score_avg ?? -Infinity) - (a.t.pke_score_avg ?? -Infinity),
+    nota_asc: (a, b) => (a.t.pke_score_avg ?? Infinity) - (b.t.pke_score_avg ?? Infinity),
+    graves_desc: (a, b) => (b.t.pke_grave_errors ?? 0) - (a.t.pke_grave_errors ?? 0) || b.i - a.i,
+    graves_asc: (a, b) => (a.t.pke_grave_errors ?? 0) - (b.t.pke_grave_errors ?? 0) || b.i - a.i,
+    buyin_desc: (a, b) => buyinOf(b.t) - buyinOf(a.t) || b.i - a.i,
+    buyin_asc: (a, b) => buyinOf(a.t) - buyinOf(b.t) || b.i - a.i,
+  };
+  return [...arr].sort(cmps[key] ?? cmps.data_desc).map((x) => x.t);
+}
+
+// ── seção recolhível (estado persiste por id; mobile pode começar fechada) ──────
+function useCollapsed(id: string, defaultMobileClosed = false): [boolean, () => void] {
+  const [open, setOpen] = useState(() => {
+    try {
+      const saved = localStorage.getItem("tsec:" + id);
+      if (saved != null) return saved === "1";
+    } catch { /* ignore */ }
+    const isMobile = typeof window !== "undefined" && window.matchMedia?.("(max-width: 640px)").matches;
+    return isMobile ? !defaultMobileClosed : true;
+  });
+  const toggle = () => setOpen((v) => {
+    try { localStorage.setItem("tsec:" + id, !v ? "1" : "0"); } catch { /* ignore */ }
+    return !v;
+  });
+  return [open, toggle];
+}
+
+function Collapsible({ id, title, icon, defaultMobileClosed, right, children }: {
+  id: string; title: string; icon?: React.ReactNode; defaultMobileClosed?: boolean;
+  right?: React.ReactNode; children: React.ReactNode;
+}) {
+  const [open, toggle] = useCollapsed(id, defaultMobileClosed);
+  return (
+    <div className="mt-3">
+      <button onClick={toggle} className="flex w-full items-center justify-between gap-2 px-1 py-1.5 text-left">
+        <SectionLabel className="flex items-center gap-1.5">{icon}{title}</SectionLabel>
+        <div className="flex items-center gap-2">
+          {right}
+          <ChevronDown className={cn("h-4 w-4 text-ink-faint transition-transform", open && "rotate-180")} />
+        </div>
+      </button>
+      {open && <div className="mt-1">{children}</div>}
+    </div>
+  );
+}
+
+// ── menu de ações secundárias do card ("...") ────────────────────────────────────
+function CardMenu({ items }: { items: { label: string; onClick: () => void; danger?: boolean; icon?: React.ReactNode }[] }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); };
+    window.addEventListener("mousedown", onDown);
+    return () => window.removeEventListener("mousedown", onDown);
+  }, [open]);
+  return (
+    <div ref={ref} className="relative">
+      <button
+        onClick={(e) => { e.stopPropagation(); setOpen((v) => !v); }}
+        className="rounded-ctl p-2 text-ink-faint hover:bg-surface-2 hover:text-ink"
+        aria-label="Mais ações"
+      >
+        <MoreHorizontal className="h-4 w-4" />
+      </button>
+      {open && (
+        <div className="absolute right-0 top-full z-20 mt-1 min-w-[160px] overflow-hidden rounded-ctl border border-border bg-surface-2 py-1 shadow-pop">
+          {items.map((it) => (
+            <button
+              key={it.label}
+              onClick={(e) => { e.stopPropagation(); setOpen(false); it.onClick(); }}
+              className={cn(
+                "flex w-full items-center gap-2 px-3 py-2 text-left text-xs hover:bg-surface-3",
+                it.danger ? "text-action-red" : "text-ink-dim",
+              )}
+            >
+              {it.icon}{it.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export function TournamentsPage() {
   const { openTournament } = useApp();
@@ -230,23 +347,26 @@ export function TournamentsPage() {
         {overview && overview.n_tournaments > 0 ? (
           <>
             <StatsBar overview={overview} currency={currency} pke={pkeKpis} />
-            <BankrollChart overview={overview} currency={currency} tournaments={tournaments} />
-            <PositionDistribution overview={overview} />
-            <EvolutionBlock
-              sessions={sessions}
-            />
-            <SessionsCard
-              sessions={sessions}
-              currency={currency}
-              activeDay={filters.from_date && filters.from_date === filters.to_date ? filters.from_date : null}
-              onPickDay={(day) =>
-                applyFilters(
-                  filters.from_date === day && filters.to_date === day
-                    ? { ...filters, from_date: null, to_date: null }
-                    : { ...filters, from_date: day, to_date: day },
-                )
-              }
-            />
+            <Collapsible id="graficos" title="Gráficos e análises" icon={<BarChart3 className="h-3.5 w-3.5" />} defaultMobileClosed>
+              <BankrollChart overview={overview} currency={currency} tournaments={tournaments} />
+              <PositionDistribution overview={overview} />
+              <EvolutionBlock sessions={sessions} />
+            </Collapsible>
+            <Collapsible id="sessoes" title="Sessões por dia" icon={<CalendarDays className="h-3.5 w-3.5" />} defaultMobileClosed
+              right={<span className="text-2xs text-ink-faint">{sessions.length} {sessions.length === 1 ? "dia" : "dias"}</span>}>
+              <SessionsCard
+                sessions={sessions}
+                currency={currency}
+                activeDay={filters.from_date && filters.from_date === filters.to_date ? filters.from_date : null}
+                onPickDay={(day) =>
+                  applyFilters(
+                    filters.from_date === day && filters.to_date === day
+                      ? { ...filters, from_date: null, to_date: null }
+                      : { ...filters, from_date: day, to_date: day },
+                  )
+                }
+              />
+            </Collapsible>
             <TournamentsList
               tournaments={tournaments}
               editingId={editingId}
@@ -547,18 +667,37 @@ function DayBars({ days, value, fmt, color, max }: {
   );
 }
 
-function notaCls(n: number | null | undefined): string {
-  if (n == null) return "text-ink-faint";
-  if (n >= 7) return "text-action-green";
-  if (n < 5) return "text-action-red";
-  return "text-gold";
+// Badge de Nota PKE destacado — faixas: 8–10 verde, 6–7.9 amarelo, <6 vermelho
+function notaBadgeCls(n: number | null | undefined): string {
+  if (n == null) return "border-border bg-surface-2 text-ink-faint";
+  if (n >= 8) return "border-action-green/40 bg-action-green/15 text-action-green";
+  if (n >= 6) return "border-gold/40 bg-gold/15 text-gold";
+  return "border-action-red/40 bg-action-red/15 text-action-red";
+}
+
+function NotaBadge({ n, size = "sm" }: { n: number | null | undefined; size?: "sm" | "lg" }) {
+  return (
+    <span
+      title="Nota PKE"
+      className={cn(
+        "inline-flex items-center gap-1 rounded-ctl border font-bold nums",
+        notaBadgeCls(n),
+        size === "lg" ? "px-2.5 py-1 text-sm" : "px-2 py-0.5 text-xs",
+      )}
+    >
+      <span className="text-[9px] font-semibold uppercase tracking-wide opacity-60">PKE</span>
+      {n != null ? n.toFixed(1) : "—"}
+    </span>
+  );
 }
 
 const SEM_MAOS_TITLE =
   "Sem hand history importado. Importe o .txt do PokerStars para receber análise PKE.";
 
-function StatusChip({ t }: { t: Tournament }) {
+// hideOk: oculta o chip quando o status é "analisado" (evita o rótulo repetido)
+function StatusChip({ t, hideOk }: { t: Tournament; hideOk?: boolean }) {
   const st = tournamentStatus(t);
+  if (hideOk && st === "analisado") return null;
   return (
     <span
       title={st === "sem_maos" ? SEM_MAOS_TITLE : undefined}
@@ -569,20 +708,23 @@ function StatusChip({ t }: { t: Tournament }) {
   );
 }
 
-function AnalyzeBtn({ t, onAnalyze }: { t: Tournament; onAnalyze: (tid: string) => Promise<void> }) {
-  const [busy, setBusy] = useState(false);
+// Itens do menu "..." compartilhados por card (mobile) e linha (desktop)
+function buildCardMenuItems(
+  t: Tournament,
+  actions: { onStartEdit: () => void; onDelete: () => void; onAnalyze: (tid: string) => Promise<void> },
+) {
   const st = tournamentStatus(t);
-  if (st === "sem_maos") return null;
-  const label = st === "nao_analisado" ? "Analisar" : "Reanalisar";
-  return (
-    <button
-      onClick={async (e) => { e.stopPropagation(); setBusy(true); try { await onAnalyze(t.tournament_id); } finally { setBusy(false); } }}
-      disabled={busy}
-      className="inline-flex items-center gap-1 rounded-full border border-gold/40 bg-gold/10 px-2 py-0.5 text-2xs font-semibold text-gold hover:bg-gold/20 disabled:opacity-50"
-    >
-      {busy ? <RotateCcw className="h-3 w-3 animate-spin" /> : <Dumbbell className="h-3 w-3" />} {label}
-    </button>
-  );
+  const items: { label: string; onClick: () => void; danger?: boolean; icon?: React.ReactNode }[] = [];
+  if (st !== "sem_maos") {
+    items.push({
+      label: st === "nao_analisado" ? "Analisar" : "Reanalisar",
+      icon: <RotateCcw className="h-3.5 w-3.5" />,
+      onClick: () => { void actions.onAnalyze(t.tournament_id); },
+    });
+  }
+  items.push({ label: "Editar", icon: <Pencil className="h-3.5 w-3.5" />, onClick: actions.onStartEdit });
+  items.push({ label: "Excluir", icon: <Trash2 className="h-3.5 w-3.5" />, danger: true, onClick: actions.onDelete });
+  return items;
 }
 
 function Tile({
@@ -1021,15 +1163,29 @@ function TournamentsList({
   onOpen: (tid: string) => void;
   onAnalyze: (tid: string) => Promise<void>;
 }) {
-  // Engine traz asc por data, mostra desc (mais recente primeiro)
-  const allRows = useMemo(() => [...tournaments].reverse(), [tournaments]);
+  const [sortKey, setSortKey] = useState<SortKey>("data_desc");
+  const allRows = useMemo(() => sortTournaments(tournaments, sortKey), [tournaments, sortKey]);
   const hasSemMaos = tournaments.some((t) => tournamentStatus(t) === "sem_maos");
 
-  // paginação (desktop: páginas; mobile: carregar mais). Reseta ao mudar filtros.
+  // paginação (desktop: páginas; mobile: carregar mais). Reseta ao mudar filtros/ordem.
   const [perPage, setPerPage] = useState(25);
   const [page, setPage] = useState(1);
   const [mobileCount, setMobileCount] = useState(25);
-  useEffect(() => { setPage(1); setMobileCount(perPage); }, [tournaments, perPage]);
+  useEffect(() => { setPage(1); setMobileCount(perPage); }, [tournaments, perPage, sortKey]);
+
+  const sortSelect = (
+    <label className="flex items-center gap-1.5 text-2xs text-ink-faint">
+      <ArrowUpDown className="h-3.5 w-3.5" />
+      Ordenar por
+      <select
+        value={sortKey}
+        onChange={(e) => setSortKey(e.target.value as SortKey)}
+        className="rounded-ctl border border-border bg-surface-2 px-2 py-1 text-xs text-ink outline-none"
+      >
+        {SORT_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+      </select>
+    </label>
+  );
 
   const total = allRows.length;
   const pageCount = Math.max(1, Math.ceil(total / perPage));
@@ -1046,7 +1202,8 @@ function TournamentsList({
           history — importe o .txt do PokerStars para receber análise PKE.
         </p>
       )}
-      {/* MOBILE: cards empilhados + carregar mais */}
+      {/* MOBILE: ordenação + cards empilhados + carregar mais */}
+      <div className="mb-2 flex justify-end sm:hidden">{sortSelect}</div>
       <div className="flex flex-col gap-2 sm:hidden">
         {mobileRows.map((t) => (
           <TournamentCard
@@ -1111,6 +1268,7 @@ function TournamentsList({
           Mostrando {total === 0 ? 0 : start + 1}–{Math.min(start + perPage, total)} de {total} torneios
         </span>
         <div className="flex items-center gap-3">
+          {sortSelect}
           <label className="flex items-center gap-1.5 text-2xs text-ink-faint">
             Por página
             <select
@@ -1222,13 +1380,13 @@ function TournamentCard({
         </Field>
       </div>
 
-      {/* Linha PKE: nota + erros graves + status + leak (toque abre a review) */}
+      {/* Linha PKE: badge de nota destacado + graves + status relevante + leak */}
       <div className="mt-2 flex cursor-pointer flex-wrap items-center gap-2 text-2xs" onClick={onOpen}>
-        <span className={cn("font-bold nums", notaCls(t.pke_score_avg))}>
-          {t.pke_score_avg != null ? `nota ${t.pke_score_avg.toFixed(1)}` : "sem nota"}
-        </span>
-        {(t.pke_grave_errors ?? 0) > 0 && <span className="text-action-red">{t.pke_grave_errors} graves</span>}
-        <StatusChip t={t} />
+        <NotaBadge n={t.pke_score_avg} />
+        {(t.pke_grave_errors ?? 0) > 0 && (
+          <span className="font-semibold text-action-red">{t.pke_grave_errors} graves</span>
+        )}
+        <StatusChip t={t} hideOk />
         {leak && <span className="text-gold">{leak}</span>}
       </div>
 
@@ -1241,27 +1399,13 @@ function TournamentCard({
         />
       )}
 
-      {/* Botões de ação no rodapé do card — só quando NÃO editando */}
+      {/* Rodapé: ação primária "Abrir review" + menu "..." com ações secundárias */}
       {!editing && (
         <div className="mt-2 flex items-center gap-1">
           <Button size="sm" variant="primary" className="mr-auto" onClick={onOpen}>
             Abrir review
           </Button>
-          <AnalyzeBtn t={t} onAnalyze={onAnalyze} />
-          <button
-            onClick={onStartEdit}
-            className="rounded-ctl p-2 text-ink-faint active:bg-surface-2 active:text-ink"
-            aria-label="Editar"
-          >
-            <Pencil className="h-4 w-4" />
-          </button>
-          <button
-            onClick={onDelete}
-            className="rounded-ctl p-2 text-ink-faint active:bg-action-red/15 active:text-action-red"
-            aria-label="Excluir"
-          >
-            <Trash2 className="h-4 w-4" />
-          </button>
+          <CardMenu items={buildCardMenuItems(t, { onStartEdit, onDelete, onAnalyze })} />
         </div>
       )}
     </Card>
@@ -1432,30 +1576,17 @@ function TableRow({
           null
         )}
       </td>
-      <td className={cn("px-3 py-2 text-right text-xs nums font-bold", notaCls(t.pke_score_avg))}>
-        {t.pke_score_avg != null ? t.pke_score_avg.toFixed(1) : "—"}
+      <td className="px-3 py-2 text-right">
+        <NotaBadge n={t.pke_score_avg} />
       </td>
       <td className="px-3 py-2 text-right text-xs nums text-action-red">
         {t.pke_grave_errors ? t.pke_grave_errors : "—"}
       </td>
-      <td className="px-3 py-2"><StatusChip t={t} /></td>
+      <td className="px-3 py-2"><StatusChip t={t} hideOk /></td>
       <td className="px-3 py-2" onClick={stop}>
-        <div className="flex items-center justify-end gap-1">
-          <AnalyzeBtn t={t} onAnalyze={onAnalyze} />
-          <button
-            onClick={onStartEdit}
-            className="rounded-ctl p-1 text-ink-faint hover:bg-surface-2 hover:text-ink"
-            aria-label="Editar"
-          >
-            <Pencil className="h-3.5 w-3.5" />
-          </button>
-          <button
-            onClick={onDelete}
-            className="rounded-ctl p-1 text-ink-faint hover:bg-action-red/15 hover:text-action-red"
-            aria-label="Excluir"
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-          </button>
+        <div className="flex items-center justify-end gap-2">
+          <Button size="sm" variant="ghost" onClick={onOpen}>Abrir review</Button>
+          <CardMenu items={buildCardMenuItems(t, { onStartEdit, onDelete, onAnalyze })} />
         </div>
       </td>
     </tr>
@@ -1496,22 +1627,15 @@ function SessionsCard({
   const shown = open ? sessions : sessions.slice(0, 5);
 
   return (
-    <Card className="mt-2 overflow-hidden">
-      <div className="flex items-center justify-between gap-3 px-3 pt-3">
-        <SectionLabel>
-          <span className="inline-flex items-center gap-1.5">
-            <CalendarDays className="h-3.5 w-3.5" />
-            Sessões (por dia)
-          </span>
-        </SectionLabel>
-        <span className="text-2xs text-ink-faint">
-          {sessions.length} {sessions.length === 1 ? "dia" : "dias"}
-        </span>
-      </div>
-      <div className="mt-2 grid gap-2 p-3 sm:grid-cols-2">
+    <Card className="overflow-hidden">
+      <div className="grid gap-2 p-3 sm:grid-cols-2">
         {shown.map((s) => {
           const start = hhmm(s.start_at);
           const end = hhmm(s.end_at);
+          const secs = s.play_seconds ?? s.grind_seconds ?? null;
+          const dur = secs && secs > 0 ? fmtDuration(secs) : null;
+          const interval = start ? `${start}${end && end !== start ? `–${end}` : ""}` : null;
+          const ppH = s.profit_per_hour_cents;
           const tone =
             s.pending > 0 && s.cashed === 0
               ? "text-ink-faint"
@@ -1533,6 +1657,7 @@ function SessionsCard({
                   <div className="text-xs font-semibold text-ink nums">{fmtShortDate(s.day)}</div>
                   <div className="mt-0.5 text-2xs text-ink-faint nums">
                     {s.n} {s.n === 1 ? "torneio" : "torneios"}
+                    {dur && ` em ${dur}`}
                     {s.roi_pct != null && ` · ROI ${fmtPct(s.roi_pct, 0)}`}
                   </div>
                 </div>
@@ -1543,10 +1668,21 @@ function SessionsCard({
               <div className="mt-2 grid grid-cols-2 gap-2 text-2xs">
                 <SessionMini label="Nota PKE" value={s.media_notas != null ? s.media_notas.toFixed(1) : "—"} tone={s.media_notas != null && s.media_notas < 5 ? "red" : s.media_notas != null && s.media_notas >= 7 ? "green" : "ink"} />
                 <SessionMini label="Erros graves" value={String(s.erros_graves ?? 0)} tone={(s.erros_graves ?? 0) > 0 ? "red" : "ink"} />
-                <div className="col-span-2 text-2xs text-ink-faint">
-                  {start && <span><Clock className="mr-1 inline h-2.5 w-2.5" />{start}{end && end !== start ? `–${end}` : ""} · </span>}
-                  Leak principal: <span className="text-gold">{s.main_leak ? leakLabel(s.main_leak) : "—"}</span>
+              </div>
+              {dur ? (
+                <div className="mt-2 grid grid-cols-3 gap-2 text-2xs">
+                  <SessionMini label="Torneios/h" value={s.tph != null ? s.tph.toFixed(1) : "—"} />
+                  <SessionMini label="Lucro/h" value={ppH != null ? fmtMoney(ppH, currency, { signed: true }) : "—"} tone={ppH == null ? "ink" : ppH > 0 ? "green" : ppH < 0 ? "red" : "ink"} />
+                  <SessionMini label="Graves/h" value={s.graves_per_hour != null ? s.graves_per_hour.toFixed(1) : "—"} tone={(s.graves_per_hour ?? 0) > 0 ? "red" : "ink"} />
                 </div>
+              ) : null}
+              <div className="mt-2 text-2xs text-ink-faint">
+                {dur ? (
+                  <span><Clock className="mr-1 inline h-2.5 w-2.5" />Grind {dur}{interval ? ` · ${interval}` : ""} · </span>
+                ) : (
+                  <span className="italic">Duração não disponível · </span>
+                )}
+                Leak principal: <span className="text-gold">{s.main_leak ? leakLabel(s.main_leak) : "—"}</span>
               </div>
               <div className="mt-3 flex gap-2">
                 <Button size="sm" variant="ghost" className="flex-1" onClick={() => onPickDay(s.day)}>

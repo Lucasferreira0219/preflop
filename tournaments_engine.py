@@ -573,6 +573,10 @@ def sessions(filters: dict | None = None) -> list[dict]:
         profit = s["prize_cents"] - s["cost_cents"]
         roi = (profit / s["cost_cents"]) if s["cost_cents"] else None
         itm_rate = (s["itm"] / s["cashed"]) if s["cashed"] else None
+        graves = s.get("erros_graves", 0)
+        # duração da sessão pelos horários dos torneios (início -> fim)
+        play_s = _play_seconds(s["start_at"], s["end_at"])
+        hours = (play_s / 3600.0) if play_s and play_s > 0 else None
         out.append({
             "day":          s["day"],
             "start_at":     s["start_at"],
@@ -586,8 +590,13 @@ def sessions(filters: dict | None = None) -> list[dict]:
             "cashed":       s["cashed"],
             "pending":      s["pending"],
             "grind_seconds": grind.get(s["day"], 0),
+            # janela de jogo (dos torneios) + métricas por hora
+            "play_seconds": play_s,
+            "tph":          round(s["n"] / hours, 1) if hours else None,
+            "profit_per_hour_cents": round(profit / hours) if hours else None,
+            "graves_per_hour": round(graves / hours, 1) if hours else None,
             "analisados":   s.get("analisados", 0),
-            "erros_graves": s.get("erros_graves", 0),
+            "erros_graves": graves,
             "media_notas":  (round(s["_pke_soma"] / s["_pke_maos"], 1)
                              if s.get("_pke_maos") else None),
             "main_leak":    (max(s["_leaks"], key=s["_leaks"].get)
@@ -598,6 +607,22 @@ def sessions(filters: dict | None = None) -> list[dict]:
                    key=lambda x: x["day"], reverse=True)
     undated = [x for x in out if x["day"] == "Sem data"]
     return dated + undated
+
+
+def _play_seconds(start_at, end_at):
+    """Duração entre o 1º e o último torneio do dia (em segundos), pelos horários
+    'YYYY/MM/DD HH:MM:SS'. None se não der pra calcular."""
+    def _ep(s):
+        if not s or len(s) < 19:
+            return None
+        try:
+            return time.mktime(time.strptime(s[:19], "%Y/%m/%d %H:%M:%S"))
+        except (ValueError, OverflowError):
+            return None
+    a, b = _ep(start_at), _ep(end_at)
+    if a is None or b is None or b < a:
+        return None
+    return int(b - a)
 
 
 def set_prize(tournament_id: str, prize_cents: int | None,
