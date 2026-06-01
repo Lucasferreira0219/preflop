@@ -18,7 +18,7 @@ _RE_HH_HEADER = re.compile(
     r"M[ãa]o PokerStars\s+#(\d+):\s*Torneio\s*#(\d+),\s*"
     r"(.+?)\s+-\s+N[íi]vel"
 )
-_RE_HH_DATE   = re.compile(r"(\d{4}/\d{2}/\d{2}\s+\d{2}:\d{2}:\d{2})\s+BRT")
+_RE_HH_DATE   = re.compile(r"(\d{4}/\d{2}/\d{2}\s+\d{1,2}:\d{2}:\d{2})\s+BRT")
 _RE_HERO      = re.compile(r"^(.+?)\s+recebe\s+\[\w\w\s+\w\w\]")
 # Eliminação fora do dinheiro: "X terminou o torneio em Nº lugar"
 _RE_BUST      = re.compile(r"^(.+?)\s+terminou o torneio em\s+(\d+)[ºo°]?\s+lugar")
@@ -71,6 +71,23 @@ _FMT_HINTS = [
 ]
 
 
+def make_internal_tid(ps_id: str, played_at: str | None) -> str:
+    """Chave interna ÚNICA de um torneio.
+
+    O PokerStars REUTILIZA o número do torneio em datas diferentes — o mesmo
+    `4004985567` em 31/05 e 01/06 são torneios DIFERENTES. Por isso a identidade
+    real é (id_pokerstars, dia). Compomos {ps_id}_{YYYYMMDD} a partir da data de
+    início; sem data conhecida, cai no número puro (compat com registros antigos).
+    """
+    if not ps_id:
+        return ps_id
+    if played_at and len(played_at) >= 10 and "/" in played_at[:10]:
+        day = played_at[:10].replace("/", "")   # '2026/06/01' -> '20260601'
+        if day.isdigit():
+            return f"{ps_id}_{day}"
+    return str(ps_id)
+
+
 def _cents(s):
     """'0,42' ou '0.42' → 42 (centavos)."""
     if s is None:
@@ -105,7 +122,13 @@ def _looks_like_summary(text: str) -> bool:
 # ── Parser de hand-history ─────────────────────────────────────────────────────
 
 def _parse_hand_history(text: str) -> dict:
-    """Agrupa todas as mãos por tournament_id e devolve {tid: facts}."""
+    """Agrupa todas as mãos por torneio e devolve {ps_tid: facts}.
+
+    Agrupa pelo NÚMERO do PokerStars durante o parse (a data só é conhecida ao
+    ler a 1ª mão); a chave interna composta (id_dia) é resolvida no final.
+    Arquivos do PS sempre trazem um torneio por dia — não há ambiguidade dentro
+    de um único arquivo.
+    """
     by_tid: dict[str, dict] = {}
     current_tid = None
     hero_per_tid: dict[str, str] = {}
@@ -116,7 +139,8 @@ def _parse_hand_history(text: str) -> dict:
         if m:
             current_tid = m.group(2)
             d = by_tid.setdefault(current_tid, {
-                "tournament_id": current_tid,
+                "tournament_id": current_tid,        # provisório; vira composto no fim
+                "ps_tournament_id": current_tid,     # número original do PokerStars
                 "source_files": {"hh"},
                 "room": "PokerStars",
             })
@@ -188,6 +212,11 @@ def _parse_hand_history(text: str) -> dict:
         if tid in by_tid:
             by_tid[tid]["raw_text"] = "\n".join(lines)
 
+    # resolve a chave interna composta (id_dia) agora que played_at é conhecido
+    for d in by_tid.values():
+        d["tournament_id"] = make_internal_tid(
+            d.get("ps_tournament_id"), d.get("played_at"))
+
     return by_tid
 
 
@@ -213,7 +242,8 @@ def _parse_summary(text: str) -> dict:
     if not tid:
         return {}
 
-    fact = {"tournament_id": tid, "source_files": {"summary"}, "room": "PokerStars"}
+    fact = {"tournament_id": tid, "ps_tournament_id": tid,
+            "source_files": {"summary"}, "room": "PokerStars"}
 
     # buy-in
     mb = _RE_SUM_BUYIN.search(text)
@@ -240,6 +270,9 @@ def _parse_summary(text: str) -> dict:
     md = _RE_SUM_DATE.search(text)
     if md:
         fact["played_at"] = md.group(1)
+
+    # chave interna composta (id_dia) — agora que played_at foi extraído
+    fact["tournament_id"] = make_internal_tid(tid, fact.get("played_at"))
 
     # nome / formato
     # tenta pegar a linha logo após o "Tournament Summary"

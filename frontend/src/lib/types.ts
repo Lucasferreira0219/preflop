@@ -464,6 +464,7 @@ export type PrizeSource = "manual" | "auto" | null;
 
 export interface Tournament {
   tournament_id: string;
+  ps_tournament_id?: string | null;
   played_at: string | null;
   hero: string | null;
   tournament_name: string | null;

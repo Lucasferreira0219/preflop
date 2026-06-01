@@ -106,6 +106,11 @@ def _init_schema():
         if "origin" not in cols:
             c.execute("ALTER TABLE tournaments ADD COLUMN origin TEXT")
             c.execute("UPDATE tournaments SET origin = 'import' WHERE origin IS NULL")
+        # ps_tournament_id = número original do PokerStars (que pode REPETIR em
+        # datas diferentes). A PK tournament_id passou a ser composta (id_dia).
+        if "ps_tournament_id" not in cols:
+            c.execute("ALTER TABLE tournaments ADD COLUMN ps_tournament_id TEXT")
+            _migrate_composite_tids(c)
         # Resumo do PokerKnowledgeEngine persistido por torneio (aditivo).
         for col, decl in [
             ("pke_analyzed", "INTEGER"), ("pke_score_avg", "REAL"),
@@ -121,6 +126,48 @@ def _init_schema():
         c.execute("CREATE TABLE IF NOT EXISTS pke_meta (key TEXT PRIMARY KEY, value TEXT)")
         # Índice de room criado após garantir que a coluna existe.
         c.execute("CREATE INDEX IF NOT EXISTS idx_t_room ON tournaments(room)")
+
+
+def _migrate_composite_tids(c):
+    """Migra registros antigos para a chave composta (id_dia).
+
+    Antes, tournament_id = número puro do PokerStars (que repete em datas
+    diferentes). Re-deriva tournament_id = {ps_id}_{YYYYMMDD} a partir do
+    played_at já salvo, e propaga para imported_hands. Idempotente: registros
+    já compostos (com '_') são deixados como estão.
+    """
+    from tournament_parser import make_internal_tid
+    rows = c.execute(
+        "SELECT tournament_id, played_at FROM tournaments"
+    ).fetchall()
+    for r in rows:
+        old_tid = r["tournament_id"]
+        ps_id = old_tid.split("_")[0] if "_" in old_tid else old_tid
+        c.execute(
+            "UPDATE tournaments SET ps_tournament_id = ? WHERE tournament_id = ?",
+            (ps_id, old_tid),
+        )
+        if "_" in old_tid:
+            continue  # já composto
+        new_tid = make_internal_tid(ps_id, r["played_at"])
+        if new_tid == old_tid:
+            continue  # sem data → mantém número puro
+        exists = c.execute(
+            "SELECT 1 FROM tournaments WHERE tournament_id = ?", (new_tid,)
+        ).fetchone()
+        if exists:
+            continue  # defensivo contra colisão
+        c.execute(
+            "UPDATE tournaments SET tournament_id = ? WHERE tournament_id = ?",
+            (new_tid, old_tid),
+        )
+        day_prefix = r["played_at"][:10] if r["played_at"] else None
+        if day_prefix:
+            c.execute(
+                "UPDATE imported_hands SET tournament_id = ? "
+                "WHERE tournament_id = ? AND substr(played_at,1,10) = ?",
+                (new_tid, old_tid, day_prefix),
+            )
 
 
 _init_schema()
@@ -172,13 +219,13 @@ def import_text(text: str) -> dict:
 
             c.execute("""
                 INSERT INTO tournaments
-                  (tournament_id, played_at, hero, tournament_name, game_type, format,
-                   buy_in_cents, fee_cents, currency, n_entries, prize_pool_cents,
-                   finish_pos, prize_cents, prize_known, room, origin, notes, raw_text,
-                   imported_ts, updated_ts)
-                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                  (tournament_id, ps_tournament_id, played_at, hero, tournament_name,
+                   game_type, format, buy_in_cents, fee_cents, currency, n_entries,
+                   prize_pool_cents, finish_pos, prize_cents, prize_known, room,
+                   origin, notes, raw_text, imported_ts, updated_ts)
+                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
             """, (
-                tid, t.get("played_at"), t.get("hero"),
+                tid, t.get("ps_tournament_id") or tid, t.get("played_at"), t.get("hero"),
                 t.get("tournament_name"), t.get("game_type"), t.get("format"),
                 t.get("buy_in_cents"), t.get("fee_cents"), t.get("currency"),
                 t.get("n_entries"), t.get("prize_pool_cents"),
@@ -686,6 +733,8 @@ def _row_to_public(row: dict) -> dict:
     profit = (prize - cost) if (prize is not None and source) else None
     return {
         "tournament_id":  row.get("tournament_id"),
+        "ps_tournament_id": row.get("ps_tournament_id") or (
+            str(row.get("tournament_id")).split("_")[0] if row.get("tournament_id") else None),
         "played_at":      row.get("played_at"),
         "hero":           row.get("hero"),
         "tournament_name": row.get("tournament_name"),

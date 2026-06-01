@@ -1,7 +1,0 @@
-=== matches WIN ===
-  'Eleka77 ganhou o torneio e recebeu $ 1.90 - parabéns!' -> groups: ('Eleka77', '1.90')
-=== matches ITM ===
-  'Musty712 Acabou o torneio em 3º lugar e recebeu $ 0.75.' -> groups: ('Musty712', '3', '0.75')
-  'CorreaDe Acabou o torneio em 2º lugar e recebeu $ 1.13.' -> groups: ('CorreaDe', '2', '1.13')
-
-=== parse_text result ===

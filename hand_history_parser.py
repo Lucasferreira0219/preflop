@@ -29,7 +29,7 @@ _SEAT_ORDER = {
 # Cabeçalho: "Mão PokerStars #260946547381: Torneio #4003782626, ... (10/20) - 2026/05/27 13:40:59 BRT ..."
 _RE_HEADER  = re.compile(r"#(\d+):\s*Torneio\s*#(\d+)")
 _RE_BLINDS  = re.compile(r"\((\d+)/(\d+)\)")
-_RE_DATE    = re.compile(r"(\d{4}/\d{2}/\d{2}\s+\d{2}:\d{2}:\d{2})\s+BRT")
+_RE_DATE    = re.compile(r"(\d{4}/\d{2}/\d{2}\s+\d{1,2}:\d{2}:\d{2})\s+BRT")
 _RE_TABLE   = re.compile(r"-max\s+Lugar\s*#(\d+)")
 _RE_MAX     = re.compile(r"(\d+)-max")
 _RE_SEAT    = re.compile(r"^Lugar\s+(\d+):\s+(.+?)\s+\((\d+)\s+em fichas\)")
@@ -206,9 +206,15 @@ def parse_text(text):
         eff_bb = round(eff_chips / bb) if bb else None
         hero_net = -stack_chips if result["hero_busted"] else None  # melhor esforço
 
+        # Chave interna do torneio = (id PokerStars, dia). O PS reutiliza o número
+        # em datas diferentes; o dia desambigua torneios distintos com mesmo número.
+        from tournament_parser import make_internal_tid
+        internal_tid = make_internal_tid(tournament_id, played_at)
+
         hands.append({
             'hand_id': hand_id,
-            'tournament_id': tournament_id,
+            'tournament_id': internal_tid,     # chave interna composta (id_dia)
+            'ps_tournament_id': tournament_id,  # número original do PokerStars
             'played_at': played_at,
             'sb': sb, 'bb': bb,
             'blinds': f"{sb}/{bb}",

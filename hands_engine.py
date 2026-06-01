@@ -73,6 +73,8 @@ def _init_schema():
             ("is_critical", "INTEGER"), ("pke_outcome", "TEXT"), ("pke_score", "INTEGER"),
             ("pke_recommended", "TEXT"), ("pke_rule", "TEXT"), ("pke_error_type", "TEXT"),
             ("pke_gravity", "TEXT"), ("pke_explain", "TEXT"),
+            # número original do PokerStars (tournament_id agora é composto id_dia)
+            ("ps_tournament_id", "TEXT"),
         ]:
             if col not in cols:
                 c.execute(f"ALTER TABLE imported_hands ADD COLUMN {col} {decl}")
@@ -170,12 +172,13 @@ def import_text(text, mode=GRADE_MODE):
 
             cur = c.execute("""
                 INSERT OR IGNORE INTO imported_hands
-                    (hand_id, tournament_id, played_at, imported_ts, hero,
+                    (hand_id, tournament_id, ps_tournament_id, played_at, imported_ts, hero,
                      hero_pos, hero_cards, stack_bb, scenario, hero_action,
                      course_action, is_correct, gradeable, source, motivo, raw_text)
-                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
             """, (
-                h['hand_id'], h['tournament_id'], h['played_at'], ts, h['hero'],
+                h['hand_id'], h['tournament_id'], h.get('ps_tournament_id'),
+                h['played_at'], ts, h['hero'],
                 h['hero_pos'], h['hero_cards'], h['stack_bb'], h['scenario'],
                 h['hero_action'], course, is_correct,
                 1 if h['gradeable'] else 0, source, h['motivo'], h['raw'],
