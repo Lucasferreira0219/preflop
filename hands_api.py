@@ -22,3 +22,7 @@ class HandsApi:
     def study_overview(self):
         """Resumo da Home: último torneio analisado, média e top leaks."""
         return he.study_overview()
+
+    def all_critical_hands(self, only_errors: bool = True, limit: int = 200):
+        """Todas as mãos críticas (erros) de todos os torneios, piores primeiro."""
+        return he.all_critical_hands(limit=limit, only_errors=only_errors)

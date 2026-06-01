@@ -10,6 +10,7 @@ import {
   YAxis,
 } from "recharts";
 import {
+  AlertTriangle,
   ArrowLeft,
   ArrowUpDown,
   BarChart3,
@@ -492,6 +493,9 @@ function HeaderActions({
           </button>
           <button className={item} onClick={() => { setOpen(false); navigate("/tournament-types"); }}>
             <Trophy className="h-4 w-4" /> Estruturas
+          </button>
+          <button className={cn(item, "text-action-red hover:text-action-red")} onClick={() => { setOpen(false); navigate("/erros-criticos"); }}>
+            <AlertTriangle className="h-4 w-4" /> Erros críticos
           </button>
           <button className={item} onClick={() => { setOpen(false); navigate("/"); }}>
             <ArrowLeft className="h-4 w-4" /> Início

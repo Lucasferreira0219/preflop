@@ -344,6 +344,45 @@ def leak_weights(tournament_id=None):
     return weights
 
 
+def all_critical_hands(limit: int = 200, only_errors: bool = True) -> dict:
+    """Todas as mãos críticas já analisadas, ordenadas das piores para as melhores.
+
+    only_errors=True retorna só erros (pke_outcome='erro');
+    only_errors=False inclui também coolers e decisões boas críticas.
+    """
+    with _conn() as c:
+        if only_errors:
+            rows = c.execute(
+                "SELECT raw_text, tournament_id, played_at FROM imported_hands "
+                "WHERE is_critical = 1 AND pke_outcome = 'erro' AND raw_text IS NOT NULL "
+                "ORDER BY pke_score ASC, played_at DESC LIMIT ?", (limit,)
+            ).fetchall()
+        else:
+            rows = c.execute(
+                "SELECT raw_text, tournament_id, played_at FROM imported_hands "
+                "WHERE is_critical = 1 AND raw_text IS NOT NULL "
+                "ORDER BY pke_score ASC, played_at DESC LIMIT ?", (limit,)
+            ).fetchall()
+
+    maos = []
+    for r in rows:
+        parsed = parse_text(r["raw_text"])
+        if not parsed:
+            continue
+        res = ta.screen_and_analyze(parsed[0])
+        if not res.get("is_critical"):
+            continue
+        if only_errors and res.get("outcome") not in ("erro",):
+            continue
+        view = ta._hand_view(res)
+        view["tournament_id"] = r["tournament_id"]
+        view["played_at"] = r["played_at"]
+        maos.append(view)
+
+    maos.sort(key=lambda h: h.get("nota") if h.get("nota") is not None else 10)
+    return {"maos": maos, "total": len(maos)}
+
+
 def summary(tournament_id=None):
     """Estatísticas agregadas das mãos importadas (pro agente / tela de stats)."""
     where, params = "1=1", []

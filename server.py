@@ -145,6 +145,16 @@ async def analyze_tournament(request: Request):
 async def study_overview():
     return hands_api.study_overview()
 
+@app.post("/api/all_critical_hands")
+async def all_critical_hands(request: Request):
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+    only_errors = body.get("only_errors", True) if isinstance(body, dict) else True
+    limit = int(body.get("limit", 200)) if isinstance(body, dict) else 200
+    return hands_api.all_critical_hands(only_errors=only_errors, limit=limit)
+
 # ── Consulta PKE (linguagem natural + contexto) ───────────────────────────────
 @app.post("/api/pke/query")
 async def pke_query(request: Request):

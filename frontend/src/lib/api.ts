@@ -113,6 +113,13 @@ export const api = {
   analyzeTournament: (tournamentId: string) =>
     call<TournamentReport>("analyze_tournament", [tournamentId]),
 
+  allCriticalHands: (onlyErrors = true, limit = 200) =>
+    fetch(`${BASE}/api/all_critical_hands`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ only_errors: onlyErrors, limit }),
+    }).then((r) => r.json()) as Promise<{ maos: import("./types").ReportHand[]; total: number }>,
+
   // Consulta PKE: body é um objeto {question, context} (não o array padrão).
   pkeQuery: async (question: string, context: PkeQueryContext) => {
     const res = await fetch(`${BASE}/api/pke/query`, {
