@@ -39,6 +39,15 @@ class Recommendation:
     range_status: str = "exact"        # exact | approximate
     used_proxy: dict | None = None
     warning: str | None = None
+    # ── tolerância estratégica (linhas alternativas) ──────────────────────────────
+    # advanced: linhas boas mas que exigem plano (trap/induce) — não são erro
+    # bad:      linhas claramente inferiores (erro médio)
+    # severe:   erros caros (erro crítico): raise/fold short, call loose, etc.
+    advanced: list[str] = field(default_factory=list)
+    bad: list[str] = field(default_factory=list)
+    severe: list[str] = field(default_factory=list)
+    tolerance_applied: bool = False
+    advanced_note: str | None = None
 
     @property
     def approximate(self) -> bool:
@@ -70,7 +79,9 @@ def recommended_actions(ctx: HandContext, kb: KnowledgeBase | None = None) -> Re
     if handler is None:
         return Recommendation(insufficient=True, explain=f"Spot '{spot}' ainda não modelado.",
                               rule_ids=[], provenance="INFERENCE")
-    return handler(ctx, kb)
+    rec = handler(ctx, kb)
+    from .tolerance import apply_strategic_tolerance
+    return apply_strategic_tolerance(ctx, rec)
 
 
 # ── handlers por spot ───────────────────────────────────────────────────────────

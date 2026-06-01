@@ -10,7 +10,8 @@ from pke import HandContext, engine
 
 
 def case(desc, ctx, hero_action, expect_rec=None, expect_score=None, expect_rule=None,
-         expect_insufficient=False, expect_source=None, expect_status=None):
+         expect_insufficient=False, expect_source=None, expect_status=None,
+         expect_quality=None, expect_rec_in=None):
     eng = engine()
     dec = eng.evaluate_decision(ctx, hero_action)
     ok = True
@@ -19,6 +20,8 @@ def case(desc, ctx, hero_action, expect_rec=None, expect_score=None, expect_rule
     else:
         if expect_rec is not None:
             ok = ok and dec["acao_recomendada"] == expect_rec
+        if expect_rec_in is not None:
+            ok = ok and dec["acao_recomendada"] in expect_rec_in
         if expect_score is not None:
             lo, hi = expect_score
             ok = ok and (dec["nota"] is not None and lo <= dec["nota"] <= hi)
@@ -28,14 +31,16 @@ def case(desc, ctx, hero_action, expect_rec=None, expect_score=None, expect_rule
             ok = ok and dec.get("source_type") == expect_source
         if expect_status is not None:
             ok = ok and dec.get("range_status") == expect_status
+        if expect_quality is not None:
+            ok = ok and dec.get("qualidade_linha") in expect_quality
     status = "OK " if ok else "FAIL"
     print(f"[{status}] {desc}")
     print(f"        spot={ctx.spot} fase={dec['fase']} rec={dec['acao_recomendada']} "
-          f"nota={dec['nota']} src={dec.get('source_type')}/{dec.get('range_status')} "
-          f"conf={dec.get('confidence')} regra={dec['regra_pdf']}")
+          f"nota={dec['nota']} qual={dec.get('qualidade_linha')} "
+          f"src={dec.get('source_type')}/{dec.get('range_status')} regra={dec['regra_pdf']}")
     if not ok:
         print(f"        ESPERADO rec={expect_rec} score={expect_score} rule={expect_rule} "
-              f"src={expect_source} status={expect_status} insuf={expect_insufficient}")
+              f"quality={expect_quality} src={expect_source} status={expect_status} insuf={expect_insufficient}")
     return ok
 
 
@@ -168,6 +173,68 @@ def main() -> int:
         "BTN 9bb AA dá raise (não all-in) → punido forte",
         HandContext(eff_stack_bb=9, hero_pos="BTN", hero_cards="AA", preflop_action="first_in", players_left=6),
         "raise", expect_rec="shove", expect_score=(0, 4), expect_rule="OPENSHOVE.10BB"))
+
+    # ── TOLERÂNCIA ESTRATÉGICA: premium short-stack não é punido por shovar ───────
+    print("\n— Tolerância estratégica (linhas alternativas) —")
+    _GOOD = {"best", "standard_good", "acceptable_good"}
+
+    # Teste 1 — QQ 10bb SB vs open: shove é boa linha; fold grave; raise/fold crítico
+    qq = lambda: HandContext(eff_stack_bb=10, hero_pos="SB", hero_cards="QQ",
+                             preflop_action="vs_raise", opener_pos="MP", players_left=6)
+    results.append(case("T1 QQ 10bb SB vs open → SHOVE não é erro (boa linha)",
+        qq(), "shove", expect_rec="shove", expect_score=(8, 10), expect_quality=_GOOD))
+    results.append(case("T1 QQ 10bb SB vs open → CALL é alternativa avançada (aceitável)",
+        qq(), "call", expect_score=(8, 10), expect_quality={"acceptable_good", "standard_good"}))
+    results.append(case("T1 QQ 10bb SB vs open → FOLD é erro grave",
+        qq(), "fold", expect_score=(0, 4), expect_quality={"major_error", "severe_error"}))
+    results.append(case("T1 QQ 10bb SB vs open → RAISE/FOLD é erro crítico",
+        qq(), "raise", expect_score=(0, 4), expect_quality={"severe_error"}))
+
+    # Teste 2 — AKs 12bb BB vs BTN open shove → aceitável/bom, não punir
+    results.append(case("T2 AKs 12bb BB vs BTN open → shove bom",
+        HandContext(eff_stack_bb=12, hero_pos="BB", hero_cards="AKs",
+                    preflop_action="vs_raise", opener_pos="BTN", players_left=6),
+        "shove", expect_rec="shove", expect_score=(8, 10), expect_quality=_GOOD))
+
+    # Teste 3 — AA/KK 14bb vs open call → trap aceitável/avançada; não é erro grave
+    results.append(case("T3 AA 14bb SB vs open → CALL aceitável (trap), não erro grave",
+        HandContext(eff_stack_bb=14, hero_pos="SB", hero_cards="AA",
+                    preflop_action="vs_raise", opener_pos="MP", players_left=6),
+        "call", expect_score=(8, 10), expect_quality={"acceptable_good", "standard_good"}))
+    results.append(case("T3 KK 14bb BB vs CO → SHOVE também aceitável",
+        HandContext(eff_stack_bb=14, hero_pos="BB", hero_cards="KK",
+                    preflop_action="vs_raise", opener_pos="CO", players_left=6),
+        "shove", expect_score=(8, 10), expect_quality=_GOOD))
+
+    # Teste 4 — JJ 15bb SB vs CO open shove → resteal bom, não punir
+    results.append(case("T4 JJ 15bb SB vs CO open → shove (resteal) bom",
+        HandContext(eff_stack_bb=15, hero_pos="SB", hero_cards="JJ",
+                    preflop_action="vs_raise", opener_pos="CO", players_left=6),
+        "shove", expect_rec="shove", expect_score=(8, 10), expect_quality=_GOOD, expect_rule="RESTEAL.SHORT"))
+
+    # Teste 5 — erro continua erro: A8o 9bb BTN raise/fold → crítico
+    results.append(case("T5 A8o 9bb BTN raise/fold → erro crítico (tolerância não se aplica)",
+        HandContext(eff_stack_bb=9, hero_pos="BTN", hero_cards="A8o", preflop_action="first_in", players_left=6),
+        "raise", expect_rec="shove", expect_score=(0, 4), expect_quality={"severe_error"}))
+
+    # Teste 6 — call especulativo short: 76s 12bb BTN vs CO open → erro (não aceitável)
+    results.append(case("T6 76s 12bb BTN vs CO open → CALL especulativo é erro (não aceitável)",
+        HandContext(eff_stack_bb=12, hero_pos="BTN", hero_cards="76s",
+                    preflop_action="vs_raise", opener_pos="CO", players_left=6),
+        "call", expect_score=(0, 5), expect_quality={"medium_error", "major_error"}))
+
+    # Teste 7 — bolha call loose: aproximação ICM; loose → erro; close → marginal
+    results.append(case("T7 Bolha call loose Q5o → aproximação ICM = erro (não punição extrema)",
+        HandContext(eff_stack_bb=12, hero_pos="BB", hero_cards="Q5o",
+                    preflop_action="vs_shove", opener_pos="BTN", players_left=4, paid_places=3),
+        "call", expect_rec="fold", expect_score=(0, 5), expect_source="DERIVED_FROM_PDF",
+        expect_quality={"major_error", "medium_error", "close"}))
+
+    # Teste 8 — HU botão 72o fold → erro (regra HU forte; tolerância não se aplica)
+    results.append(case("T8 BTN HU 72o fold → erro (regra HU.BTN forte)",
+        HandContext(eff_stack_bb=20, hero_pos="BTN", hero_cards="72o", preflop_action="first_in", players_left=2),
+        "fold", expect_rec="raise", expect_score=(0, 5),
+        expect_quality={"medium_error", "major_error"}, expect_rule="HU.BTN"))
 
     n_ok = sum(results)
     print(f"\n{n_ok}/{len(results)} casos de decisão OK")

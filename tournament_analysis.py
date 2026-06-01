@@ -254,6 +254,15 @@ _SHOWN_LABEL = {
 _SHOWN_IMPACT = {"low": "Impacto baixo", "medium": "Impacto médio",
                  "high": "Impacto alto", "critical": "Impacto crítico"}
 
+# faixa de qualidade da linha (tolerância estratégica) → rótulo PT da UI
+_SHOWN_QUALITY = {
+    "best": "Melhor linha", "standard_good": "Boa linha padrão",
+    "acceptable_good": "Linha aceitável", "acceptable_but_inferior": "Linha aceitável, mas inferior",
+    "close": "Spot close", "minor_error": "Erro leve", "medium_error": "Erro médio",
+    "major_error": "Erro grave", "severe_error": "Erro crítico",
+    "cooler": "Cooler", "insufficient": "Insuficiente",
+}
+
 
 def _decision_label(outcome: str, score) -> str:
     if outcome == "insuficiente":
@@ -314,6 +323,13 @@ def _hand_view(a: dict) -> dict:
     _dlabel = _decision_label(_outcome, _score)
     _w, _ilabel = _impact(dbg.get("spot"), d.get("fase"), d.get("eff_stack_bb"),
                           d.get("linha_hero"), d.get("acao_recomendada"), _dlabel, hh)
+    # faixa de qualidade da linha (tolerância): cooler/insuficiente têm prioridade
+    if _outcome == "cooler":
+        _quality = "cooler"
+    elif _outcome == "insuficiente" or d.get("insuficiente"):
+        _quality = "insufficient"
+    else:
+        _quality = d.get("qualidade_linha") or _dlabel
     return {
         "decision_label": _dlabel,
         "impact_label": _ilabel,
@@ -321,6 +337,14 @@ def _hand_view(a: dict) -> dict:
         "internal_score": _score,        # debug/cálculo — NÃO exibir como nota na UI da mão
         "shown_label": _SHOWN_LABEL.get(_dlabel, _dlabel),
         "shown_impact": _SHOWN_IMPACT.get(_ilabel, _ilabel),
+        # ── tolerância estratégica: faixa da linha + linhas alternativas ──────
+        "hero_action_quality": _quality,
+        "shown_quality": _SHOWN_QUALITY.get(_quality, _SHOWN_LABEL.get(_dlabel, _dlabel)),
+        "quality_note": d.get("nota_pedagogica"),
+        "acoes_aceitaveis": d.get("acoes_aceitaveis") or [],
+        "alternativas_avancadas": d.get("alternativas_avancadas") or [],
+        "acoes_ruins": d.get("acoes_ruins") or [],
+        "erros_graves_acoes": d.get("erros_graves_acoes") or [],
         "hand_id": a.get("hand_id"),
         "fase": d.get("fase"),
         "spot": dbg.get("spot"),

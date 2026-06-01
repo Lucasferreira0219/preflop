@@ -250,10 +250,21 @@ def _decision_answer(ctx: HandContext, cand: str | None) -> dict:
     # pergunta sobre uma ação específica ("posso dar raise?", "call foi ruim?")
     if cand and norm_action(cand) != norm_action(primary):
         sc = score_decision(ctx, rec, cand)
-        if norm_action(cand) in {norm_action(a) for a in rec.forbidden}:
+        ncand = norm_action(cand)
+        accept = {norm_action(a) for a in rec.acceptable}
+        adv = {norm_action(a) for a in rec.advanced}
+        if ncand in {norm_action(a) for a in rec.severe}:
+            answer = (f"Não — {_ACT_LABEL(primary)} é melhor. {_ACT_LABEL(cand)} aqui é erro crítico.")
+            common = common or rec.common_mistake or f"{_ACT_LABEL(cand)} quando o certo é {_ACT_LABEL(primary)}."
+        elif ncand in {norm_action(a) for a in rec.forbidden}:
             answer = (f"Não — {_ACT_LABEL(primary)} é melhor. "
                       f"{_ACT_LABEL(cand)} aqui é erro {sc.get('gravity')}.")
             common = common or rec.common_mistake or f"{_ACT_LABEL(cand)} quando o certo é {_ACT_LABEL(primary)}."
+        elif ncand in adv:
+            answer = (f"{_ACT_LABEL(primary)} é a recomendação, mas {_ACT_LABEL(cand)} é uma "
+                      "linha avançada aceitável (exige plano).")
+        elif ncand in accept:
+            answer = f"{_ACT_LABEL(cand)} também é aceitável aqui — não é erro. {_ACT_LABEL(primary)} é a preferida."
         else:
             answer = f"{_ACT_LABEL(primary)} é a recomendação. {_ACT_LABEL(cand)} é inferior."
 

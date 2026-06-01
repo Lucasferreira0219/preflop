@@ -10,7 +10,9 @@ import json
 import os
 import time
 
-PKE_VERSION = "0.3.0"
+# 0.4.0 — camada de tolerância estratégica (linhas alternativas / hero_action_quality):
+# premium short-stack vs open não é mais punido por shovar; call/trap = avançada.
+PKE_VERSION = "0.4.0"
 
 _BASE = os.path.dirname(os.path.abspath(__file__))
 _ROOT = os.path.dirname(_BASE)

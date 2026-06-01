@@ -59,6 +59,21 @@ const IMP_BADGE: Record<string, { label: string; cls: string }> = {
   critical: { label: "Impacto crítico", cls: "bg-action-red/15 text-action-red" },
 };
 
+// faixa de qualidade da linha (tolerância estratégica) — cores por faixa
+const QUAL_BADGE: Record<string, string> = {
+  best: "bg-action-green/15 text-action-green",
+  standard_good: "bg-action-green/15 text-action-green",
+  acceptable_good: "bg-action-green/10 text-action-green",
+  acceptable_but_inferior: "bg-gold/15 text-gold",
+  close: "bg-action-blue/15 text-action-blue",
+  minor_error: "bg-gold/15 text-gold",
+  medium_error: "bg-orange-500/15 text-orange-400",
+  major_error: "bg-action-red/15 text-action-red",
+  severe_error: "bg-action-red/20 text-action-red",
+  cooler: "bg-action-blue/15 text-action-blue",
+  insufficient: "bg-surface-2 text-ink-faint",
+};
+
 function lbl(map: Record<string, string>, k: string | null | undefined) {
   return k ? map[k] ?? k : "—";
 }
@@ -454,6 +469,9 @@ function HandCard({
   const [open, setOpen] = useState(false);
   const dec = DEC_BADGE[m.decision_label ?? ""] ?? DEC_BADGE.insufficient;
   const imp = IMP_BADGE[m.impact_label ?? ""];
+  const qualKey = m.hero_action_quality ?? m.decision_label ?? "";
+  const qualCls = QUAL_BADGE[qualKey] ?? dec.cls;
+  const qualText = m.shown_quality ?? m.shown_label ?? dec.label;
   const mode = trainModeFor(m.spot);
   const ruleId = ruleIdOf(m.regra[0]);
   return (
@@ -475,8 +493,8 @@ function HandCard({
             {m.eff_bb != null && <><span>·</span><span>{Math.round(m.eff_bb)}bb</span></>}
           </div>
           <div className="mt-0.5 flex flex-wrap items-center gap-1">
-            <span className={cn("rounded-full px-2 py-0.5 text-2xs font-semibold", dec.cls)}>
-              {m.shown_label ?? dec.label}
+            <span className={cn("rounded-full px-2 py-0.5 text-2xs font-semibold", qualCls)}>
+              {qualText}
             </span>
             {imp && (
               <span className={cn("rounded-full px-2 py-0.5 text-2xs font-medium", imp.cls)}>
@@ -574,7 +592,23 @@ function HandDetail({ m }: { m: ReportHand }) {
         <Block title="Decisão">
           <Row k="Você jogou" v={lbl(ACT, m.linha)} />
           <Row k="Recomendado" v={m.insuficiente ? "—" : `${lbl(ACT, m.recomendado)}${m.size_recomendado ? ` (${m.size_recomendado})` : ""}`} />
+          {((m.acoes_aceitaveis?.length ?? 0) > 1 || (m.alternativas_avancadas?.length ?? 0) > 0) && (
+            <Row
+              k="Linhas aceitáveis"
+              v={
+                <>
+                  {(m.acoes_aceitaveis ?? []).map((a) => lbl(ACT, a)).join(" / ")}
+                  {(m.alternativas_avancadas?.length ?? 0) > 0 && (
+                    <span className="text-ink-faint"> · avançada: {(m.alternativas_avancadas ?? []).map((a) => lbl(ACT, a)).join(" / ")}</span>
+                  )}
+                </>
+              }
+            />
+          )}
           {m.explicacao && <p className="mt-1 leading-relaxed text-ink-dim">{m.explicacao}</p>}
+          {m.quality_note && (
+            <p className="mt-1 rounded bg-action-blue/10 px-2 py-1 text-[11px] text-action-blue">{m.quality_note}</p>
+          )}
           {approx && (
             <p className="mt-1 rounded bg-gold/10 px-2 py-1 text-[11px] text-gold">
               Aproximação ({m.confidence}). {m.warning ?? "Para precisão exata, usar HRC/ICMizer."}

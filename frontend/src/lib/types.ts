@@ -365,6 +365,14 @@ export interface ReportHand {
   internal_score?: number | null;  // só cálculo/debug — não exibir como nota
   shown_label?: string;      // "Acerto" | "Erro leve" | ...
   shown_impact?: string;     // "Impacto baixo" | ...
+  // tolerância estratégica: faixa da linha (mais de uma linha pode ser boa)
+  hero_action_quality?: string;  // best | standard_good | acceptable_good | ... | severe_error
+  shown_quality?: string;        // "Melhor linha" | "Linha aceitável" | "Spot close" | ...
+  quality_note?: string | null;  // explicação pedagógica quando há linhas alternativas
+  acoes_aceitaveis?: string[];
+  alternativas_avancadas?: string[];
+  acoes_ruins?: string[];
+  erros_graves_acoes?: string[];
 }
 
 export interface ReportLeak {
@@ -565,6 +573,11 @@ export interface TournamentSession {
   cashed: number;
   pending: number;
   grind_seconds: number;
+  // janela de jogo (dos torneios) + métricas por hora (aditivo).
+  play_seconds?: number | null;
+  tph?: number | null;
+  profit_per_hour_cents?: number | null;
+  graves_per_hour?: number | null;
   // PKE por dia (aditivo).
   analisados?: number;
   media_notas?: number | null;
