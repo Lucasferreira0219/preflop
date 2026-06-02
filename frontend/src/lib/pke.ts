@@ -78,25 +78,34 @@ export function leakLabel(id?: string | null): string | null {
 }
 
 // Status da análise PKE de um torneio (deriva de campos persistidos).
-export type TournamentStatus = "analisado" | "nao_analisado" | "sem_maos" | "insuficiente";
+export type TournamentStatus =
+  | "analisado" | "nao_analisado" | "sem_maos" | "insuficiente" | "analise_antiga";
 export const STATUS_LABEL: Record<TournamentStatus, string> = {
   analisado: "Analisado",
   nao_analisado: "Não analisado",
   sem_maos: "Sem mãos",
   insuficiente: "Insuficiente",
+  analise_antiga: "Análise antiga",
 };
 export const STATUS_CLS: Record<TournamentStatus, string> = {
   analisado: "bg-action-green/15 text-action-green",
   nao_analisado: "bg-gold/15 text-gold",
   sem_maos: "bg-surface-2 text-ink-faint",
   insuficiente: "bg-surface-2 text-ink-dim",
+  analise_antiga: "bg-gold/15 text-gold",
 };
+// Espelha _row_status() do backend (tournaments_engine.py) — mesma ordem de ramos:
+// análise antiga tem prioridade sobre analisado/insuficiente.
 export function tournamentStatus(t: {
   pke_analyzed?: boolean;
   pke_critical_hands?: number | null;
+  pke_outdated?: boolean;
   hands_count?: number | null;
 }): TournamentStatus {
-  if (t.pke_analyzed) return (t.pke_critical_hands ?? 0) > 0 ? "analisado" : "insuficiente";
+  if (t.pke_analyzed) {
+    if (t.pke_outdated) return "analise_antiga";
+    return (t.pke_critical_hands ?? 0) > 0 ? "analisado" : "insuficiente";
+  }
   if ((t.hands_count ?? 0) > 0) return "nao_analisado";
   return "sem_maos";
 }

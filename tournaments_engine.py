@@ -28,6 +28,12 @@ DB_PATH  = os.path.join(DATA_DIR, "preflop.db")
 # Um torneio é "Big Win" quando o prêmio é >= N× o custo (buy-in + fee).
 BIG_WIN_MULTIPLIER = 30
 
+# Grind real: dois torneios são considerados o MESMO bloco de jogo se o intervalo
+# entre eles for <= GRIND_GAP_MIN minutos. Pausas maiores separam sessões/blocos
+# (ex.: jogou de manhã e à tarde = 2 blocos). Multi-tabling (torneios sobrepostos)
+# nunca é contado em dobro: o bloco mede o tempo corrido real (wall-clock).
+GRIND_GAP_MIN = 45
+
 
 @contextmanager
 def _conn():
@@ -428,8 +434,16 @@ def _apply_payout(d: dict, payouts_by_key: dict[str, list[int]]) -> dict:
 
 
 def list_tournaments(filters: dict | None = None) -> list[dict]:
-    """Lista torneios com filtros opcionais:
-       from_date / to_date (YYYY/MM/DD), format, min_buyin / max_buyin (centavos).
+    """Lista torneios com filtros opcionais.
+
+    Período/sala/buy-in/formato + filtros avançados de PKE e resultado:
+      - min_nota / max_nota / nota_band   → pke_score_avg (SQL)
+      - graves                            → pke_grave_errors (SQL)
+      - leak                              → pke_main_leak (SQL)
+      - financial / status                → pós-filtro em Python (dependem de
+        prêmio pós-payout e do status derivado, que não são colunas SQL).
+    `overview()` e `sessions()` chamam esta função, então qualquer filtro aqui
+    se propaga automaticamente — KPIs/gráficos/lista ficam consistentes.
     """
     f = filters or {}
     where, params = ["1=1"], []
@@ -452,6 +466,39 @@ def list_tournaments(filters: dict | None = None) -> list[dict]:
         where.append("buy_in_cents <= ?")
         params.append(int(f["max_buyin"]))
 
+    # ── Nota PKE (faixa livre + bandas rápidas) ───────────────────────────────
+    if f.get("min_nota") is not None:
+        where.append("pke_score_avg >= ?")
+        params.append(float(f["min_nota"]))
+    if f.get("max_nota") is not None:
+        where.append("pke_score_avg <= ?")
+        params.append(float(f["max_nota"]))
+    band = f.get("nota_band")
+    if band == "8plus":
+        where.append("pke_score_avg >= 8")
+    elif band == "6a8":
+        where.append("pke_score_avg >= 6 AND pke_score_avg < 8")
+    elif band == "lt6":
+        where.append("pke_score_avg < 6")
+    elif band == "sem_nota":
+        where.append("pke_score_avg IS NULL")
+
+    # ── Erros graves ──────────────────────────────────────────────────────────
+    graves = f.get("graves")
+    if graves == "sem_grave":
+        where.append("COALESCE(pke_grave_errors, 0) = 0")
+    elif graves in ("com_grave", "gte1"):
+        where.append("COALESCE(pke_grave_errors, 0) >= 1")
+    elif graves == "gte3":
+        where.append("COALESCE(pke_grave_errors, 0) >= 3")
+    elif graves == "gte5":
+        where.append("COALESCE(pke_grave_errors, 0) >= 5")
+
+    # ── Leak principal ────────────────────────────────────────────────────────
+    if f.get("leak"):
+        where.append("pke_main_leak = ?")
+        params.append(f["leak"])
+
     sql = (
         "SELECT *, (SELECT COUNT(*) FROM imported_hands ih "
         "WHERE ih.tournament_id = tournaments.tournament_id) AS hands_count "
@@ -460,14 +507,71 @@ def list_tournaments(filters: dict | None = None) -> list[dict]:
         + " ORDER BY played_at ASC"
     )
     payouts_by_key = _load_payouts_by_key()
+    cur_pke_ver, cur_rules_ver = _current_pke_versions()
+    financial = f.get("financial")
+    status_f = f.get("status")
     with _conn() as c:
         rows = c.execute(sql, params).fetchall()
     out = []
     for r in rows:
         d = dict(r)
         d = _apply_payout(d, payouts_by_key)
-        out.append(_row_to_public(d))
+        pub = _row_to_public(d)
+        pub["pke_outdated"] = _is_outdated(d, cur_pke_ver, cur_rules_ver)
+        # Pós-filtros (dependem de prêmio pós-payout / status derivado).
+        if financial and not _match_financial(pub, financial):
+            continue
+        if status_f and _row_status(pub) != status_f:
+            continue
+        out.append(pub)
     return out
+
+
+def _current_pke_versions() -> tuple[str, str]:
+    """Versões atuais do motor/regras (best-effort) p/ marcar análise antiga."""
+    try:
+        from pke import version as pkever
+        return pkever.PKE_VERSION, pkever.rules_version()
+    except Exception:
+        return "", ""
+
+
+def _is_outdated(row: dict, cur_pke_ver: str, cur_rules_ver: str) -> bool:
+    """True se o torneio foi analisado com versão antiga do PKE/regras."""
+    if not row.get("pke_analyzed"):
+        return False
+    return ((row.get("pke_analysis_version") or "") != cur_pke_ver
+            or (row.get("pke_rules_version") or "") != cur_rules_ver)
+
+
+def _row_status(pub: dict) -> str:
+    """Espelha tournamentStatus() do frontend (pke.ts) — mesma ordem de ramos.
+    'analise_antiga' tem prioridade sobre 'analisado'/'insuficiente'."""
+    if pub.get("pke_analyzed"):
+        if pub.get("pke_outdated"):
+            return "analise_antiga"
+        return "analisado" if (pub.get("pke_critical_hands") or 0) > 0 else "insuficiente"
+    if (pub.get("hands_count") or 0) > 0:
+        return "nao_analisado"
+    return "sem_maos"
+
+
+def _match_financial(pub: dict, kind: str) -> bool:
+    """Resultado financeiro — ITM/fora_itm exigem prêmio conhecido (igual overview)."""
+    profit = pub.get("profit_cents")
+    known = pub.get("prize_source") is not None
+    prize = pub.get("prize_cents") or 0
+    if kind == "lucro_positivo":
+        return profit is not None and profit > 0
+    if kind == "lucro_negativo":
+        return profit is not None and profit < 0
+    if kind == "campeao":
+        return pub.get("finish_pos") == 1
+    if kind == "itm":
+        return known and prize > 0
+    if kind == "fora_itm":
+        return known and prize == 0
+    return True
 
 
 def overview(filters: dict | None = None) -> dict:
@@ -612,10 +716,13 @@ def sessions(filters: dict | None = None) -> list[dict]:
         else:
             s["pending"] += 1
 
-    # Tempo de grind por dia (blocos fechados). Inclui dias que tiveram grind
-    # mas nenhum torneio importado/cadastrado.
-    grind = grind_by_day()
-    for day in grind:
+    # Grind REAL por blocos (a partir dos horários das mãos importadas).
+    tids = [t["tournament_id"] for t in tournaments]
+    hands_by_tid = _hands_by_tournament(tids)
+    hand_grind = _grind_seconds_by_day(tournaments, hands_by_tid)
+    # Fallback: cronômetro manual (grind_blocks) p/ dias sem mãos importadas.
+    manual_grind = grind_by_day()
+    for day in manual_grind:
         by_day.setdefault(day, _blank_day(day))
 
     out = []
@@ -624,9 +731,14 @@ def sessions(filters: dict | None = None) -> list[dict]:
         roi = (profit / s["cost_cents"]) if s["cost_cents"] else None
         itm_rate = (s["itm"] / s["cashed"]) if s["cashed"] else None
         graves = s.get("erros_graves", 0)
-        # duração da sessão pelos horários dos torneios (início -> fim)
-        play_s = _play_seconds(s["start_at"], s["end_at"])
-        hours = (play_s / 3600.0) if play_s and play_s > 0 else None
+        # duração = grind real por blocos; cai pro cronômetro manual se não houver mãos.
+        hg = hand_grind.get(s["day"])
+        if hg and hg["seconds"] > 0:
+            real_secs, estimated, n_blocks = hg["seconds"], hg["estimated"], hg["n_blocks"]
+        else:
+            real_secs = manual_grind.get(s["day"], 0)
+            estimated, n_blocks = False, (1 if real_secs > 0 else 0)
+        hours = (real_secs / 3600.0) if real_secs and real_secs > 0 else None
         out.append({
             "day":          s["day"],
             "start_at":     s["start_at"],
@@ -639,9 +751,11 @@ def sessions(filters: dict | None = None) -> list[dict]:
             "itm_pct":      itm_rate * 100 if itm_rate is not None else None,
             "cashed":       s["cashed"],
             "pending":      s["pending"],
-            "grind_seconds": grind.get(s["day"], 0),
-            # janela de jogo (dos torneios) + métricas por hora
-            "play_seconds": play_s,
+            "grind_seconds": real_secs,
+            "estimated":    estimated,
+            "n_blocks":     n_blocks,
+            # compat: play_seconds agora reflete o grind real (não o vão do dia)
+            "play_seconds": real_secs,
             "tph":          round(s["n"] / hours, 1) if hours else None,
             "profit_per_hour_cents": round(profit / hours) if hours else None,
             "graves_per_hour": round(graves / hours, 1) if hours else None,
@@ -659,20 +773,387 @@ def sessions(filters: dict | None = None) -> list[dict]:
     return dated + undated
 
 
+# ── Central de análise (séries agregadas p/ os gráficos) ───────────────────────
+
+def _status_of(outcome, score):
+    """Espelha tournament_analysis._decision_label (NÃO importa o motor).
+    6 classes: correct / minor_error / medium_error / major_error / cooler /
+    insufficient. Mantenha em sincronia com o PKE se a faixa mudar."""
+    if outcome == "insuficiente":
+        return "insufficient"
+    if outcome == "cooler":
+        return "cooler"
+    if score is None:
+        return "insufficient"
+    if score >= 8:
+        return "correct"
+    if score >= 6:
+        return "minor_error"
+    if score >= 4:
+        return "medium_error"
+    return "major_error"
+
+
+def _new_bucket():
+    return {
+        "n": 0, "cost_cents": 0, "prize_cents": 0,
+        "cashed": 0, "pending": 0, "itm": 0,
+        "champion": 0, "podium": 0, "out": 0,
+        "analisados": 0, "erros_graves": 0,
+        "_pke_soma": 0.0, "_pke_maos": 0, "_leaks": {},
+        "_finish_sum": 0, "_finish_n": 0, "_wins": 0,
+    }
+
+
+def _accumulate(b, t):
+    b["n"] += 1
+    cost = (t.get("buy_in_cents") or 0) + (t.get("fee_cents") or 0)
+    b["cost_cents"] += cost
+    known = t.get("prize_source") is not None
+    prize = t.get("prize_cents") or 0
+    if known:
+        b["cashed"] += 1
+        b["prize_cents"] += prize
+        if prize > 0:
+            b["itm"] += 1
+    else:
+        b["pending"] += 1
+    fp = t.get("finish_pos")
+    if fp is not None:
+        b["_finish_sum"] += fp
+        b["_finish_n"] += 1
+        if fp == 1:
+            b["champion"] += 1
+            b["_wins"] += 1
+        elif fp in (2, 3):
+            b["podium"] += 1
+        elif known and prize > 0:
+            pass  # ITM fora do pódio já contado em itm
+        else:
+            b["out"] += 1
+    if t.get("pke_analyzed"):
+        b["analisados"] += 1
+        ch = t.get("pke_critical_hands") or 0
+        sa = t.get("pke_score_avg")
+        if sa is not None and ch:
+            b["_pke_soma"] += sa * ch
+            b["_pke_maos"] += ch
+        b["erros_graves"] += t.get("pke_grave_errors") or 0
+        ml = t.get("pke_main_leak")
+        if ml:
+            b["_leaks"][ml] = b["_leaks"].get(ml, 0) + 1
+
+
+def _finalize(b, grind_seconds=0, estimated=False, extra=None):
+    profit = b["prize_cents"] - b["cost_cents"]
+    roi = (profit / b["cost_cents"]) if b["cost_cents"] else None
+    itm_rate = (b["itm"] / b["cashed"]) if b["cashed"] else None
+    hours = (grind_seconds / 3600.0) if grind_seconds and grind_seconds > 0 else None
+    graves = b["erros_graves"]
+    res = {
+        "n": b["n"],
+        "cost_cents": b["cost_cents"],
+        "prize_cents": b["prize_cents"],
+        "profit_cents": profit,
+        "roi_pct": roi * 100 if roi is not None else None,
+        "itm_pct": itm_rate * 100 if itm_rate is not None else None,
+        "cashed": b["cashed"], "pending": b["pending"], "itm": b["itm"],
+        "champion": b["champion"], "podium": b["podium"], "out": b["out"],
+        "grind_seconds": int(grind_seconds or 0),
+        "estimated": estimated,
+        "tph": round(b["n"] / hours, 2) if hours else None,
+        "profit_per_hour_cents": round(profit / hours) if hours else None,
+        "graves_per_hour": round(graves / hours, 2) if hours else None,
+        "avg_finish": round(b["_finish_sum"] / b["_finish_n"], 1) if b["_finish_n"] else None,
+        "win_rate_pct": round(b["_wins"] / b["_finish_n"] * 100, 1) if b["_finish_n"] else None,
+        "analisados": b["analisados"],
+        "erros_graves": graves,
+        "media_notas": round(b["_pke_soma"] / b["_pke_maos"], 1) if b["_pke_maos"] else None,
+        "main_leak": max(b["_leaks"], key=b["_leaks"].get) if b["_leaks"] else None,
+    }
+    if extra:
+        res.update(extra)
+    return res
+
+
+def _iso_week(day):
+    """'YYYY/MM/DD' -> ('YYYY-Www', 'YYYY/MM/DD' do início da semana ISO)."""
+    try:
+        tm = time.strptime(day, "%Y/%m/%d")
+    except (ValueError, TypeError):
+        return None, None
+    iso = time.struct_time(tm)
+    y, w, _ = time.strftime("%G %V %u", iso).split()
+    # início (segunda) da semana ISO
+    start_ep = time.mktime(time.strptime(f"{y} {w} 1", "%G %V %u"))
+    return f"{y}-W{w}", time.strftime("%Y/%m/%d", time.localtime(start_ep))
+
+
+def tournaments_analytics(filters: dict | None = None) -> dict:
+    """Séries agregadas p/ a central de análise. Um list_tournaments + um scan de
+    imported_hands; constrói blocos de grind uma vez e dobra em todas as séries."""
+    tournaments = list_tournaments(filters)
+    tids = [t["tournament_id"] for t in tournaments]
+    hands_by_tid = _hands_by_tournament(tids)
+    intervals, blocks = _blocks_for_tournaments(tournaments, hands_by_tid)
+    grind_day = _grind_seconds_by_day(tournaments, hands_by_tid)
+
+    # índice torneio -> sessão (bloco). Atribui pelo horário de início do torneio.
+    sorted_blocks = sorted(blocks, key=lambda b: b["start"])
+    def _block_of(tid):
+        iv = intervals.get(tid)
+        if not iv:
+            return None
+        st = iv[0]
+        for k, blk in enumerate(sorted_blocks):
+            if blk["start"] <= st <= blk["end"]:
+                return k
+        return None
+
+    day_b, week_b, sess_b, buyin_b, room_b, hour_b = {}, {}, {}, {}, {}, {}
+    week_start = {}
+    sess_meta = {}  # k -> {start,end,estimated,day}
+    per_tournament, correlation, leaks_by_period = [], [], []
+    leak_day = {}
+
+    for t in tournaments:
+        pa = t.get("played_at")
+        day = pa[:10] if pa else "Sem data"
+        _accumulate(day_b.setdefault(day, _new_bucket()), t)
+        wk, wstart = _iso_week(day)
+        if wk:
+            week_start[wk] = wstart
+            _accumulate(week_b.setdefault(wk, _new_bucket()), t)
+        k = _block_of(t["tournament_id"])
+        if k is not None:
+            _accumulate(sess_b.setdefault(k, _new_bucket()), t)
+            blk = sorted_blocks[k]
+            sess_meta[k] = {
+                "day": time.strftime("%Y/%m/%d", time.localtime(blk["start"])),
+                "start_at": time.strftime("%Y/%m/%d %H:%M:%S", time.localtime(blk["start"])),
+                "end_at": time.strftime("%Y/%m/%d %H:%M:%S", time.localtime(blk["end"])),
+                "seconds": blk["seconds"], "estimated": blk["estimated"],
+            }
+        bi = (t.get("buy_in_cents") or 0) + (t.get("fee_cents") or 0)
+        _accumulate(buyin_b.setdefault(bi, _new_bucket()), t)
+        _accumulate(room_b.setdefault(t.get("room") or "—", _new_bucket()), t)
+        iv = intervals.get(t["tournament_id"])
+        if iv:
+            hour = int(time.localtime(iv[0]).tm_hour)
+            _accumulate(hour_b.setdefault(hour, _new_bucket()), t)
+
+        # por torneio
+        cost = bi
+        prof = t.get("profit_cents")
+        per_tournament.append({
+            "tournament_id": t["tournament_id"],
+            "played_at": pa,
+            "label": (t.get("format") or t.get("tournament_name") or t["tournament_id"]),
+            "profit_cents": prof,
+            "roi_pct": (prof / cost * 100) if (prof is not None and cost) else None,
+            "finish_pos": t.get("finish_pos"),
+            "n_entries": t.get("n_entries"),
+            "buy_in_cents": cost,
+            "room": t.get("room") or "—",
+            "media_notas": t.get("pke_score_avg"),
+            "erros_graves": t.get("pke_grave_errors") or 0,
+        })
+        if t.get("pke_analyzed") and t.get("pke_score_avg") is not None:
+            correlation.append({
+                "media_notas": t.get("pke_score_avg"),
+                "profit_cents": prof,
+                "roi_pct": (prof / cost * 100) if (prof is not None and cost) else None,
+                "n": t.get("pke_critical_hands") or 0,
+            })
+        ml = t.get("pke_main_leak")
+        if ml and day != "Sem data":
+            leak_day[(day, ml)] = leak_day.get((day, ml), 0) + 1
+
+    # séries de tempo ordenadas
+    per_day = [{"day": d, **_finalize(b, grind_day.get(d, {}).get("seconds", 0),
+                                      grind_day.get(d, {}).get("estimated", False),
+                                      {"n_blocks": grind_day.get(d, {}).get("n_blocks", 0)})}
+               for d, b in sorted(day_b.items()) if d != "Sem data"]
+    per_week = [{"week": w, "week_start": week_start.get(w), **_finalize(b)}
+                for w, b in sorted(week_b.items())]
+    per_session = [{"session_id": f"{sess_meta[k]['day']}#{k}",
+                    "day": sess_meta[k]["day"],
+                    "start_at": sess_meta[k]["start_at"], "end_at": sess_meta[k]["end_at"],
+                    **_finalize(b, sess_meta[k]["seconds"], sess_meta[k]["estimated"])}
+                   for k, b in sorted(sess_b.items())]
+    per_buyin = [{"buyin_cents": bi, **_finalize(b)} for bi, b in sorted(buyin_b.items())]
+    per_room = [{"room": r, **_finalize(b)} for r, b in sorted(room_b.items())]
+    per_hour = [{"hour": h, **_finalize(b)} for h, b in sorted(hour_b.items())]
+    leaks_by_period = [{"day": d, "leak": l, "n": n}
+                       for (d, l), n in sorted(leak_day.items())]
+
+    # ── breakdowns técnicos (1 passada nas mãos) ──
+    status_dist = {"correct": 0, "minor_error": 0, "medium_error": 0,
+                   "major_error": 0, "cooler": 0, "insufficient": 0}
+    error_types, spots = {}, {}
+    for tid, hands in hands_by_tid.items():
+        for h in hands:
+            if not h.get("is_critical"):
+                continue
+            st = _status_of(h.get("pke_outcome"), h.get("pke_score"))
+            status_dist[st] = status_dist.get(st, 0) + 1
+            et = h.get("pke_error_type")
+            if et:
+                error_types[et] = error_types.get(et, 0) + 1
+            sc = h.get("scenario") or "outro"
+            sp = spots.setdefault(sc, {"n": 0, "errors": 0})
+            sp["n"] += 1
+            if st in ("medium_error", "major_error"):
+                sp["errors"] += 1
+
+    spots_list = sorted(
+        [{"scenario": k, "n": v["n"], "errors": v["errors"],
+          "error_pct": round(v["errors"] / v["n"] * 100, 1) if v["n"] else 0}
+         for k, v in spots.items()],
+        key=lambda x: -x["errors"])
+    error_types_list = sorted(
+        [{"type": k, "n": v} for k, v in error_types.items()], key=lambda x: -x["n"])
+
+    n_hands = sum(len(h) for h in hands_by_tid.values())
+    return {
+        "meta": {
+            "n_tournaments": len(tournaments),
+            "n_hands": n_hands,
+            "n_days": len(per_day),
+            "n_sessions": len(per_session),
+            "grind_gap_min": GRIND_GAP_MIN,
+        },
+        "per_day": per_day,
+        "per_session": per_session,
+        "per_week": per_week,
+        "per_tournament": per_tournament,
+        "per_buyin": per_buyin,
+        "per_room": per_room,
+        "per_hour": per_hour,
+        "status_dist": status_dist,
+        "error_types": error_types_list,
+        "spots": spots_list,
+        "fase": [],  # não há coluna de fase persistida por mão; não inventar
+        "correlation": correlation,
+        "leaks_by_period": leaks_by_period,
+    }
+
+
 def _play_seconds(start_at, end_at):
-    """Duração entre o 1º e o último torneio do dia (em segundos), pelos horários
-    'YYYY/MM/DD HH:MM:SS'. None se não der pra calcular."""
-    def _ep(s):
-        if not s or len(s) < 19:
-            return None
-        try:
-            return time.mktime(time.strptime(s[:19], "%Y/%m/%d %H:%M:%S"))
-        except (ValueError, OverflowError):
-            return None
-    a, b = _ep(start_at), _ep(end_at)
+    """[legado] Duração entre o 1º e o último torneio do dia. Mantido só como
+    fallback; o grind real agora é por blocos (ver _grind_blocks)."""
+    a, b = _epoch(start_at), _epoch(end_at)
     if a is None or b is None or b < a:
         return None
     return int(b - a)
+
+
+# ── Grind real por blocos ──────────────────────────────────────────────────────
+
+def _epoch(s):
+    """Parse tolerante de 'YYYY/MM/DD H:MM:SS' (hora pode vir com 1 dígito nas
+    mãos importadas) → epoch (float) ou None. Não usar comparação de string em
+    SQL pra MIN/MAX: '7:38' ordena DEPOIS de '17:38'."""
+    if not s or len(s) < 16:
+        return None
+    try:
+        date_part, time_part = s[:19].split(" ", 1)
+        hh, mm, ss = (time_part.split(":") + ["0", "0"])[:3]
+        norm = f"{date_part} {int(hh):02d}:{int(mm):02d}:{int(ss):02d}"
+        return time.mktime(time.strptime(norm, "%Y/%m/%d %H:%M:%S"))
+    except (ValueError, OverflowError):
+        return None
+
+
+def _tournament_interval(played_at, hands):
+    """Janela real de um torneio: (start_ep, end_ep, estimated).
+    Usa MIN/MAX das mãos importadas; sem mãos → ponto único do played_at (estimado)."""
+    eps = [e for h in (hands or []) if (e := _epoch(h.get("played_at"))) is not None]
+    if eps:
+        return (min(eps), max(eps), False)
+    start = _epoch(played_at)
+    if start is None:
+        return None
+    return (start, start, True)
+
+
+def _grind_blocks(intervals):
+    """Une intervalos de jogo em blocos de grind reais.
+
+    intervals: lista de (start_ep, end_ep, estimated).
+    - mescla quando o próximo começa <= GRIND_GAP_MIN min após o fim do bloco
+      atual (cobre sobreposição de multi-tabling E pausas curtas) usando max(end);
+    - pausa > GRIND_GAP_MIN abre um bloco novo.
+    Devolve lista de blocos {start, end, seconds, estimated} ordenados por início.
+    """
+    iv = sorted((x for x in intervals if x), key=lambda x: x[0])
+    gap = GRIND_GAP_MIN * 60
+    blocks = []
+    cur = None
+    for (s, e, est) in iv:
+        if cur is None:
+            cur = {"start": s, "end": e, "estimated": est}
+        elif s <= cur["end"] + gap:
+            cur["end"] = max(cur["end"], e)
+            cur["estimated"] = cur["estimated"] or est
+        else:
+            blocks.append(cur)
+            cur = {"start": s, "end": e, "estimated": est}
+    if cur is not None:
+        blocks.append(cur)
+    for b in blocks:
+        b["seconds"] = max(0, int(b["end"] - b["start"]))
+    return blocks
+
+
+def _hands_by_tournament(tids):
+    """{tournament_id: [ {played_at, is_critical, pke_outcome, pke_score,
+    pke_error_type, pke_gravity, scenario}, ... ]} para os torneios dados.
+    Faz chunk do IN (limite ~999 de params do SQLite)."""
+    out: dict[str, list] = {}
+    if not tids:
+        return out
+    cols = ("tournament_id, played_at, is_critical, pke_outcome, pke_score, "
+            "pke_error_type, pke_gravity, scenario")
+    with _conn() as c:
+        for i in range(0, len(tids), 900):
+            chunk = tids[i:i + 900]
+            ph = ",".join("?" * len(chunk))
+            rows = c.execute(
+                f"SELECT {cols} FROM imported_hands WHERE tournament_id IN ({ph})",
+                chunk,
+            ).fetchall()
+            for r in rows:
+                out.setdefault(r["tournament_id"], []).append(dict(r))
+    return out
+
+
+def _blocks_for_tournaments(tournaments, hands_by_tid):
+    """Constrói (intervals_por_torneio, blocos_do_conjunto).
+
+    intervals_por_torneio: {tournament_id: (start_ep, end_ep, estimated)}.
+    blocos: _grind_blocks de todos os intervalos juntos (sessões reais)."""
+    intervals = {}
+    for t in tournaments:
+        iv = _tournament_interval(t.get("played_at"), hands_by_tid.get(t["tournament_id"]))
+        if iv is not None:
+            intervals[t["tournament_id"]] = iv
+    blocks = _grind_blocks(list(intervals.values()))
+    return intervals, blocks
+
+
+def _grind_seconds_by_day(tournaments, hands_by_tid):
+    """{dia: {'seconds': int, 'estimated': bool, 'n_blocks': int}} dos blocos reais.
+    Cada bloco conta no dia do seu início."""
+    _, blocks = _blocks_for_tournaments(tournaments, hands_by_tid)
+    by_day: dict[str, dict] = {}
+    for b in blocks:
+        day = time.strftime("%Y/%m/%d", time.localtime(b["start"]))
+        d = by_day.setdefault(day, {"seconds": 0, "estimated": False, "n_blocks": 0})
+        d["seconds"] += b["seconds"]
+        d["estimated"] = d["estimated"] or b["estimated"]
+        d["n_blocks"] += 1
+    return by_day
 
 
 def set_prize(tournament_id: str, prize_cents: int | None,
@@ -722,6 +1203,18 @@ def list_formats() -> list[str]:
     return [r["format"] for r in rows]
 
 
+def list_leaks() -> list[str]:
+    """Ids de leak principal distintos já presentes nos torneios analisados
+    (pra alimentar o dropdown de filtro por leak). Rótulo fica no frontend."""
+    with _conn() as c:
+        rows = c.execute(
+            "SELECT DISTINCT pke_main_leak FROM tournaments "
+            "WHERE pke_main_leak IS NOT NULL AND pke_main_leak <> '' "
+            "ORDER BY pke_main_leak"
+        ).fetchall()
+    return [r["pke_main_leak"] for r in rows]
+
+
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 def _row_to_public(row: dict) -> dict:
@@ -764,6 +1257,7 @@ def _row_to_public(row: dict) -> dict:
         "pke_main_leak":      row.get("pke_main_leak"),
         "pke_leaks":          _parse_leaks(row.get("pke_leaks_json")),
         "pke_last_analyzed_at": row.get("pke_last_analyzed_at"),
+        "pke_outdated":       False,   # sobrescrito em list_tournaments
         "hands_count":        row.get("hands_count"),
     }
 

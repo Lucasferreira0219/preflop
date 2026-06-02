@@ -491,6 +491,7 @@ export interface Tournament {
   pke_main_leak?: string | null;
   pke_leaks?: ReportLeak[];
   pke_last_analyzed_at?: number | null;
+  pke_outdated?: boolean;
   hands_count?: number | null;
 }
 
@@ -545,6 +546,13 @@ export interface ImportTournamentFilesResult {
   error?: string;
 }
 
+export type FinancialFilter =
+  | "lucro_positivo" | "lucro_negativo" | "campeao" | "itm" | "fora_itm";
+export type NotaBand = "8plus" | "6a8" | "lt6" | "sem_nota";
+export type GravesFilter = "sem_grave" | "com_grave" | "gte1" | "gte3" | "gte5";
+export type StatusFilter =
+  | "analisado" | "nao_analisado" | "sem_maos" | "insuficiente" | "analise_antiga";
+
 export interface TournamentFilters {
   from_date?: string | null;
   to_date?: string | null;
@@ -552,6 +560,14 @@ export interface TournamentFilters {
   room?: string | null;
   min_buyin?: number | null;
   max_buyin?: number | null;
+  // ── filtros avançados (PKE + resultado) ──────────────────────────────────
+  financial?: FinancialFilter | null;
+  min_nota?: number | null;
+  max_nota?: number | null;
+  nota_band?: NotaBand | null;
+  graves?: GravesFilter | null;
+  status?: StatusFilter | null;
+  leak?: string | null;
 }
 
 export interface PositionBuckets {
@@ -573,7 +589,9 @@ export interface TournamentSession {
   itm_pct: number | null;
   cashed: number;
   pending: number;
-  grind_seconds: number;
+  grind_seconds: number;       // grind REAL por blocos
+  estimated?: boolean;         // algum torneio sem mãos importadas
+  n_blocks?: number;           // nº de blocos de grind no dia
   // janela de jogo (dos torneios) + métricas por hora (aditivo).
   play_seconds?: number | null;
   tph?: number | null;
@@ -584,6 +602,78 @@ export interface TournamentSession {
   media_notas?: number | null;
   erros_graves?: number;
   main_leak?: string | null;
+}
+
+// ── Central de análise (séries agregadas) ─────────────────────────────────────
+// Métricas comuns a per_day/per_session/per_week/per_buyin/per_room/per_hour.
+export interface AnalyticsBucket {
+  n: number;
+  cost_cents: number;
+  prize_cents: number;
+  profit_cents: number | null;
+  roi_pct: number | null;
+  itm_pct: number | null;
+  cashed: number;
+  pending: number;
+  itm: number;
+  champion: number;
+  podium: number;
+  out: number;
+  grind_seconds: number;
+  estimated: boolean;
+  tph: number | null;
+  profit_per_hour_cents: number | null;
+  graves_per_hour: number | null;
+  avg_finish: number | null;
+  win_rate_pct: number | null;
+  analisados: number;
+  erros_graves: number;
+  media_notas: number | null;
+  main_leak: string | null;
+}
+export interface AnalyticsDay extends AnalyticsBucket { day: string; n_blocks: number }
+export interface AnalyticsSession extends AnalyticsBucket {
+  session_id: string; day: string; start_at: string; end_at: string;
+}
+export interface AnalyticsWeek extends AnalyticsBucket { week: string; week_start: string | null }
+export interface AnalyticsBuyin extends AnalyticsBucket { buyin_cents: number }
+export interface AnalyticsRoom extends AnalyticsBucket { room: string }
+export interface AnalyticsHour extends AnalyticsBucket { hour: number }
+export interface AnalyticsTournament {
+  tournament_id: string;
+  played_at: string | null;
+  label: string;
+  profit_cents: number | null;
+  roi_pct: number | null;
+  finish_pos: number | null;
+  n_entries: number | null;
+  buy_in_cents: number;
+  room: string;
+  media_notas: number | null;
+  erros_graves: number;
+}
+export interface StatusDist {
+  correct: number; minor_error: number; medium_error: number;
+  major_error: number; cooler: number; insufficient: number;
+}
+export interface AnalyticsPayload {
+  meta: {
+    n_tournaments: number; n_hands: number; n_days: number;
+    n_sessions: number; grind_gap_min: number;
+  };
+  per_day: AnalyticsDay[];
+  per_session: AnalyticsSession[];
+  per_week: AnalyticsWeek[];
+  per_tournament: AnalyticsTournament[];
+  per_buyin: AnalyticsBuyin[];
+  per_room: AnalyticsRoom[];
+  per_hour: AnalyticsHour[];
+  status_dist: StatusDist;
+  error_types: { type: string; n: number }[];
+  spots: { scenario: string; n: number; errors: number; error_pct: number }[];
+  fase: { fase: string; n: number; errors: number; error_pct: number }[];
+  correlation: { media_notas: number; profit_cents: number | null; roi_pct: number | null; n: number }[];
+  leaks_by_period: { day: string; leak: string; n: number }[];
 }
 
 export interface GrindBlock {

@@ -264,6 +264,10 @@ async def list_tournament_formats():
 async def list_rooms():
     return tour_api.list_rooms()
 
+@app.post("/api/list_leaks")
+async def list_leaks():
+    return tour_api.list_leaks()
+
 @app.post("/api/add_tournament")
 async def add_tournament(request: Request):
     args = await _read_args(request)
@@ -275,6 +279,11 @@ async def add_tournament(request: Request):
 async def tournaments_sessions(request: Request):
     args = await _read_args(request)
     return tour_api.tournaments_sessions(*args)
+
+@app.post("/api/tournaments_analytics")
+async def tournaments_analytics(request: Request):
+    args = await _read_args(request)
+    return tour_api.tournaments_analytics(*args)
 
 @app.post("/api/grind_active")
 async def grind_active():

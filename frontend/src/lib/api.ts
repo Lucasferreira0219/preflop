@@ -1,6 +1,7 @@
 // Cliente da API REST do FastAPI. Mantém o padrão _BASE (deploy atrás de /preflop).
 import type {
   Analytics,
+  AnalyticsPayload,
   ImportSummary,
   ImportTournamentFilesResult,
   GrindBlock,
@@ -182,11 +183,16 @@ export const api = {
 
   listRooms: () => call<string[]>("list_rooms", []),
 
+  listLeaks: () => call<string[]>("list_leaks", []),
+
   addTournament: (data: ManualTournamentInput) =>
     call<Tournament | { error: string }>("add_tournament", [data]),
 
   tournamentsSessions: (filters: TournamentFilters = {}) =>
     call<TournamentSession[]>("tournaments_sessions", [filters]),
+
+  tournamentsAnalytics: (filters: TournamentFilters = {}) =>
+    call<AnalyticsPayload>("tournaments_analytics", [filters]),
 
   // ── Cronômetro de grind ───────────────────────────────────────────────────
   grindActive: () => call<GrindBlock | null>("grind_active", []),

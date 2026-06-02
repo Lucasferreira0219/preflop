@@ -73,6 +73,9 @@ class TournamentsApi:
     def list_rooms(self):
         return te.list_rooms()
 
+    def list_leaks(self):
+        return te.list_leaks()
+
     def add_tournament(self, data: dict):
         if not isinstance(data, dict):
             return {"error": "Dados inválidos."}
@@ -80,6 +83,9 @@ class TournamentsApi:
 
     def tournaments_sessions(self, filters: dict | None = None):
         return te.sessions(filters or {})
+
+    def tournaments_analytics(self, filters: dict | None = None):
+        return te.tournaments_analytics(filters or {})
 
     # ── Cronômetro de grind ───────────────────────────────────────────────────
     def grind_active(self):

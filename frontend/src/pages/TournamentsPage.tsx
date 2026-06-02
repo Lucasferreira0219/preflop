@@ -1,15 +1,6 @@
 ﻿import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  Area,
-  AreaChart,
-  CartesianGrid,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
-import {
   AlertTriangle,
   ArrowLeft,
   ArrowUpDown,
@@ -35,8 +26,8 @@ import { Button } from "@/components/ui/Button";
 import { Card, SectionLabel } from "@/components/ui/Card";
 import { Drawer } from "@/components/ui/Drawer";
 import { Select } from "@/components/ui/Select";
+import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import {
-  BIG_WIN_MULT,
   BigWinBadge,
   RoomTag,
   fmtDuration,
@@ -45,13 +36,18 @@ import {
 } from "@/components/tournaments/badges";
 import { NewTournamentModal } from "@/components/tournaments/NewTournamentModal";
 import { TournamentImport } from "@/components/tournaments/TournamentImport";
-import { PkeBadge } from "@/components/PkeBadge";
+import { AnalyticsCenter } from "@/components/tournaments/AnalyticsCenter";
 import { useApp } from "@/state/AppProvider";
 import { leakLabel, tournamentStatus, STATUS_LABEL, STATUS_CLS } from "@/lib/pke";
 import { api } from "@/lib/api";
 import { fmtMoney, fmtPct, fmtShortDate, parseCentsInput } from "@/lib/money";
 import type {
+  AnalyticsPayload,
+  FinancialFilter,
+  GravesFilter,
   ManualTournamentInput,
+  NotaBand,
+  StatusFilter,
   Tournament,
   TournamentFilters,
   TournamentOverview,
@@ -59,9 +55,6 @@ import type {
 } from "@/lib/types";
 import { cn } from "@/lib/cn";
 
-const GOLD = "#D2A54A";
-const GREEN = "#2BA672";
-const RED = "#D6535B";
 const FMT_ALL = "__all__";
 const ROOM_ALL = "__all__";
 
@@ -122,11 +115,14 @@ function useCollapsed(id: string, defaultMobileClosed = false): [boolean, () => 
   return [open, toggle];
 }
 
-function Collapsible({ id, title, icon, defaultMobileClosed, right, children }: {
+function Collapsible({ id, title, icon, defaultMobileClosed, right, children, open: openProp, onToggle }: {
   id: string; title: string; icon?: React.ReactNode; defaultMobileClosed?: boolean;
   right?: React.ReactNode; children: React.ReactNode;
+  open?: boolean; onToggle?: () => void;   // modo controlado (opcional)
 }) {
-  const [open, toggle] = useCollapsed(id, defaultMobileClosed);
+  const internal = useCollapsed(id, defaultMobileClosed);
+  const open = openProp ?? internal[0];
+  const toggle = onToggle ?? internal[1];
   return (
     <div className="mt-3">
       <button onClick={toggle} className="flex w-full items-center justify-between gap-2 px-1 py-1.5 text-left">
@@ -189,27 +185,35 @@ export function TournamentsPage() {
   const [overview, setOverview] = useState<TournamentOverview | null>(null);
   const [formats, setFormats] = useState<string[]>([]);
   const [rooms, setRooms] = useState<string[]>([]);
+  const [leaks, setLeaks] = useState<string[]>([]);
   const [sessions, setSessions] = useState<TournamentSession[]>([]);
+  const [analytics, setAnalytics] = useState<AnalyticsPayload | null>(null);
   const [filters, setFilters] = useState<TournamentFilters>({});
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showNew, setShowNew] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [outdated, setOutdated] = useState(0);
   const importRef = useRef<HTMLDivElement>(null);
+  // Seção "Importar mãos" controlada (pra goImport conseguir abri-la ao rolar).
+  const [importOpen, toggleImport] = useCollapsed("importar", true);
 
   async function refresh(f = filters) {
-    const [list, ov, fmts, rms, sess] = await Promise.all([
+    const [list, ov, fmts, rms, lks, sess, anl] = await Promise.all([
       api.listTournaments(f),
       api.tournamentsOverview(f),
       api.listTournamentFormats(),
       api.listRooms(),
+      api.listLeaks(),
       api.tournamentsSessions(f),
+      api.tournamentsAnalytics(f),
     ]);
     setTournaments(list);
     setOverview(ov);
     setFormats(fmts);
     setRooms(rms);
+    setLeaks(lks);
     setSessions(sess);
+    setAnalytics(anl);
   }
 
   useEffect(() => {
@@ -282,25 +286,17 @@ export function TournamentsPage() {
   const currency = tournaments[0]?.currency ?? "USD";
   const activeFilterCount = countFilters(filters);
 
-  const pkeKpis = useMemo(() => {
-    let soma = 0, maos = 0, graves = 0, analisados = 0;
-    for (const t of tournaments) {
-      if (!t.pke_analyzed) continue;
-      analisados++;
-      const ch = t.pke_critical_hands ?? 0;
-      if (t.pke_score_avg != null && ch) { soma += t.pke_score_avg * ch; maos += ch; }
-      graves += t.pke_grave_errors ?? 0;
-    }
-    return { media: maos ? Math.round((soma / maos) * 10) / 10 : null, graves, analisados };
-  }, [tournaments]);
-
   async function analyzeOne(tid: string) {
     await api.analyzeTournament(tid);
     await refresh();
   }
 
   function goImport() {
-    importRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    if (!importOpen) toggleImport();
+    // espera o conteúdo expandir antes de rolar
+    requestAnimationFrame(() =>
+      importRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }),
+    );
   }
 
   return (
@@ -323,9 +319,18 @@ export function TournamentsPage() {
 
       {/* Container — padding menor no mobile, max-width pra desktop */}
       <div className="mx-auto w-full max-w-5xl px-3 py-4 sm:px-6 sm:py-6">
-        <div ref={importRef} className="scroll-mt-20">
-          <TournamentImport onImported={() => refresh()} />
-        </div>
+        {overview && overview.n_tournaments > 0 ? (
+          <Collapsible id="importar" title="Importar mãos" icon={<Upload className="h-3.5 w-3.5" />}
+            open={importOpen} onToggle={toggleImport}>
+            <div ref={importRef} className="scroll-mt-20">
+              <TournamentImport onImported={() => refresh()} />
+            </div>
+          </Collapsible>
+        ) : (
+          <div ref={importRef} className="scroll-mt-20">
+            <TournamentImport onImported={() => refresh()} />
+          </div>
+        )}
 
         {outdated > 0 && (
           <Card className="mt-3 flex items-center justify-between gap-3 border-gold/30 bg-gold/5 p-3">
@@ -347,11 +352,15 @@ export function TournamentsPage() {
 
         {overview && overview.n_tournaments > 0 ? (
           <>
-            <StatsBar overview={overview} currency={currency} pke={pkeKpis} />
+            <Collapsible id="kpis" title="Resumo" icon={<BarChart3 className="h-3.5 w-3.5" />}>
+              <StatsBar overview={overview} currency={currency} />
+            </Collapsible>
             <Collapsible id="graficos" title="Gráficos e análises" icon={<BarChart3 className="h-3.5 w-3.5" />} defaultMobileClosed>
-              <BankrollChart overview={overview} currency={currency} tournaments={tournaments} />
-              <PositionDistribution overview={overview} />
-              <EvolutionBlock sessions={sessions} />
+              {analytics ? (
+                <AnalyticsCenter analytics={analytics} currency={currency} />
+              ) : (
+                <Card className="mt-2 p-4 text-center text-xs text-ink-faint">Carregando análises…</Card>
+              )}
             </Collapsible>
             <Collapsible id="sessoes" title="Sessões por dia" icon={<CalendarDays className="h-3.5 w-3.5" />} defaultMobileClosed
               right={<span className="text-2xs text-ink-faint">{sessions.length} {sessions.length === 1 ? "dia" : "dias"}</span>}>
@@ -368,16 +377,20 @@ export function TournamentsPage() {
                 }
               />
             </Collapsible>
-            <TournamentsList
-              tournaments={tournaments}
-              editingId={editingId}
-              onStartEdit={setEditingId}
-              onCancelEdit={() => setEditingId(null)}
-              onSave={savePrize}
-              onDelete={removeTournament}
-              onOpen={openTournament}
-              onAnalyze={analyzeOne}
-            />
+            <ActiveFilterChips filters={filters} onChange={applyFilters} />
+            <Collapsible id="lista" title="Lista de torneios" icon={<Trophy className="h-3.5 w-3.5" />}
+              right={<span className="text-2xs text-ink-faint">{tournaments.length}</span>}>
+              <TournamentsList
+                tournaments={tournaments}
+                editingId={editingId}
+                onStartEdit={setEditingId}
+                onCancelEdit={() => setEditingId(null)}
+                onSave={savePrize}
+                onDelete={removeTournament}
+                onOpen={openTournament}
+                onAnalyze={analyzeOne}
+              />
+            </Collapsible>
           </>
         ) : (
           <Card className="mt-4 p-6 text-center text-sm text-ink-dim sm:p-8">
@@ -407,6 +420,7 @@ export function TournamentsPage() {
           filters={filters}
           formats={formats}
           rooms={rooms}
+          leaks={leaks}
           onApply={(f) => {
             applyFilters(f);
             setFiltersOpen(false);
@@ -510,8 +524,32 @@ function countFilters(filters: TournamentFilters): number {
   return [
     filters.from_date, filters.to_date, filters.format, filters.room,
     filters.min_buyin, filters.max_buyin,
+    filters.financial, filters.nota_band, filters.min_nota, filters.max_nota,
+    filters.graves, filters.status, filters.leak,
   ].filter((v) => v != null && v !== "").length;
 }
+
+// Rótulos dos filtros avançados (fonte única p/ controles e chips).
+const FINANCIAL_LABEL: Record<string, string> = {
+  lucro_positivo: "Lucro positivo",
+  lucro_negativo: "Lucro negativo",
+  campeao: "Campeão",
+  itm: "ITM",
+  fora_itm: "Fora do ITM",
+};
+const BAND_LABEL: Record<string, string> = {
+  "8plus": "Nota 8+",
+  "6a8": "Nota 6–7.9",
+  lt6: "Nota < 6",
+  sem_nota: "Sem nota PKE",
+};
+const GRAVES_LABEL: Record<string, string> = {
+  sem_grave: "Sem erro grave",
+  com_grave: "Com erro grave",
+  gte1: "1+ graves",
+  gte3: "3+ graves",
+  gte5: "5+ graves",
+};
 function HeroLucro({
   overview,
   currency,
@@ -539,134 +577,28 @@ function HeroLucro({
 
 // â"€â"€ Tiles secundários â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 
-function StatsBar({ overview, currency, pke }: {
+function StatsBar({ overview, currency }: {
   overview: TournamentOverview;
   currency: string;
-  pke: { media: number | null; graves: number; analisados: number };
 }) {
   const profit = overview.profit_cents;
-  const mediaTone = pke.media == null ? "ink" : pke.media >= 7 ? "green" : pke.media < 5 ? "red" : "ink";
   return (
-    <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-6">
-      <Tile
-        label="Saldo"
-        value={fmtMoney(profit, currency, { signed: true })}
-        tone={profit > 0 ? "green" : profit < 0 ? "red" : "ink"}
-      />
-      <Tile label="Torneios" value={String(overview.n_tournaments)} />
-      <Tile label="ROI" value={fmtPct(overview.roi_pct)} tone={overview.roi_pct != null && overview.roi_pct > 0 ? "green" : overview.roi_pct != null && overview.roi_pct < 0 ? "red" : "ink"} />
-      <Tile label="ITM" value={fmtPct(overview.itm_pct, 0)} />
-      <Tile label="Nota média PKE" value={pke.media != null ? pke.media.toFixed(1) : "—"} tone={mediaTone} />
-      <Tile label="Erros graves" value={String(pke.graves)} tone={pke.graves > 0 ? "red" : "ink"} />
+    <div className="mt-2">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+        <Tile
+          label="Saldo"
+          value={fmtMoney(profit, currency, { signed: true })}
+          tone={profit > 0 ? "green" : profit < 0 ? "red" : "ink"}
+        />
+        <Tile label="Torneios" value={String(overview.n_tournaments)} />
+        <Tile label="ROI" value={fmtPct(overview.roi_pct)} tone={overview.roi_pct != null && overview.roi_pct > 0 ? "green" : overview.roi_pct != null && overview.roi_pct < 0 ? "red" : "ink"} />
+        <Tile label="ITM" value={fmtPct(overview.itm_pct, 0)} />
+      </div>
       {overview.pending_prize > 0 && (
-        <p className="col-span-2 text-2xs text-ink-faint sm:col-span-6">
+        <p className="mt-2 text-2xs text-ink-faint">
           {overview.pending_prize} {overview.pending_prize === 1 ? "torneio" : "torneios"} sem prêmio confirmado · usando custo como base.
         </p>
       )}
-    </div>
-  );
-}
-
-// â"€â"€ Evolução técnica (abas por dia: nota / erros / leaks) â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
-function EvolutionBlock({
-  sessions,
-}: {
-  sessions: TournamentSession[];
-}) {
-  type Tab = "nota" | "graves" | "leaks";
-  const [tab, setTab] = useState<Tab>("nota");
-  const TABS: { key: Tab; label: string }[] = [
-    { key: "nota", label: "Nota PKE" },
-    { key: "graves", label: "Erros graves" },
-    { key: "leaks", label: "Leaks" },
-  ];
-  const days = useMemo(
-    () => [...sessions].filter((s) => s.day !== "Sem data" && (s.analisados ?? 0) > 0).reverse(),
-    [sessions],
-  );
-  const insight = useMemo(() => pickInsight(days), [days]);
-
-  return (
-    <Card className="mt-2 p-3 sm:p-4">
-      <div className="mb-3 flex items-center gap-2">
-        <SectionLabel className="flex items-center gap-1.5">
-          <BarChart3 className="h-3.5 w-3.5" /> Evolução
-        </SectionLabel>
-        {days.length > 0 && <PkeBadge variant="analisado" />}
-      </div>
-      <div className="mb-3 flex flex-wrap gap-1.5">
-        {TABS.map((t) => (
-          <button key={t.key} onClick={() => setTab(t.key)}
-            className={cn("rounded-full border px-3 py-1 text-2xs font-semibold transition-colors",
-              tab === t.key ? "border-gold/50 bg-gold/15 text-gold"
-                : "border-border bg-surface-1 text-ink-dim hover:text-ink")}>
-            {t.label}
-          </button>
-        ))}
-      </div>
-      {tab === "nota" && (
-        days.length > 0 ? <DayBars days={days} value={(s) => s.media_notas ?? null} max={10}
-          fmt={(v) => v.toFixed(1)} color={(v) => v >= 7 ? "#2BA672" : v < 5 ? "#D6535B" : "#D2A54A"} />
-        : <p className="py-6 text-center text-xs text-ink-faint">Nenhum dia analisado pelo PKE ainda.</p>
-      )}
-      {tab === "graves" && (
-        days.length > 0 ? <DayBars days={days} value={(s) => s.erros_graves ?? null}
-          fmt={(v) => String(v)} color={() => "#D6535B"} />
-        : <p className="py-6 text-center text-xs text-ink-faint">Nenhum dia analisado pelo PKE ainda.</p>
-      )}
-      {tab === "leaks" && (
-        <div className="flex flex-col gap-1.5">
-          {[...days].reverse().filter((s) => s.main_leak).map((s) => (
-            <div key={s.day} className="flex items-center justify-between rounded-ctl border border-border/60 bg-surface-1 px-3 py-1.5 text-xs">
-              <span className="text-ink-dim">{s.day}</span>
-              <span className="font-semibold text-gold">{leakLabel(s.main_leak)}</span>
-            </div>
-          ))}
-        </div>
-      )}
-      {insight && (
-        <p className={cn("mt-3 rounded-ctl px-3 py-2 text-xs",
-          insight.tone === "warn" ? "bg-action-red/10 text-action-red" : "bg-action-green/10 text-action-green")}>
-          {insight.text}
-        </p>
-      )}
-    </Card>
-  );
-}
-
-function pickInsight(days: TournamentSession[]): { text: string; tone: "warn" | "good" } | null {
-  for (let i = days.length - 1; i >= 0; i--) {
-    const s = days[i];
-    if (s.media_notas == null) continue;
-    if (s.profit_cents > 0 && s.media_notas < 6)
-      return { text: `${s.day}: você ganhou, mas a nota foi ${s.media_notas}. Cuidado com a variância — resultado bom não valida decisão.`, tone: "warn" };
-    if (s.profit_cents < 0 && s.media_notas >= 7)
-      return { text: `${s.day}: você perdeu, mas jogou bem (nota ${s.media_notas}). Decisões boas — siga o processo.`, tone: "good" };
-  }
-  return null;
-}
-
-function DayBars({ days, value, fmt, color, max }: {
-  days: TournamentSession[];
-  value: (s: TournamentSession) => number | null;
-  fmt: (v: number) => string;
-  color: (v: number) => string;
-  max?: number;
-}) {
-  const pts = days.map((s) => ({ day: s.day, v: value(s) })).filter((p) => p.v != null) as { day: string; v: number }[];
-  if (!pts.length) return <p className="py-6 text-center text-xs text-ink-faint">Sem dados ainda.</p>;
-  const top = max ?? Math.max(1, ...pts.map((p) => p.v));
-  return (
-    <div className="flex items-end gap-1.5 overflow-x-auto pb-1">
-      {pts.map((p) => (
-        <div key={p.day} className="flex min-w-[36px] flex-1 flex-col items-center gap-1">
-          <span className="text-2xs nums text-ink-dim">{fmt(p.v)}</span>
-          <div className="flex w-full items-end" style={{ height: 70 }}>
-            <div className="w-full rounded-t" style={{ height: `${Math.max(4, (p.v / top) * 70)}px`, background: color(p.v) }} />
-          </div>
-          <span className="text-2xs text-ink-faint">{p.day.slice(5)}</span>
-        </div>
-      ))}
     </div>
   );
 }
@@ -735,10 +667,12 @@ function Tile({
   label,
   value,
   tone = "ink",
+  hint,
 }: {
   label: string;
   value: string;
   tone?: "ink" | "green" | "red";
+  hint?: string;
 }) {
   const color = {
     ink: "text-ink",
@@ -746,170 +680,17 @@ function Tile({
     red: "text-action-red",
   }[tone];
   return (
-    <Card className="flex flex-col gap-0.5 p-2.5 sm:p-3">
+    <Card className="flex h-full flex-col gap-0.5 p-2.5 sm:p-3">
       <span className={cn("text-base font-bold nums sm:text-lg", color)}>{value}</span>
-      <span className="text-2xs uppercase tracking-[0.1em] text-ink-faint">{label}</span>
+      <span className="flex items-center gap-1 text-2xs uppercase tracking-[0.1em] text-ink-faint">
+        {label}
+        {hint && (
+          <span title={hint} aria-label={hint} className="cursor-help">
+            <Info className="h-3 w-3 text-ink-faint/70" />
+          </span>
+        )}
+      </span>
     </Card>
-  );
-}
-
-// â"€â"€ Distribuição de posições â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
-
-function PositionDistribution({ overview, compact }: { overview: TournamentOverview; compact?: boolean }) {
-  const b = overview.position_buckets;
-  const total = b.champion + b.podium + b.itm + b.out;
-  if (total === 0) return null;
-
-  const bars = [
-    { key: "champion", label: "1 lugar", n: b.champion, color: GOLD },
-    { key: "podium", label: "2-3 lugar", n: b.podium, color: "#7C8AA5" },
-    { key: "itm", label: "ITM", n: b.itm, color: GREEN },
-    { key: "out", label: "Fora", n: b.out, color: "#3A4757" },
-  ];
-
-  return (
-    <Card className={cn("p-3 sm:p-4", !compact && "mt-2")}>
-      <SectionLabel>Distribuição de posições</SectionLabel>
-      <div className="mt-3 flex flex-col gap-2">
-        {bars.map((bar) => {
-          const pct = total ? (bar.n / total) * 100 : 0;
-          return (
-            <div key={bar.key} className="flex items-center gap-2">
-              <div className="w-24 shrink-0 text-xs text-ink-dim truncate">
-                {bar.label}
-              </div>
-              <div className="h-3 flex-1 overflow-hidden rounded-full bg-surface-2">
-                <div
-                  className="h-full rounded-full transition-all"
-                  style={{ width: `${pct}%`, backgroundColor: bar.color }}
-                />
-              </div>
-              <div className="w-16 shrink-0 text-right text-xs nums text-ink">
-                {bar.n}
-                <span className="ml-1 text-2xs text-ink-faint">{pct.toFixed(0)}%</span>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </Card>
-  );
-}
-
-// â"€â"€ Bankroll cumulativo â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
-
-function BankrollChart({
-  overview,
-  currency,
-  tournaments,
-  compact,
-}: {
-  overview: TournamentOverview;
-  currency: string;
-  tournaments: Tournament[];
-  compact?: boolean;
-}) {
-  const bigWinIds = useMemo(() => {
-    const s = new Set<string>();
-    for (const t of tournaments) if (isBigWin(t)) s.add(t.tournament_id);
-    return s;
-  }, [tournaments]);
-
-  const data = useMemo(
-    () =>
-      overview.cumulative.map((p, i) => ({
-        idx: i + 1,
-        running: (p.running ?? 0) / 100,
-        date: fmtShortDate(p.played_at),
-        bigWin: bigWinIds.has(p.tournament_id),
-      })),
-    [overview.cumulative, bigWinIds],
-  );
-
-  if (data.length < 2) {
-    return (
-      <Card className={cn("p-4 text-center text-xs text-ink-faint sm:text-sm", !compact && "mt-2")}>
-        Importe pelo menos 2 torneios pra ver a curva.
-      </Card>
-    );
-  }
-
-  const last = data[data.length - 1].running;
-  const tone = last > 0 ? GREEN : last < 0 ? RED : GOLD;
-
-  return (
-    <Card className={cn("p-3 sm:p-4", !compact && "mt-2")}>
-      <div className="flex items-start justify-between gap-3">
-        <SectionLabel>Banca acumulada</SectionLabel>
-        <div className="text-xs nums" style={{ color: tone }}>
-          {fmtMoney(Math.round(last * 100), currency, { signed: true })}
-        </div>
-      </div>
-      <div className={cn("mt-3 h-[190px] w-full", compact ? "sm:h-[150px]" : "sm:h-[260px]")}>
-        <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={data} margin={{ top: 6, right: 6, bottom: 0, left: -12 }}>
-            <defs>
-              <linearGradient id="bkFill" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor={tone} stopOpacity={0.28} />
-                <stop offset="100%" stopColor={tone} stopOpacity={0.02} />
-              </linearGradient>
-            </defs>
-            <CartesianGrid stroke="#273241" vertical={false} />
-            <XAxis
-              dataKey="idx"
-              tick={{ fill: "#5D6875", fontSize: 10 }}
-              tickLine={false}
-              axisLine={{ stroke: "#273241" }}
-              minTickGap={20}
-            />
-            <YAxis
-              tick={{ fill: "#5D6875", fontSize: 10 }}
-              tickLine={false}
-              axisLine={false}
-              width={48}
-              tickFormatter={(v: number) =>
-                fmtMoney(Math.round(v * 100), currency, { placeholder: "0" })
-              }
-            />
-            <Tooltip
-              content={<BkTooltip currency={currency} />}
-              cursor={{ stroke: "#33414F", strokeWidth: 1 }}
-            />
-            <Area
-              type="monotone"
-              dataKey="running"
-              stroke={tone}
-              strokeWidth={2}
-              fill="url(#bkFill)"
-              dot={<BigWinDot />}
-              activeDot={{ r: 4, fill: tone, stroke: "#0B1016", strokeWidth: 2 }}
-            />
-          </AreaChart>
-        </ResponsiveContainer>
-      </div>
-    </Card>
-  );
-}
-
-// Dot só nos pontos de Big Win (cravadas grandes) — destaca no gráfico.
-function BigWinDot(props: any) {
-  const { cx, cy, payload } = props;
-  if (!payload?.bigWin || cx == null || cy == null) return null;
-  return <circle cx={cx} cy={cy} r={5} fill={GOLD} stroke="#0B1016" strokeWidth={2} />;
-}
-
-function BkTooltip({ active, payload, currency }: any) {
-  if (!active || !payload?.length) return null;
-  const p = payload[0].payload;
-  return (
-    <div className="rounded-ctl border border-border bg-surface-2 px-3 py-2 text-xs shadow-pop">
-      <div className="font-semibold text-ink nums">
-        {fmtMoney(Math.round(p.running * 100), currency, { signed: true })}
-      </div>
-      <div className="mt-0.5 text-ink-faint nums">
-        #{p.idx} · {p.date}
-      </div>
-    </div>
   );
 }
 
@@ -959,15 +740,49 @@ function presetRange(key: PresetKey): { from: string | null; to: string | null }
   }
 }
 
+// Grupo de pílulas mutuamente exclusivas (clicar na ativa desmarca).
+function PillGroup<T extends string>({ value, onChange, options }: {
+  value: T | null;
+  onChange: (v: T | null) => void;
+  options: { value: T; label: string }[];
+}) {
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      {options.map((o) => {
+        const active = value === o.value;
+        return (
+          <button
+            key={o.value}
+            type="button"
+            onClick={() => onChange(active ? null : o.value)}
+            className={cn(
+              "rounded-full border px-3 py-1 text-2xs font-semibold transition-colors",
+              active
+                ? "border-gold/50 bg-gold/15 text-gold"
+                : "border-border bg-surface-2 text-ink-dim hover:border-border-strong hover:text-ink",
+            )}
+          >
+            {o.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+const LEAK_ALL = "__all__";
+
 function Filters({
   filters,
   formats,
   rooms,
+  leaks,
   onApply,
 }: {
   filters: TournamentFilters;
   formats: string[];
   rooms: string[];
+  leaks: string[];
   onApply: (f: TournamentFilters) => void;
 }) {
   const [from, setFrom] = useState(filters.from_date ?? "");
@@ -980,6 +795,17 @@ function Filters({
   const [max, setMax] = useState(
     filters.max_buyin != null ? String(filters.max_buyin / 100) : "",
   );
+  // avançados
+  const [financial, setFinancial] = useState<FinancialFilter | null>(filters.financial ?? null);
+  const [notaBand, setNotaBand] = useState<NotaBand | null>(filters.nota_band ?? null);
+  const [minNota, setMinNota] = useState(filters.min_nota != null ? String(filters.min_nota) : "");
+  const [maxNota, setMaxNota] = useState(filters.max_nota != null ? String(filters.max_nota) : "");
+  const [graves, setGraves] = useState<GravesFilter | null>(filters.graves ?? null);
+  const [status, setStatus] = useState<StatusFilter | null>(filters.status ?? null);
+  const [leak, setLeak] = useState(filters.leak ?? LEAK_ALL);
+  const hasAdv = !!(filters.financial || filters.nota_band || filters.min_nota != null
+    || filters.max_nota != null || filters.graves || filters.status || filters.leak);
+  const [advOpen, setAdvOpen] = useState(hasAdv);
 
   // Mantém os inputs sincronizados quando os filtros mudam por fora
   // (presets, clique em sessão, etc.).
@@ -990,7 +816,22 @@ function Filters({
     setRoom(filters.room ?? ROOM_ALL);
     setMin(filters.min_buyin != null ? String(filters.min_buyin / 100) : "");
     setMax(filters.max_buyin != null ? String(filters.max_buyin / 100) : "");
+    setFinancial(filters.financial ?? null);
+    setNotaBand(filters.nota_band ?? null);
+    setMinNota(filters.min_nota != null ? String(filters.min_nota) : "");
+    setMaxNota(filters.max_nota != null ? String(filters.max_nota) : "");
+    setGraves(filters.graves ?? null);
+    setStatus(filters.status ?? null);
+    setLeak(filters.leak ?? LEAK_ALL);
   }, [filters]);
+
+  // banda de nota e min/max manual são mutuamente exclusivos
+  function pickBand(b: NotaBand | null) {
+    setNotaBand(b);
+    if (b) { setMinNota(""); setMaxNota(""); }
+  }
+  function typeMinNota(v: string) { setMinNota(v); if (v) setNotaBand(null); }
+  function typeMaxNota(v: string) { setMaxNota(v); if (v) setNotaBand(null); }
 
   function applyPreset(key: PresetKey) {
     const { from: f, to: t } = presetRange(key);
@@ -998,6 +839,12 @@ function Filters({
   }
 
   function apply() {
+    const num = (s: string) => {
+      const v = s.trim();
+      if (!v) return null;
+      const n = Number(v.replace(",", "."));
+      return Number.isFinite(n) ? n : null;
+    };
     onApply({
       from_date: from || null,
       to_date: to || null,
@@ -1005,16 +852,20 @@ function Filters({
       room: room && room !== ROOM_ALL ? room : null,
       min_buyin: min ? parseCentsInput(min) : null,
       max_buyin: max ? parseCentsInput(max) : null,
+      financial,
+      nota_band: notaBand,
+      min_nota: notaBand ? null : num(minNota),
+      max_nota: notaBand ? null : num(maxNota),
+      graves,
+      status,
+      leak: leak && leak !== LEAK_ALL ? leak : null,
     });
   }
 
   function clear() {
-    setFrom("");
-    setTo("");
-    setFmt(FMT_ALL);
-    setRoom(ROOM_ALL);
-    setMin("");
-    setMax("");
+    setFrom(""); setTo(""); setFmt(FMT_ALL); setRoom(ROOM_ALL); setMin(""); setMax("");
+    setFinancial(null); setNotaBand(null); setMinNota(""); setMaxNota("");
+    setGraves(null); setStatus(null); setLeak(LEAK_ALL);
     onApply({});
   }
 
@@ -1028,6 +879,25 @@ function Filters({
     { value: ROOM_ALL, label: "Todas as salas" },
     ...rooms.map((r) => ({ value: r, label: r })),
   ];
+
+  const leakOptions = [
+    { value: LEAK_ALL, label: "Todos os leaks" },
+    ...leaks.map((l) => ({ value: l, label: leakLabel(l) ?? l })),
+  ];
+
+  const FINANCIAL_OPTS = (Object.keys(FINANCIAL_LABEL) as FinancialFilter[])
+    .map((v) => ({ value: v, label: FINANCIAL_LABEL[v] }));
+  const BAND_OPTS = (Object.keys(BAND_LABEL) as NotaBand[])
+    .map((v) => ({ value: v, label: BAND_LABEL[v] }));
+  const GRAVES_OPTS: { value: GravesFilter; label: string }[] = [
+    { value: "sem_grave", label: "Sem grave" },
+    { value: "gte1", label: "1+" },
+    { value: "gte3", label: "3+" },
+    { value: "gte5", label: "5+" },
+  ];
+  const STATUS_OPTS: { value: StatusFilter; label: string }[] =
+    (["analisado", "nao_analisado", "sem_maos", "insuficiente", "analise_antiga"] as StatusFilter[])
+      .map((v) => ({ value: v, label: STATUS_LABEL[v] }));
 
   return (
     <div className="flex flex-col gap-3">
@@ -1111,6 +981,66 @@ function Filters({
               className="filter-input"
             />
           </FilterField>
+
+          {/* ── Avançados (PKE + resultado) ─────────────────────────────── */}
+          <div className="col-span-2 mt-1 border-t border-border pt-2">
+            <button
+              type="button"
+              onClick={() => setAdvOpen((v) => !v)}
+              className="flex w-full items-center justify-between py-1 text-left"
+            >
+              <SectionLabel>Filtros avançados</SectionLabel>
+              <ChevronDown className={cn("h-4 w-4 text-ink-faint transition-transform", advOpen && "rotate-180")} />
+            </button>
+          </div>
+
+          {advOpen && (
+            <div className="col-span-2 flex flex-col gap-3">
+              <FilterField label="Resultado">
+                <PillGroup value={financial} onChange={setFinancial} options={FINANCIAL_OPTS} />
+              </FilterField>
+              <FilterField label="Nota PKE">
+                <div className="flex flex-col gap-2">
+                  <PillGroup value={notaBand} onChange={pickBand} options={BAND_OPTS} />
+                  <div className="flex items-center gap-2">
+                    <input
+                      value={minNota}
+                      onChange={(e) => typeMinNota(e.target.value)}
+                      placeholder="mín"
+                      inputMode="decimal"
+                      className="filter-input w-20"
+                    />
+                    <span className="text-2xs text-ink-faint">até</span>
+                    <input
+                      value={maxNota}
+                      onChange={(e) => typeMaxNota(e.target.value)}
+                      placeholder="máx"
+                      inputMode="decimal"
+                      className="filter-input w-20"
+                    />
+                  </div>
+                </div>
+              </FilterField>
+              <FilterField label="Erros graves">
+                <PillGroup value={graves} onChange={setGraves} options={GRAVES_OPTS} />
+              </FilterField>
+              <FilterField label="Status PKE">
+                <PillGroup value={status} onChange={setStatus} options={STATUS_OPTS} />
+              </FilterField>
+              {leaks.length > 0 && (
+                <FilterField label="Leak principal">
+                  <Select
+                    value={leak}
+                    onValueChange={setLeak}
+                    options={leakOptions}
+                    ariaLabel="Filtrar por leak"
+                    className="w-full"
+                  />
+                </FilterField>
+              )}
+            </div>
+          )}
+
           <div className="col-span-2 flex flex-col gap-2 sm:flex-row sm:items-end">
             <Button size="sm" variant="primary" onClick={apply} className="w-full sm:w-auto">
               Aplicar
@@ -1120,6 +1050,60 @@ function Filters({
             </Button>
           </div>
         </div>
+    </div>
+  );
+}
+
+// Chips de filtros ativos — cada um remove sua chave; "Limpar tudo" zera.
+function ActiveFilterChips({ filters, onChange }: {
+  filters: TournamentFilters;
+  onChange: (f: TournamentFilters) => void;
+}) {
+  const set = (patch: Partial<TournamentFilters>) => onChange({ ...filters, ...patch });
+  const money = (c: number) => (c / 100).toFixed(2);
+  const chips: { key: string; label: string; clear: () => void }[] = [];
+
+  if (filters.from_date || filters.to_date) {
+    const lbl = filters.from_date && filters.to_date
+      ? (filters.from_date === filters.to_date ? filters.from_date : `${filters.from_date} → ${filters.to_date}`)
+      : filters.from_date ? `De ${filters.from_date}` : `Até ${filters.to_date}`;
+    chips.push({ key: "date", label: lbl, clear: () => set({ from_date: null, to_date: null }) });
+  }
+  if (filters.format) chips.push({ key: "format", label: filters.format, clear: () => set({ format: null }) });
+  if (filters.room) chips.push({ key: "room", label: filters.room, clear: () => set({ room: null }) });
+  if (filters.min_buyin != null) chips.push({ key: "minb", label: `Buy-in ≥ ${money(filters.min_buyin)}`, clear: () => set({ min_buyin: null }) });
+  if (filters.max_buyin != null) chips.push({ key: "maxb", label: `Buy-in ≤ ${money(filters.max_buyin)}`, clear: () => set({ max_buyin: null }) });
+  if (filters.financial) chips.push({ key: "fin", label: FINANCIAL_LABEL[filters.financial], clear: () => set({ financial: null }) });
+  if (filters.nota_band) chips.push({ key: "band", label: BAND_LABEL[filters.nota_band], clear: () => set({ nota_band: null }) });
+  if (filters.min_nota != null) chips.push({ key: "minn", label: `Nota ≥ ${filters.min_nota}`, clear: () => set({ min_nota: null }) });
+  if (filters.max_nota != null) chips.push({ key: "maxn", label: `Nota ≤ ${filters.max_nota}`, clear: () => set({ max_nota: null }) });
+  if (filters.graves) chips.push({ key: "graves", label: GRAVES_LABEL[filters.graves], clear: () => set({ graves: null }) });
+  if (filters.status) chips.push({ key: "status", label: STATUS_LABEL[filters.status], clear: () => set({ status: null }) });
+  if (filters.leak) chips.push({ key: "leak", label: `Leak: ${leakLabel(filters.leak)}`, clear: () => set({ leak: null }) });
+
+  if (chips.length === 0) return null;
+  return (
+    <div className="mt-3 flex flex-wrap items-center gap-1.5">
+      {chips.map((c) => (
+        <button
+          key={c.key}
+          type="button"
+          onClick={c.clear}
+          className="inline-flex items-center gap-1 rounded-full border border-gold/40 bg-gold/10 px-2.5 py-1 text-2xs font-semibold text-gold hover:bg-gold/15"
+        >
+          {c.label}
+          <X className="h-3 w-3" />
+        </button>
+      ))}
+      {chips.length > 1 && (
+        <button
+          type="button"
+          onClick={() => onChange({})}
+          className="ml-1 text-2xs text-ink-faint underline-offset-2 hover:text-ink hover:underline"
+        >
+          Limpar tudo
+        </button>
+      )}
     </div>
   );
 }
@@ -1626,79 +1610,21 @@ function SessionsCard({
   onPickDay: (day: string) => void;
 }) {
   const [open, setOpen] = useState(false);
-  const navigate = useNavigate();
   if (sessions.length === 0) return null;
   const shown = open ? sessions : sessions.slice(0, 5);
 
   return (
     <Card className="overflow-hidden">
       <div className="grid gap-2 p-3 sm:grid-cols-2">
-        {shown.map((s) => {
-          const start = hhmm(s.start_at);
-          const end = hhmm(s.end_at);
-          const secs = s.play_seconds ?? s.grind_seconds ?? null;
-          const dur = secs && secs > 0 ? fmtDuration(secs) : null;
-          const interval = start ? `${start}${end && end !== start ? `–${end}` : ""}` : null;
-          const ppH = s.profit_per_hour_cents;
-          const tone =
-            s.pending > 0 && s.cashed === 0
-              ? "text-ink-faint"
-              : s.profit_cents > 0
-                ? "text-action-green"
-                : s.profit_cents < 0
-                  ? "text-action-red"
-                  : "text-ink";
-          return (
-            <div
-              key={s.day}
-              className={cn(
-                "rounded-card border border-border bg-surface-1 p-3 transition-colors",
-                activeDay === s.day && "border-gold/40 bg-gold/10",
-              )}
-            >
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <div className="text-xs font-semibold text-ink nums">{fmtShortDate(s.day)}</div>
-                  <div className="mt-0.5 text-2xs text-ink-faint nums">
-                    {s.n} {s.n === 1 ? "torneio" : "torneios"}
-                    {dur && ` em ${dur}`}
-                    {s.roi_pct != null && ` · ROI ${fmtPct(s.roi_pct, 0)}`}
-                  </div>
-                </div>
-                <div className={cn("shrink-0 text-right text-sm font-bold nums", tone)}>
-                  {fmtMoney(s.profit_cents, currency, { signed: true })}
-                </div>
-              </div>
-              <div className="mt-2 grid grid-cols-2 gap-2 text-2xs">
-                <SessionMini label="Nota PKE" value={s.media_notas != null ? s.media_notas.toFixed(1) : "—"} tone={s.media_notas != null && s.media_notas < 5 ? "red" : s.media_notas != null && s.media_notas >= 7 ? "green" : "ink"} />
-                <SessionMini label="Erros graves" value={String(s.erros_graves ?? 0)} tone={(s.erros_graves ?? 0) > 0 ? "red" : "ink"} />
-              </div>
-              {dur ? (
-                <div className="mt-2 grid grid-cols-3 gap-2 text-2xs">
-                  <SessionMini label="Torneios/h" value={s.tph != null ? s.tph.toFixed(1) : "—"} />
-                  <SessionMini label="Lucro/h" value={ppH != null ? fmtMoney(ppH, currency, { signed: true }) : "—"} tone={ppH == null ? "ink" : ppH > 0 ? "green" : ppH < 0 ? "red" : "ink"} />
-                  <SessionMini label="Graves/h" value={s.graves_per_hour != null ? s.graves_per_hour.toFixed(1) : "—"} tone={(s.graves_per_hour ?? 0) > 0 ? "red" : "ink"} />
-                </div>
-              ) : null}
-              <div className="mt-2 text-2xs text-ink-faint">
-                {dur ? (
-                  <span><Clock className="mr-1 inline h-2.5 w-2.5" />Grind {dur}{interval ? ` · ${interval}` : ""} · </span>
-                ) : (
-                  <span className="italic">Duração não disponível · </span>
-                )}
-                Leak principal: <span className="text-gold">{s.main_leak ? leakLabel(s.main_leak) : "—"}</span>
-              </div>
-              <div className="mt-3 flex gap-2">
-                <Button size="sm" variant="ghost" className="flex-1" onClick={() => onPickDay(s.day)}>
-                  Revisar sessão
-                </Button>
-                <Button size="sm" variant="primary" className="flex-1" onClick={() => navigate("/treinar?mode=leaks&from=leak")}>
-                  Treinar leaks
-                </Button>
-              </div>
-            </div>
-          );
-        })}
+        {shown.map((s) => (
+          <SessionRow
+            key={s.day}
+            s={s}
+            currency={currency}
+            active={activeDay === s.day}
+            onPickDay={onPickDay}
+          />
+        ))}
       </div>
       {sessions.length > 5 && (
         <button
@@ -1710,5 +1636,95 @@ function SessionsCard({
         </button>
       )}
     </Card>
+  );
+}
+
+// Card de sessão (dia): destaque em ROI · torneios · grind real; nota/graves
+// ficam num detalhe secundário expansível (não roubam o foco).
+function SessionRow({ s, currency, active, onPickDay }: {
+  s: TournamentSession;
+  currency: string;
+  active: boolean;
+  onPickDay: (day: string) => void;
+}) {
+  const navigate = useNavigate();
+  const [detail, setDetail] = useState(false);
+  const start = hhmm(s.start_at);
+  const end = hhmm(s.end_at);
+  const secs = s.grind_seconds ?? null;
+  const dur = secs && secs > 0 ? fmtDuration(secs) : null;
+  const interval = start ? `${start}${end && end !== start ? `–${end}` : ""}` : null;
+  const blocks = s.n_blocks ?? 0;
+  const ppH = s.profit_per_hour_cents;
+  const tone =
+    s.pending > 0 && s.cashed === 0 ? "text-ink-faint"
+      : s.profit_cents > 0 ? "text-action-green"
+        : s.profit_cents < 0 ? "text-action-red" : "text-ink";
+  const roiTone = s.roi_pct == null ? "ink" : s.roi_pct > 0 ? "green" : s.roi_pct < 0 ? "red" : "ink";
+
+  return (
+    <div className={cn(
+      "rounded-card border border-border bg-surface-1 p-3 transition-colors",
+      active && "border-gold/40 bg-gold/10",
+    )}>
+      {/* Cabeçalho: data + resultado à direita */}
+      <div className="flex items-start justify-between gap-3">
+        <div className="text-xs font-semibold text-ink nums">{fmtShortDate(s.day)}</div>
+        <div className={cn("shrink-0 text-right text-sm font-bold nums", tone)}>
+          {fmtMoney(s.profit_cents, currency, { signed: true })}
+        </div>
+      </div>
+
+      {/* Linha principal: ROI · torneios · grind real */}
+      <div className="mt-2 grid grid-cols-3 gap-2 text-2xs">
+        <SessionMini label="ROI" value={s.roi_pct != null ? fmtPct(s.roi_pct, 0) : "—"} tone={roiTone} />
+        <SessionMini label="Torneios" value={String(s.n)} />
+        <SessionMini label="Grind" value={dur ?? "—"} />
+      </div>
+
+      {/* Linha secundária: ritmo + lucro/h + leak */}
+      <div className="mt-2 grid grid-cols-2 gap-2 text-2xs">
+        <SessionMini label="Torneios/h" value={s.tph != null ? s.tph.toFixed(1) : "—"} />
+        <SessionMini label="Lucro/h" value={ppH != null ? fmtMoney(ppH, currency, { signed: true }) : "—"} tone={ppH == null ? "ink" : ppH > 0 ? "green" : ppH < 0 ? "red" : "ink"} />
+      </div>
+
+      <div className="mt-2 text-2xs text-ink-faint">
+        {dur ? (
+          <span><Clock className="mr-1 inline h-2.5 w-2.5" />Grind {s.estimated ? "~" : ""}{dur}
+            {blocks > 1 ? ` · ${blocks} blocos` : interval ? ` · ${interval}` : ""}
+            {s.estimated ? " (estimado)" : ""} · </span>
+        ) : (
+          <span className="italic">Duração não disponível · </span>
+        )}
+        Leak: <span className="text-gold">{s.main_leak ? leakLabel(s.main_leak) : "—"}</span>
+      </div>
+
+      {/* Detalhe técnico (secundário, expansível) */}
+      <button
+        type="button"
+        onClick={() => setDetail((v) => !v)}
+        className="mt-2 flex w-full items-center gap-1 text-2xs text-ink-faint hover:text-ink"
+      >
+        <ChevronDown className={cn("h-3 w-3 transition-transform", detail && "rotate-180")} />
+        Detalhe técnico (PKE)
+      </button>
+      {detail && (
+        <div className="mt-1.5 grid grid-cols-2 gap-2 text-2xs sm:grid-cols-4">
+          <SessionMini label="Nota PKE" value={s.media_notas != null ? s.media_notas.toFixed(1) : "—"} tone={s.media_notas != null && s.media_notas < 5 ? "red" : s.media_notas != null && s.media_notas >= 7 ? "green" : "ink"} />
+          <SessionMini label="Erros graves" value={String(s.erros_graves ?? 0)} tone={(s.erros_graves ?? 0) > 0 ? "red" : "ink"} />
+          <SessionMini label="ITM" value={s.itm_pct != null ? fmtPct(s.itm_pct, 0) : "—"} />
+          <SessionMini label="Graves/h" value={s.graves_per_hour != null ? s.graves_per_hour.toFixed(1) : "—"} tone={(s.graves_per_hour ?? 0) > 0 ? "red" : "ink"} />
+        </div>
+      )}
+
+      <div className="mt-3 flex gap-2">
+        <Button size="sm" variant="ghost" className="flex-1" onClick={() => onPickDay(s.day)}>
+          Revisar sessão
+        </Button>
+        <Button size="sm" variant="primary" className="flex-1" onClick={() => navigate("/treinar?mode=leaks&from=leak")}>
+          Treinar leaks
+        </Button>
+      </div>
+    </div>
   );
 }
