@@ -20,6 +20,7 @@ import {
   Trash2,
   Trophy,
   X,
+  Loader2,
 } from "lucide-react";
 import { BrandBar } from "@/components/layout/BrandBar";
 import { Button } from "@/components/ui/Button";
@@ -193,11 +194,14 @@ export function TournamentsPage() {
   const [showNew, setShowNew] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [outdated, setOutdated] = useState(0);
+  const [loading, setLoading] = useState(true);
   const importRef = useRef<HTMLDivElement>(null);
   // Seção "Importar mãos" controlada (pra goImport conseguir abri-la ao rolar).
   const [importOpen, toggleImport] = useCollapsed("importar", true);
 
   async function refresh(f = filters) {
+    setLoading(true);
+    try {
     const [list, ov, fmts, rms, lks, sess, anl] = await Promise.all([
       api.listTournaments(f),
       api.tournamentsOverview(f),
@@ -214,6 +218,9 @@ export function TournamentsPage() {
     setLeaks(lks);
     setSessions(sess);
     setAnalytics(anl);
+    } finally {
+      setLoading(false);
+    }
   }
 
   useEffect(() => {
@@ -319,18 +326,23 @@ export function TournamentsPage() {
 
       {/* Container — padding menor no mobile, max-width pra desktop */}
       <div className="mx-auto w-full max-w-5xl px-3 py-4 sm:px-6 sm:py-6">
-        {overview && overview.n_tournaments > 0 ? (
+        {loading && (
+          <div className="flex h-64 items-center justify-center">
+            <Loader2 className="h-8 w-8 animate-spin text-ink-dim" />
+          </div>
+        )}
+        {!loading && overview && overview.n_tournaments > 0 ? (
           <Collapsible id="importar" title="Importar mãos" icon={<Upload className="h-3.5 w-3.5" />}
             open={importOpen} onToggle={toggleImport}>
             <div ref={importRef} className="scroll-mt-20">
               <TournamentImport onImported={() => refresh()} />
             </div>
           </Collapsible>
-        ) : (
+        ) : !loading ? (
           <div ref={importRef} className="scroll-mt-20">
             <TournamentImport onImported={() => refresh()} />
           </div>
-        )}
+        ) : null}
 
         {outdated > 0 && (
           <Card className="mt-3 flex items-center justify-between gap-3 border-gold/30 bg-gold/5 p-3">
