@@ -266,13 +266,18 @@ function distributionData(metric: MetricDef, a: AnalyticsPayload): { label: stri
       .map((k) => ({ label: DECISION_LABEL[k], value: d[k] ?? 0, color: DECISION_COLOR[k] }));
   }
   if (metric.id === "positions") {
-    const sum = (k: string) => a.per_day.reduce((acc, d: any) => acc + (d[k] ?? 0), 0);
-    return [
-      { label: "1º lugar", value: sum("champion"), color: COLOR.gold },
-      { label: "2º–3º", value: sum("podium"), color: COLOR.slate },
-      { label: "ITM", value: sum("itm"), color: COLOR.green },
-      { label: "Fora", value: sum("out"), color: "#3A4757" },
-    ];
+    const counts: Record<number, number> = {};
+    for (const t of a.per_tournament) {
+      const p = t.finish_pos;
+      if (p != null) counts[p] = (counts[p] ?? 0) + 1;
+    }
+    return Object.entries(counts)
+      .sort((a, b) => Number(a[0]) - Number(b[0]))
+      .map(([pos, n]) => ({
+        label: `${pos}º`,
+        value: n,
+        color: pos === "1" ? COLOR.gold : Number(pos) <= 3 ? COLOR.slate : Number(pos) <= 4 ? COLOR.green : "#3A4757",
+      }));
   }
   if (metric.source === "spots") {
     return a.spots.map((s) => ({ label: s.scenario, value: s.error_pct, color: COLOR.red }));
