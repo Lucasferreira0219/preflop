@@ -266,18 +266,21 @@ function distributionData(metric: MetricDef, a: AnalyticsPayload): { label: stri
       .map((k) => ({ label: DECISION_LABEL[k], value: d[k] ?? 0, color: DECISION_COLOR[k] }));
   }
   if (metric.id === "positions") {
+    // Uma barra por posição final (1º a 9º) + "10º+" para finais mais fundos (MTT).
     const counts: Record<number, number> = {};
+    let over = 0;
     for (const t of a.per_tournament) {
-      const p = t.finish_pos;
-      if (p != null) counts[p] = (counts[p] ?? 0) + 1;
+      const fp = t.finish_pos;
+      if (fp == null) continue;
+      if (fp >= 1 && fp <= 9) counts[fp] = (counts[fp] ?? 0) + 1;
+      else if (fp > 9) over++;
     }
-    return Object.entries(counts)
-      .sort((a, b) => Number(a[0]) - Number(b[0]))
-      .map(([pos, n]) => ({
-        label: `${pos}º`,
-        value: n,
-        color: pos === "1" ? COLOR.gold : Number(pos) <= 3 ? COLOR.slate : Number(pos) <= 4 ? COLOR.green : "#3A4757",
-      }));
+    const posColor = (k: number) => (k === 1 ? COLOR.gold : k <= 3 ? COLOR.slate : "#3A4757");
+    const rows = Array.from({ length: 9 }, (_, i) => i + 1).map((k) => ({
+      label: `${k}º`, value: counts[k] ?? 0, color: posColor(k),
+    }));
+    if (over > 0) rows.push({ label: "10º+", value: over, color: "#2C3744" });
+    return rows;
   }
   if (metric.source === "spots") {
     return a.spots.map((s) => ({ label: s.scenario, value: s.error_pct, color: COLOR.red }));
