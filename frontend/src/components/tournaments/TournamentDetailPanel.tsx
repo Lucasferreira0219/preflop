@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { useNavigate } from "react-router-dom";
-import { BookOpen, Download, Dumbbell, Eye, Loader2, MoreHorizontal, RefreshCw, X } from "lucide-react";
+import { BookOpen, Download, Dumbbell, Eye, Loader2, MoreHorizontal, NotebookPen, RefreshCw, X } from "lucide-react";
 import { HandList, Leaks, Summary, Treino } from "@/components/tournaments/PkeReport";
 import { PkeBadge } from "@/components/PkeBadge";
 import { Button } from "@/components/ui/Button";
@@ -9,7 +9,7 @@ import { api } from "@/lib/api";
 import { useApp } from "@/state/AppProvider";
 import { askHandUrl } from "@/lib/askLink";
 import { leakLabel, ruleIdOf } from "@/lib/pke";
-import type { ReportHand, Tournament, TournamentReport } from "@/lib/types";
+import type { Note, ReportHand, ReportLeak, Tournament, TournamentReport } from "@/lib/types";
 import { cn } from "@/lib/cn";
 
 type DetailTab = "resumo" | "leaks" | "maos" | "treino";
@@ -88,6 +88,52 @@ export function TournamentDetailPanel() {
     if (rule) openRule(rule);
   }
 
+  // ── Exportar para Anotações ───────────────────────────────────────────────
+  function openNote(id: string) {
+    closeTournament();
+    navigate(`/notes?open=${id}`);
+  }
+  async function goExportHand(m: ReportHand) {
+    const payload = { ...m, tournament_id: tid } as unknown as Record<string, unknown>;
+    const res = await api.noteFromHand(payload);
+    if (res && "existing" in res) {
+      if (confirm("Essa mão já tem uma anotação. Abrir a existente?\n(Cancelar = criar uma nova mesmo assim)")) {
+        openNote(res.existing.note_id);
+      } else {
+        const created = await api.noteFromHand(payload, true);
+        openNote((created as Note).note_id);
+      }
+      return;
+    }
+    openNote((res as Note).note_id);
+  }
+  async function goExportLeak(l: ReportLeak) {
+    const res = await api.noteFromLeak({ ...l, tournament_id: tid } as unknown as Record<string, unknown>);
+    openNote(res.note_id);
+  }
+  async function exportTournament() {
+    if (!report || !tour) return;
+    const cost = (tour.buy_in_cents || 0) + (tour.fee_cents || 0);
+    const top = report.leaks[0];
+    const payload: Record<string, unknown> = {
+      tournament_id: tid,
+      played_at: tour.played_at,
+      finish_pos: tour.finish_pos,
+      buyin: money(cost, tour.currency),
+      prize: tour.prize_cents != null ? money(tour.prize_cents, tour.currency) : null,
+      roi: cost && profit != null ? `${Math.round((profit / cost) * 100)}%` : null,
+      result: profit != null ? (profit > 0 ? "lucro" : profit < 0 ? "prejuízo" : "neutro") : null,
+      pke_score: report.pke_score,
+      erros_graves: report.erros_graves,
+      main_leak: top ? (leakLabel(top.id) ?? top.label) : null,
+      main_leak_key: top?.exercicio ?? top?.id ?? null,
+      leaks: report.leaks.map((l) => leakLabel(l.id) ?? l.label),
+      worst_hand_ids: report.piores_decisoes.map((m) => m.hand_id),
+    };
+    const res = await api.noteFromTournament(payload);
+    openNote(res.note_id);
+  }
+
   const profit = tour?.profit_cents;
   const tabs: { key: DetailTab; label: string }[] = [
     { key: "resumo", label: "Resumo" },
@@ -142,8 +188,11 @@ export function TournamentDetailPanel() {
               </button>
               {menuOpen && (
                 <div className="absolute right-0 top-9 z-50 w-44 rounded-card border border-border bg-surface-1 p-1 shadow-pop">
+                  <button className="flex w-full items-center gap-2 rounded-ctl px-3 py-2 text-left text-sm text-ink-dim hover:bg-surface-2 hover:text-ink" onClick={() => { setMenuOpen(false); void exportTournament(); }} disabled={!report}>
+                    <NotebookPen className="h-4 w-4" /> Criar anotação do torneio
+                  </button>
                   <button className="flex w-full items-center gap-2 rounded-ctl px-3 py-2 text-left text-sm text-ink-dim hover:bg-surface-2 hover:text-ink" onClick={() => { setMenuOpen(false); exportReview(); }} disabled={!report}>
-                    <Download className="h-4 w-4" /> Exportar review
+                    <Download className="h-4 w-4" /> Exportar review (.md)
                   </button>
                   <button className="flex w-full items-center gap-2 rounded-ctl px-3 py-2 text-left text-sm text-ink-dim hover:bg-surface-2 hover:text-ink" onClick={() => { setMenuOpen(false); openMainRule(); }} disabled={!report?.leaks[0]?.regra_violada}>
                     <BookOpen className="h-4 w-4" /> Ver regra principal
@@ -172,8 +221,8 @@ export function TournamentDetailPanel() {
                   ))}
                 </div>
                 {tab === "resumo" && <Summary report={report} />}
-                {tab === "leaks" && <Leaks leaks={report.leaks} onTrainLeak={goTrainLeak} onOpenRule={openRule} onFilterSpot={() => setTab("maos")} />}
-                {tab === "maos" && <HandList report={report} onTrainLeak={goTrainLeak} onOpenRule={openRule} onAskHand={goAsk} />}
+                {tab === "leaks" && <Leaks leaks={report.leaks} onTrainLeak={goTrainLeak} onOpenRule={openRule} onFilterSpot={() => setTab("maos")} onExportLeak={goExportLeak} />}
+                {tab === "maos" && <HandList report={report} onTrainLeak={goTrainLeak} onOpenRule={openRule} onAskHand={goAsk} onExportHand={goExportHand} />}
                 {tab === "treino" && (
                   <div className="flex flex-col gap-3">
                     <Treino drills={report.treino_sugerido} onTrainLeak={goTrainLeak} />

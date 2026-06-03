@@ -20,12 +20,15 @@ export function EvolutionChart({
   daily: DailyEntry[];
   improvement: Improvement | null;
 }) {
-  const data = daily.slice(-30).map((d) => ({
-    day: d.day.slice(5),
-    pct: d.pct,
-    total: d.total,
-    correct: d.correct,
-  }));
+  const data = daily.slice(-30).map((d) => {
+    const m = d.day.match(/^\d{4}\/(\d{2})\/(\d{2})/); // YYYY/MM/DD -> DD/MM (BR)
+    return {
+      day: m ? `${m[2]}/${m[1]}` : d.day,
+      pct: d.pct,
+      total: d.total,
+      correct: d.correct,
+    };
+  });
 
   const delta = improvement?.delta_pct ?? null;
   const deltaTone = delta == null ? "neutral" : delta > 0 ? "up" : delta < 0 ? "down" : "neutral";

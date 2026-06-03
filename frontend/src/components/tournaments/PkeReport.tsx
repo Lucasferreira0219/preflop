@@ -6,6 +6,7 @@ import {
   Eye,
   Loader2,
   MessageCircleQuestion,
+  NotebookPen,
   RefreshCw,
   ShieldAlert,
   Sparkles,
@@ -104,6 +105,8 @@ export function PkeReport({
   onTrainLeak,
   onOpenRule,
   onAskHand,
+  onExportHand,
+  onExportLeak,
 }: {
   report: TournamentReport;
   onReanalyze?: () => void;
@@ -112,6 +115,8 @@ export function PkeReport({
   onTrainLeak?: (mode: string) => void;
   onOpenRule?: (id: string) => void;
   onAskHand?: (hand: ReportHand) => void;
+  onExportHand?: (hand: ReportHand) => void;
+  onExportLeak?: (leak: ReportLeak) => void;
 }) {
   const [filter, setFilter] = useState<Filter>("todos");
   const [fase, setFase] = useState<string>("all");
@@ -187,6 +192,7 @@ export function PkeReport({
           onTrainLeak={onTrainLeak}
           onOpenRule={onOpenRule}
           onFilterSpot={focusSpot}
+          onExportLeak={onExportLeak}
         />
       )}
       {report.treino_sugerido.length > 0 && (
@@ -222,7 +228,7 @@ export function PkeReport({
       {/* Lista de mãos */}
       <div ref={listRef} className="flex flex-col gap-2 scroll-mt-20">
         {maos.map((m) => (
-          <HandCard key={m.hand_id} m={m} onTrainLeak={onTrainLeak} onOpenRule={onOpenRule} onAskHand={onAskHand} />
+          <HandCard key={m.hand_id} m={m} onTrainLeak={onTrainLeak} onOpenRule={onOpenRule} onAskHand={onAskHand} onExportHand={onExportHand} />
         ))}
         {maos.length === 0 && (
           <Card className="p-4 text-center text-xs text-ink-faint">Nenhuma mão com esse filtro.</Card>
@@ -280,11 +286,13 @@ export function Leaks({
   onTrainLeak,
   onOpenRule,
   onFilterSpot,
+  onExportLeak,
 }: {
   leaks: ReportLeak[];
   onTrainLeak?: (mode: string) => void;
   onOpenRule?: (id: string) => void;
   onFilterSpot?: (spot: string | null) => void;
+  onExportLeak?: (leak: ReportLeak) => void;
 }) {
   return (
     <Card className="p-4">
@@ -324,6 +332,11 @@ export function Leaks({
                 {spot && onFilterSpot && (
                   <LeakBtn onClick={() => onFilterSpot(spot)}>
                     <Eye className="h-3.5 w-3.5" /> Ver mãos desse erro
+                  </LeakBtn>
+                )}
+                {onExportLeak && (
+                  <LeakBtn onClick={() => onExportLeak(l)}>
+                    <NotebookPen className="h-3.5 w-3.5" /> Criar anotação deste leak
                   </LeakBtn>
                 )}
               </div>
@@ -386,12 +399,14 @@ export function HandList({
   onTrainLeak,
   onOpenRule,
   onAskHand,
+  onExportHand,
 }: {
   report: TournamentReport;
   initialSpot?: string | null;
   onTrainLeak?: (mode: string) => void;
   onOpenRule?: (id: string) => void;
   onAskHand?: (hand: ReportHand) => void;
+  onExportHand?: (hand: ReportHand) => void;
 }) {
   const [filter, setFilter] = useState<Filter>("todos");
   const [fase, setFase] = useState("all");
@@ -444,7 +459,7 @@ export function HandList({
       </div>
       <div className="flex flex-col gap-2">
         {maos.map((m) => (
-          <HandCard key={m.hand_id} m={m} onTrainLeak={onTrainLeak} onOpenRule={onOpenRule} onAskHand={onAskHand} />
+          <HandCard key={m.hand_id} m={m} onTrainLeak={onTrainLeak} onOpenRule={onOpenRule} onAskHand={onAskHand} onExportHand={onExportHand} />
         ))}
         {maos.length === 0 && (
           <Card className="p-4 text-center text-xs text-ink-faint">Nenhuma mão com esse filtro.</Card>
@@ -460,11 +475,13 @@ function HandCard({
   onTrainLeak,
   onOpenRule,
   onAskHand,
+  onExportHand,
 }: {
   m: ReportHand;
   onTrainLeak?: (mode: string) => void;
   onOpenRule?: (id: string) => void;
   onAskHand?: (hand: ReportHand) => void;
+  onExportHand?: (hand: ReportHand) => void;
 }) {
   const [open, setOpen] = useState(false);
   const dec = DEC_BADGE[m.decision_label ?? ""] ?? DEC_BADGE.insufficient;
@@ -510,8 +527,13 @@ function HandCard({
         <div className="border-t border-border bg-surface-1/50 p-3 text-xs">
           <HandDetail m={m} />
 
-          {(onAskHand || (ruleId && onOpenRule) || (mode && onTrainLeak)) && (
+          {(onAskHand || onExportHand || (ruleId && onOpenRule) || (mode && onTrainLeak)) && (
             <div className="mt-3 flex flex-wrap gap-1.5 border-t border-border pt-3">
+              {onExportHand && (
+                <LeakBtn primary onClick={() => onExportHand(m)}>
+                  <NotebookPen className="h-3.5 w-3.5" /> Enviar para anotações
+                </LeakBtn>
+              )}
               {onAskHand && (
                 <LeakBtn onClick={() => onAskHand(m)}>
                   <MessageCircleQuestion className="h-3.5 w-3.5" /> Perguntar sobre essa mão

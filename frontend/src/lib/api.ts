@@ -2,6 +2,9 @@
 import type {
   Analytics,
   AnalyticsPayload,
+  Note,
+  NoteFilters,
+  NotesStats,
   ImportSummary,
   ImportTournamentFilesResult,
   GrindBlock,
@@ -184,6 +187,21 @@ export const api = {
   listRooms: () => call<string[]>("list_rooms", []),
 
   listLeaks: () => call<string[]>("list_leaks", []),
+
+  // ── Caderno de Estudo (anotações) ───────────────────────────────────────────
+  listNotes: (filters: NoteFilters = {}) => call<Note[]>("list_notes", [filters]),
+  getNote: (id: string) => call<Note | { error: string }>("get_note", [id]),
+  createNote: (data: Partial<Note>) => call<Note>("create_note", [data]),
+  updateNote: (id: string, patch: Partial<Note>) => call<Note>("update_note", [id, patch]),
+  deleteNote: (id: string, hard = false) =>
+    call<{ archived?: number; deleted?: number; hard?: boolean; error?: string }>("delete_note", [id, hard]),
+  noteFromHand: (payload: Record<string, unknown>, force = false) =>
+    call<Note | { existing: Note }>("note_from_hand", [payload, force]),
+  noteFromTournament: (payload: Record<string, unknown>) =>
+    call<Note>("note_from_tournament", [payload]),
+  noteFromLeak: (payload: Record<string, unknown>) =>
+    call<Note>("note_from_leak", [payload]),
+  notesStats: () => call<NotesStats>("notes_stats", []),
 
   addTournament: (data: ManualTournamentInput) =>
     call<Tournament | { error: string }>("add_tournament", [data]),

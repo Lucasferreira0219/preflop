@@ -715,3 +715,81 @@ export interface TournamentOverview {
   cumulative: CumulativePoint[];
   by_format: Record<string, TournamentFormatBreakdown>;
 }
+
+// ── Caderno de Estudo (anotações) ─────────────────────────────────────────────
+export type NoteType =
+  | "free" | "hand_analysis" | "tournament_review" | "leak" | "concept"
+  | "study_plan" | "question" | "recurring_error" | "mental_game" | "grind_session";
+export type ReviewStatus = "not_reviewed" | "reviewed" | "needs_work" | "mastered";
+export type NoteSource =
+  | "manual" | "exported_from_hand" | "exported_from_tournament"
+  | "exported_from_leak" | "exported_from_ask" | "exported_from_training";
+
+export interface NoteLink {
+  entity_type: string; // tournament | hand | rule | leak | training_session
+  entity_id: string;
+  label?: string | null;
+}
+
+export interface Note {
+  note_id: string;
+  title: string;
+  type: NoteType;
+  content: string;
+  tags: string[];
+  pinned: boolean;
+  archived: boolean;
+  favorite: boolean;
+  review_status: ReviewStatus;
+  source: NoteSource;
+  // contexto de poker (opcional)
+  tournament_id?: string | null;
+  hand_id?: string | null;
+  session_id?: string | null;
+  spot?: string | null;
+  phase?: string | null;
+  hero_cards?: string | null;
+  position?: string | null;
+  effective_stack_bb?: number | null;
+  decision_label?: string | null;
+  impact_label?: string | null;
+  leak_key?: string | null;
+  pke_rule_id?: string | null;
+  pke_rule_page?: string | null;
+  pke_recommendation?: string | null;
+  hero_action?: string | null;
+  result?: string | null;
+  created_at: number;
+  updated_at: number;
+  links?: NoteLink[];
+}
+
+export interface NoteFilters {
+  q?: string;
+  type?: NoteType | null;
+  tag?: string | null;
+  review_status?: ReviewStatus | null;
+  source?: NoteSource | null;
+  tournament_id?: string | null;
+  hand_id?: string | null;
+  spot?: string | null;
+  phase?: string | null;
+  leak_key?: string | null;
+  pke_rule_id?: string | null;
+  favorite?: boolean;
+  pinned?: boolean;
+  archived?: boolean;
+  from_date?: number | null;
+  to_date?: number | null;
+  sort?: string;
+}
+
+export interface NotesStats {
+  total: number;
+  pinned: number;
+  favorite: number;
+  hands_saved: number;
+  leaks_noted: number;
+  archived: number;
+  pending_review: number;
+}

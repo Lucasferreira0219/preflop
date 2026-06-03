@@ -15,6 +15,7 @@ import { AskPage } from "@/pages/AskPage";
 import { TrainPage } from "@/pages/TrainPage";
 import { SettingsPage } from "@/pages/SettingsPage";
 import { CriticalHandsPage } from "@/pages/CriticalHandsPage";
+import { NotesPage } from "@/pages/NotesPage";
 import { BASE } from "@/lib/api";
 
 export function App() {
@@ -34,6 +35,7 @@ export function App() {
             <Route path="/treinar" element={<TrainPage />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/erros-criticos" element={<CriticalHandsPage />} />
+            <Route path="/notes" element={<NotesPage />} />
           </Routes>
           <SettingsDrawer />
           <GlossaryDialog />

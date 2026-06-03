@@ -68,12 +68,21 @@ export function seriesFor(payload: AnalyticsPayload, g: Granularity): any[] {
   return k ? ((payload[k] as any[]) ?? []) : [];
 }
 
+// "YYYY/MM/DD..." -> "DD/MM" (formato BR)
+function ddmm(s: string): string {
+  const m = (s ?? "").match(/^\d{4}\/(\d{2})\/(\d{2})/);
+  return m ? `${m[2]}/${m[1]}` : (s ?? "");
+}
+
 export function xLabel(g: Granularity, row: any): string {
   switch (g) {
-    case "day": return (row.day ?? "").slice(5);
-    case "session": return (row.start_at ?? row.session_id ?? "").slice(11, 16) || row.session_id;
+    case "day": return ddmm(row.day);
+    case "session": {
+      const hhmm = (row.start_at ?? "").slice(11, 16);
+      return row.start_at ? `${ddmm(row.start_at)} ${hhmm}`.trim() : (row.session_id ?? "");
+    }
     case "week": return row.week ?? "";
-    case "tournament": return (row.played_at ?? "").slice(5, 10);
+    case "tournament": return ddmm(row.played_at);
     case "buyin": return fmtMoney(row.buyin_cents, "USD");
     case "room": return row.room ?? "—";
     case "hour": return `${row.hour}h`;

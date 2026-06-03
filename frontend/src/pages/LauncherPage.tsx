@@ -181,6 +181,12 @@ export function LauncherPage() {
           onClick={() => navigate("/perguntar")}
         />
         <LaunchCard
+          icon={<BookOpen className="h-5 w-5" />}
+          title="Anotações"
+          desc="Caderno de estudo. Salve mãos, leaks, dúvidas e planos — ligados ao PKE."
+          onClick={() => navigate("/notes")}
+        />
+        <LaunchCard
           icon={<Settings className="h-5 w-5" />}
           title="Configurações"
           desc="Manutenção PKE: reprocessar torneios quando regras/ranges/nota mudarem."

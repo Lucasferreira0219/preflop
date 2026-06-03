@@ -112,6 +112,22 @@ export function CriticalHandsPage() {
     });
   }, [allMaos, dateRange]);
 
+  async function goExportHand(m: ReportHand) {
+    const tid = (m as ReportHand & { tournament_id?: string }).tournament_id;
+    const payload = { ...m, tournament_id: tid } as unknown as Record<string, unknown>;
+    const res = await api.noteFromHand(payload);
+    if (res && "existing" in res) {
+      if (confirm("Essa mão já tem uma anotação. Abrir a existente?\n(Cancelar = criar uma nova mesmo assim)")) {
+        navigate(`/notes?open=${res.existing.note_id}`);
+      } else {
+        const created = await api.noteFromHand(payload, true);
+        navigate(`/notes?open=${(created as { note_id: string }).note_id}`);
+      }
+      return;
+    }
+    navigate(`/notes?open=${(res as { note_id: string }).note_id}`);
+  }
+
   const pill = (active: boolean, danger?: boolean) =>
     cn(
       "rounded-full px-3 py-1 text-xs font-semibold transition-colors",
@@ -180,7 +196,7 @@ export function CriticalHandsPage() {
             <p className="text-xs">Tente ampliar o filtro de data.</p>
           </div>
         ) : (
-          <HandList report={{ maos, leaks: [], drills: [] } as unknown as TournamentReport} />
+          <HandList report={{ maos, leaks: [], drills: [] } as unknown as TournamentReport} onExportHand={goExportHand} />
         )}
       </div>
     </div>

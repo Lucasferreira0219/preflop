@@ -24,6 +24,7 @@ from simulator_api import SimulatorApi
 from insights_api import InsightsApi
 from hands_api import HandsApi
 from tournaments_api import TournamentsApi
+from notes_api import NotesApi
 from pke import engine as pke_engine
 from pke_sim_api import PkeSimApi
 from settings_api import SettingsApi
@@ -44,6 +45,7 @@ sim_api      = SimulatorApi()
 insights_api = InsightsApi()
 hands_api    = HandsApi()
 tour_api     = TournamentsApi()
+notes_api    = NotesApi()
 pke_sim      = PkeSimApi()
 settings_api = SettingsApi()
 
@@ -284,6 +286,65 @@ async def tournaments_sessions(request: Request):
 async def tournaments_analytics(request: Request):
     args = await _read_args(request)
     return tour_api.tournaments_analytics(*args)
+
+# ── Caderno de Estudo (anotações) ──────────────────────────────────────────────
+@app.post("/api/list_notes")
+async def list_notes(request: Request):
+    args = await _read_args(request)
+    return notes_api.list_notes(*args)
+
+@app.post("/api/get_note")
+async def get_note(request: Request):
+    args = await _read_args(request)
+    if not args:
+        raise HTTPException(400, "missing note_id")
+    return notes_api.get_note(*args)
+
+@app.post("/api/create_note")
+async def create_note(request: Request):
+    args = await _read_args(request)
+    if not args:
+        raise HTTPException(400, "missing note data")
+    return notes_api.create_note(*args)
+
+@app.post("/api/update_note")
+async def update_note(request: Request):
+    args = await _read_args(request)
+    if not args:
+        raise HTTPException(400, "missing note_id")
+    return notes_api.update_note(*args)
+
+@app.post("/api/delete_note")
+async def delete_note(request: Request):
+    args = await _read_args(request)
+    if not args:
+        raise HTTPException(400, "missing note_id")
+    return notes_api.delete_note(*args)
+
+@app.post("/api/note_from_hand")
+async def note_from_hand(request: Request):
+    args = await _read_args(request)
+    if not args:
+        raise HTTPException(400, "missing hand payload")
+    return notes_api.note_from_hand(*args)
+
+@app.post("/api/note_from_tournament")
+async def note_from_tournament(request: Request):
+    args = await _read_args(request)
+    if not args:
+        raise HTTPException(400, "missing tournament payload")
+    return notes_api.note_from_tournament(*args)
+
+@app.post("/api/note_from_leak")
+async def note_from_leak(request: Request):
+    args = await _read_args(request)
+    if not args:
+        raise HTTPException(400, "missing leak payload")
+    return notes_api.note_from_leak(*args)
+
+@app.post("/api/notes_stats")
+async def notes_stats():
+    return notes_api.notes_stats()
 
 @app.post("/api/grind_active")
 async def grind_active():
