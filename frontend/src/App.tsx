@@ -24,7 +24,10 @@ export function App() {
       <AppProvider>
         <TooltipProvider>
           <Routes>
-            <Route path="/" element={<LauncherPage />} />
+            {/* Meus Torneios é a tela inicial do app. A home antiga (LauncherPage)
+                segue acessível em /home como "Painel de estudo" opcional no menu. */}
+            <Route path="/" element={<Navigate to="/tournaments" replace />} />
+            <Route path="/home" element={<LauncherPage />} />
             <Route path="/sim" element={<Navigate to="/treinar" replace />} />
             <Route path="/consulta" element={<ConsultaPage />} />
             <Route path="/import" element={<Navigate to="/tournaments" replace />} />

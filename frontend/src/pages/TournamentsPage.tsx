@@ -23,6 +23,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { BrandBar } from "@/components/layout/BrandBar";
+import { MenuButton } from "@/components/layout/MenuButton";
 import { Button } from "@/components/ui/Button";
 import { Card, SectionLabel } from "@/components/ui/Card";
 import { Drawer } from "@/components/ui/Drawer";
@@ -38,7 +39,7 @@ import {
 import { NewTournamentModal } from "@/components/tournaments/NewTournamentModal";
 import { TournamentImport } from "@/components/tournaments/TournamentImport";
 import { AnalyticsCenter } from "@/components/tournaments/AnalyticsCenter";
-import { useApp } from "@/state/AppProvider";
+import { useApp, type DrawerAction } from "@/state/AppProvider";
 import { leakLabel, tournamentStatus, STATUS_LABEL, STATUS_CLS } from "@/lib/pke";
 import { api } from "@/lib/api";
 import { fmtMoney, fmtPct, fmtShortDate, parseCentsInput } from "@/lib/money";
@@ -178,7 +179,7 @@ function CardMenu({ items }: { items: { label: string; onClick: () => void; dang
 }
 
 export function TournamentsPage() {
-  const { openTournament } = useApp();
+  const { openTournament, setDrawerActions } = useApp();
   const navigate = useNavigate();
   const [error, setError] = useState<string | null>(null);
 
@@ -293,6 +294,20 @@ export function TournamentsPage() {
   const currency = tournaments[0]?.currency ?? "USD";
   const activeFilterCount = countFilters(filters);
 
+  // Ações secundárias da página vão pro menu hambúrguer (seção "Nesta página"),
+  // mantendo a topbar mobile limpa. Limpa ao desmontar.
+  useEffect(() => {
+    const actions: DrawerAction[] = [
+      { label: "Novo torneio", icon: <Plus className="h-4 w-4" />, onClick: () => setShowNew(true) },
+    ];
+    if (tournaments.length > 0) {
+      actions.push({ label: "Exportar CSV", icon: <Download className="h-4 w-4" />, onClick: exportCsv });
+    }
+    setDrawerActions(actions);
+    return () => setDrawerActions([]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tournaments.length]);
+
   async function analyzeOne(tid: string) {
     await api.analyzeTournament(tid);
     await refresh();
@@ -313,16 +328,29 @@ export function TournamentsPage() {
           title="Meus Torneios"
           actions={
             <HeaderActions
-              canExport={tournaments.length > 0}
               activeFilterCount={activeFilterCount}
               onImport={goImport}
               onFilters={() => setFiltersOpen(true)}
-              onNew={() => setShowNew(true)}
-              onExport={exportCsv}
             />
           }
         />
       </header>
+
+      {/* Barra de ações mobile — Importar + Filtros abaixo da topbar (topbar fica
+          só com logo/título + hambúrguer). No desktop estas ações estão na topbar. */}
+      <div className="flex items-center gap-2 px-3 pt-3 sm:hidden">
+        <Button variant="primary" size="sm" className="flex-1" onClick={goImport} aria-label="Importar mãos">
+          <Upload className="h-4 w-4" /> Importar mãos
+        </Button>
+        <Button variant="ghost" size="sm" onClick={() => setFiltersOpen(true)} aria-label="Filtros">
+          <Filter className="h-4 w-4" /> Filtros
+          {activeFilterCount > 0 && (
+            <span className="ml-0.5 rounded-full bg-gold/15 px-1.5 py-0.5 text-[10px] font-bold text-gold">
+              {activeFilterCount}
+            </span>
+          )}
+        </Button>
+      </div>
 
       {/* Container — padding menor no mobile, max-width pra desktop */}
       <div className="mx-auto w-full max-w-5xl px-3 py-4 sm:px-6 sm:py-6">
@@ -446,88 +474,34 @@ export function TournamentsPage() {
 // â"€â"€ Hero (Lucro grande) â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 
 function HeaderActions({
-  canExport,
   activeFilterCount,
   onImport,
   onFilters,
-  onNew,
-  onExport,
 }: {
-  canExport: boolean;
   activeFilterCount: number;
   onImport: () => void;
   onFilters: () => void;
-  onNew: () => void;
-  onExport: () => void;
 }) {
-  const navigate = useNavigate();
-  const [open, setOpen] = useState(false);
-  const boxRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    function onDown(e: MouseEvent) {
-      if (!boxRef.current?.contains(e.target as Node)) setOpen(false);
-    }
-    window.addEventListener("mousedown", onDown);
-    return () => window.removeEventListener("mousedown", onDown);
-  }, []);
-
-  const item = "flex w-full items-center gap-2 rounded-ctl px-3 py-2 text-left text-sm text-ink-dim hover:bg-surface-2 hover:text-ink";
+  // Mobile: só o hambúrguer (Importar + Filtros ficam na barra abaixo da topbar).
+  // Desktop: Importar + Filtros visíveis na topbar + hambúrguer.
   return (
-    <div className="relative flex items-center gap-1" ref={boxRef}>
-      <Button variant="primary" size="sm" onClick={onImport} aria-label="Importar mãos">
-        <Upload className="h-4 w-4" />
-        <span className="hidden sm:inline">Importar mãos</span>
-      </Button>
-      <Button variant="ghost" size="sm" onClick={onFilters} aria-label="Filtros">
-        <Filter className="h-4 w-4" />
-        <span className="hidden sm:inline">Filtros</span>
-        {activeFilterCount > 0 && (
-          <span className="ml-0.5 rounded-full bg-gold/15 px-1.5 py-0.5 text-[10px] font-bold text-gold">
-            {activeFilterCount}
-          </span>
-        )}
-      </Button>
-      <button
-        type="button"
-        onClick={onNew}
-        className="grid h-8 w-8 place-items-center rounded-ctl text-ink-dim hover:bg-surface-2 hover:text-ink sm:hidden"
-        aria-label="Novo torneio"
-      >
-        <Plus className="h-4 w-4" />
-      </button>
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        className="grid h-8 w-8 place-items-center rounded-ctl text-ink-dim hover:bg-surface-2 hover:text-ink"
-        aria-label="Mais ações"
-      >
-        <MoreHorizontal className="h-4 w-4" />
-      </button>
-      {open && (
-        <div className="absolute right-0 top-10 z-50 w-48 rounded-card border border-border bg-surface-1 p-1 shadow-pop">
-          <button className={cn(item, "hidden sm:flex")} onClick={() => { setOpen(false); onNew(); }}>
-            <Plus className="h-4 w-4" /> Novo torneio
-          </button>
-          {canExport && (
-            <button className={item} onClick={() => { setOpen(false); onExport(); }}>
-              <Download className="h-4 w-4" /> CSV
-            </button>
+    <div className="flex items-center gap-1">
+      <div className="hidden items-center gap-1 sm:flex">
+        <Button variant="primary" size="sm" onClick={onImport} aria-label="Importar mãos">
+          <Upload className="h-4 w-4" />
+          Importar mãos
+        </Button>
+        <Button variant="ghost" size="sm" onClick={onFilters} aria-label="Filtros">
+          <Filter className="h-4 w-4" />
+          Filtros
+          {activeFilterCount > 0 && (
+            <span className="ml-0.5 rounded-full bg-gold/15 px-1.5 py-0.5 text-[10px] font-bold text-gold">
+              {activeFilterCount}
+            </span>
           )}
-          <button className={item} onClick={() => { setOpen(false); navigate("/sessions"); }}>
-            <CalendarClock className="h-4 w-4" /> Sessões
-          </button>
-          <button className={item} onClick={() => { setOpen(false); navigate("/tournament-types"); }}>
-            <Trophy className="h-4 w-4" /> Estruturas
-          </button>
-          <button className={cn(item, "text-action-red hover:text-action-red")} onClick={() => { setOpen(false); navigate("/erros-criticos"); }}>
-            <AlertTriangle className="h-4 w-4" /> Erros críticos
-          </button>
-          <button className={item} onClick={() => { setOpen(false); navigate("/"); }}>
-            <ArrowLeft className="h-4 w-4" /> Início
-          </button>
-        </div>
-      )}
+        </Button>
+      </div>
+      <MenuButton className="h-8 w-8" />
     </div>
   );
 }

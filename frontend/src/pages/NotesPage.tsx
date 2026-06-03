@@ -4,6 +4,7 @@ import {
   AlertTriangle, ArrowLeft, BookOpen, Filter, Pin, Plus, Search, Star, X,
 } from "lucide-react";
 import { BrandBar } from "@/components/layout/BrandBar";
+import { MenuButton } from "@/components/layout/MenuButton";
 import { Button } from "@/components/ui/Button";
 import { Card, SectionLabel } from "@/components/ui/Card";
 import { Drawer } from "@/components/ui/Drawer";
@@ -102,9 +103,7 @@ export function NotesPage() {
               <Button variant="primary" size="sm" onClick={() => newNote()}>
                 <Plus className="h-4 w-4" /><span className="hidden sm:inline">Nova</span>
               </Button>
-              <Button variant="ghost" size="sm" onClick={() => navigate("/")}>
-                <ArrowLeft className="h-4 w-4" /><span className="hidden sm:inline">Início</span>
-              </Button>
+              <MenuButton className="h-8 w-8" />
             </div>
           }
         />

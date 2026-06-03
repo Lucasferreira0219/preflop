@@ -5,12 +5,23 @@ import type { Mode } from "@/lib/types";
 
 const STUDY_KEY = "preflop.studyMode.v1";
 
+/** Ação secundária específica da página, exibida dentro do menu hambúrguer
+ *  numa seção "Nesta página". A página registra com setDrawerActions. */
+export interface DrawerAction {
+  label: string;
+  icon?: React.ReactNode;
+  onClick: () => void;
+  danger?: boolean;
+}
+
 interface AppCtx {
   mode: Mode;
   setMode: (m: Mode) => void;
   stacks: number[];
   drawerOpen: boolean;
   setDrawerOpen: (v: boolean) => void;
+  drawerActions: DrawerAction[];
+  setDrawerActions: (a: DrawerAction[]) => void;
   glossaryOpen: boolean;
   setGlossaryOpen: (v: boolean) => void;
   ruleId: string | null;
@@ -28,6 +39,7 @@ const Ctx = createContext<AppCtx | null>(null);
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const [mode, setModeState] = useState<Mode>(() => readMode());
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [drawerActions, setDrawerActions] = useState<DrawerAction[]>([]);
   const [glossaryOpen, setGlossaryOpen] = useState(false);
   const [ruleId, setRuleId] = useState<string | null>(null);
   const [studyMode, setStudyModeState] = useState<boolean>(() => lsGet<boolean>(STUDY_KEY, true));
@@ -52,12 +64,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     () => ({
       mode, setMode, stacks: stacksForMode(mode),
       drawerOpen, setDrawerOpen,
+      drawerActions, setDrawerActions,
       glossaryOpen, setGlossaryOpen,
       ruleId, openRule, closeRule,
       tournamentDetailId, openTournament, closeTournament,
       studyMode, setStudyMode,
     }),
-    [mode, setMode, drawerOpen, glossaryOpen, ruleId, openRule, closeRule,
+    [mode, setMode, drawerOpen, drawerActions, glossaryOpen, ruleId, openRule, closeRule,
      tournamentDetailId, openTournament, closeTournament, studyMode, setStudyMode],
   );
 

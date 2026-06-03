@@ -10,6 +10,7 @@ import {
   Send,
 } from "lucide-react";
 import { BrandBar } from "@/components/layout/BrandBar";
+import { MenuButton } from "@/components/layout/MenuButton";
 import { Button } from "@/components/ui/Button";
 import { Card, SectionLabel } from "@/components/ui/Card";
 import { PkeBadge } from "@/components/PkeBadge";
@@ -116,11 +117,7 @@ export function AskPage() {
       <header className="sticky top-0 z-30 border-b border-border bg-bg/85 backdrop-blur-md">
         <BrandBar
           title="Perguntar ao PKE"
-          actions={
-            <Button variant="ghost" size="sm" onClick={() => navigate("/")}>
-              <ArrowLeft className="h-4 w-4" /> Início
-            </Button>
-          }
+          actions={<MenuButton className="h-8 w-8" />}
         />
       </header>
 

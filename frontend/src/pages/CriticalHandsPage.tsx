@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { AlertTriangle, ArrowLeft, Download, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { api } from "@/lib/api";
+import { MenuButton } from "@/components/layout/MenuButton";
 import { HandList } from "@/components/tournaments/PkeReport";
 import type { ReportHand, TournamentReport } from "@/lib/types";
 import { cn } from "@/lib/cn";
@@ -150,18 +151,21 @@ export function CriticalHandsPage() {
         </button>
         <AlertTriangle className="h-5 w-5 text-action-red" />
         <span className="text-sm font-bold tracking-wide text-ink">Erros Críticos</span>
-        {!loading && maos.length > 0 && (
-          <button
-            onClick={() => exportMarkdown(maos)}
-            className="ml-auto flex items-center gap-1.5 rounded-lg border border-border bg-surface-2 px-3 py-1.5 text-xs font-semibold text-ink-dim hover:text-ink"
-          >
-            <Download className="h-3.5 w-3.5" />
-            Exportar .md
-          </button>
-        )}
-        {!loading && maos.length === 0 && (
-          <span className="ml-auto text-xs text-ink-faint">0 mãos</span>
-        )}
+        <div className="ml-auto flex items-center gap-2">
+          {!loading && maos.length > 0 && (
+            <button
+              onClick={() => exportMarkdown(maos)}
+              className="flex items-center gap-1.5 rounded-lg border border-border bg-surface-2 px-3 py-1.5 text-xs font-semibold text-ink-dim hover:text-ink"
+            >
+              <Download className="h-3.5 w-3.5" />
+              Exportar .md
+            </button>
+          )}
+          {!loading && maos.length === 0 && (
+            <span className="text-xs text-ink-faint">0 mãos</span>
+          )}
+          <MenuButton className="h-8 w-8" />
+        </div>
       </header>
 
       {/* Filters */}

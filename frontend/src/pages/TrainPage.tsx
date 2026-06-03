@@ -4,6 +4,7 @@ import {
   ArrowLeft, BarChart3, BookOpen, Check, ChevronRight, Flag, HelpCircle, Loader2, RotateCcw, Target, X,
 } from "lucide-react";
 import { BrandBar } from "@/components/layout/BrandBar";
+import { MenuButton } from "@/components/layout/MenuButton";
 import { Button } from "@/components/ui/Button";
 import { Card, SectionLabel } from "@/components/ui/Card";
 import { PkeBadge } from "@/components/PkeBadge";
@@ -124,7 +125,7 @@ export function TrainPage() {
                 <BarChart3 className="h-4 w-4" /><span className="hidden sm:inline">Evolução</span>
               </Button>
               <Button variant="ghost" size="sm" onClick={finish}><Flag className="h-4 w-4" /><span className="hidden sm:inline">Encerrar</span></Button>
-              <Button variant="ghost" size="sm" onClick={() => navigate("/")}><ArrowLeft className="h-4 w-4" /><span className="hidden sm:inline">Início</span></Button>
+              <MenuButton className="h-8 w-8" />
             </div>
           }
         />

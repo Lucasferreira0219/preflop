@@ -11,6 +11,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { BrandBar } from "@/components/layout/BrandBar";
+import { MenuButton } from "@/components/layout/MenuButton";
 import { Button } from "@/components/ui/Button";
 import { Card, SectionLabel } from "@/components/ui/Card";
 import {
@@ -195,6 +196,7 @@ export function SessionsPage() {
                 <ArrowLeft className="h-4 w-4" />
                 <span className="hidden sm:inline">Torneios</span>
               </Button>
+              <MenuButton className="h-8 w-8" />
             </div>
           }
         />

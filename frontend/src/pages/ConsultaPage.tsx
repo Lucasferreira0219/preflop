@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Minus, PanelRight, Plus } from "lucide-react";
+import { Minus, Plus } from "lucide-react";
 import { BrandBar } from "@/components/layout/BrandBar";
+import { MenuButton } from "@/components/layout/MenuButton";
 import { IconButton } from "@/components/ui/IconButton";
 import { Select } from "@/components/ui/Select";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
@@ -230,11 +231,7 @@ export function ConsultaPage() {
               ]}
             />
           }
-          actions={
-            <IconButton label="Menu" onClick={() => setDrawerOpen(true)}>
-              <PanelRight className="h-[18px] w-[18px]" />
-            </IconButton>
-          }
+          actions={<MenuButton />}
         />
         {/* Controles */}
         <div className="flex flex-wrap items-center gap-x-5 gap-y-3 border-t border-border px-4 py-3 sm:px-5">

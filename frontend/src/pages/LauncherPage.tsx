@@ -4,6 +4,7 @@ import {
   ArrowRight, BookOpen, Dumbbell, Grid3x3, LineChart, Loader2,
   MessageCircleQuestion, RotateCcw, Settings, Target, Upload,
 } from "lucide-react";
+import { MenuButton } from "@/components/layout/MenuButton";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { Card } from "@/components/ui/Card";
 import { PkeBadge } from "@/components/PkeBadge";
@@ -53,6 +54,9 @@ export function LauncherPage() {
 
   return (
     <div className="mx-auto flex min-h-full w-full max-w-2xl flex-col px-5 py-8">
+      <div className="mb-2 flex justify-end">
+        <MenuButton />
+      </div>
       <div className="mb-6 flex flex-col items-center text-center">
         <span className="mb-3 grid h-12 w-12 place-items-center rounded-2xl border border-gold/30 bg-gold/10 text-xl text-gold">
           ♠

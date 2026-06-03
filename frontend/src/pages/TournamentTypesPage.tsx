@@ -10,6 +10,7 @@ import {
   X,
 } from "lucide-react";
 import { BrandBar } from "@/components/layout/BrandBar";
+import { MenuButton } from "@/components/layout/MenuButton";
 import { Button } from "@/components/ui/Button";
 import { Card, SectionLabel } from "@/components/ui/Card";
 import { api } from "@/lib/api";
@@ -55,14 +56,17 @@ export function TournamentTypesPage() {
         <BrandBar
           title={selected ? selected.format ?? "Estrutura" : "Estruturas"}
           actions={
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => (selected ? setSelectedKey(null) : navigate("/tournaments"))}
-            >
-              <ArrowLeft className="h-4 w-4" />
-              <span className="hidden sm:inline">Voltar</span>
-            </Button>
+            <div className="flex items-center gap-1">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => (selected ? setSelectedKey(null) : navigate("/tournaments"))}
+              >
+                <ArrowLeft className="h-4 w-4" />
+                <span className="hidden sm:inline">Voltar</span>
+              </Button>
+              <MenuButton className="h-8 w-8" />
+            </div>
           }
         />
       </header>

@@ -4,6 +4,7 @@ import {
   AlertTriangle, ArrowLeft, CheckCircle2, Database, Loader2, RefreshCw, Settings, Wrench, X,
 } from "lucide-react";
 import { BrandBar } from "@/components/layout/BrandBar";
+import { MenuButton } from "@/components/layout/MenuButton";
 import { Button } from "@/components/ui/Button";
 import { Card, SectionLabel } from "@/components/ui/Card";
 import { api } from "@/lib/api";
@@ -61,11 +62,7 @@ export function SettingsPage() {
       <header className="sticky top-0 z-30 border-b border-border bg-bg/85 backdrop-blur-md">
         <BrandBar
           title="Configurações"
-          actions={
-            <Button variant="ghost" size="sm" onClick={() => navigate("/")}>
-              <ArrowLeft className="h-4 w-4" /> Início
-            </Button>
-          }
+          actions={<MenuButton className="h-8 w-8" />}
         />
       </header>
 
