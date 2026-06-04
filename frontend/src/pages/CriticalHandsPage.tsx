@@ -85,7 +85,7 @@ function exportMarkdown(maos: ReportHand[]) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = `erros-criticos-${new Date().toISOString().slice(0, 10)}.md`;
+  a.download = `erros-criticos-${(() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; })()}.md`;
   a.click();
   URL.revokeObjectURL(url);
 }

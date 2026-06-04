@@ -12,7 +12,7 @@ const FMT_NONE = "__none__";
 /** "2026/05/31" → "2026-05-31" (formato do <input type=date>). */
 function toInputDate(day?: string | null): string {
   if (day && /^\d{4}\/\d{2}\/\d{2}/.test(day)) return day.slice(0, 10).replace(/\//g, "-");
-  return new Date().toISOString().slice(0, 10);
+  const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
 
 export function NewTournamentModal({
