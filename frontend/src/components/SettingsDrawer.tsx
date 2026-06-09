@@ -24,7 +24,7 @@ const NAV_GROUPS: NavGroup[] = [
   {
     title: "Estudo",
     items: [
-      // { to: "/consulta", label: "Ranges e Regras", icon: <Grid3x3 className="h-4 w-4" /> },
+      { to: "/consulta", label: "Ranges e Regras", icon: <Grid3x3 className="h-4 w-4" /> },
       { to: "/perguntar", label: "Perguntar ao PKE", icon: <MessageCircleQuestion className="h-4 w-4" /> },
       { to: "/home", label: "Painel de estudo", icon: <Target className="h-4 w-4" /> },
     ],

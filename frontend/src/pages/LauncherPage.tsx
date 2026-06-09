@@ -172,12 +172,12 @@ export function LauncherPage() {
           desc="Pratique spots e seus leaks. O motor corrige e cita a regra."
           onClick={() => navigate("/treinar")}
         />
-        {/* <LaunchCard
+        <LaunchCard
           icon={<Grid3x3 className="h-5 w-5" />}
           title="Ranges e Regras"
           desc="Veja ranges completos por posição, cenário e profundidade."
           onClick={() => navigate("/consulta")}
-        /> */}
+        />
         <LaunchCard
           icon={<MessageCircleQuestion className="h-5 w-5" />}
           title="Perguntar ao PKE"
