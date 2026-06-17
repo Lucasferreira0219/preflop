@@ -460,9 +460,6 @@ function DayKpis({ session, grindSecs }: { session: TournamentSession; grindSecs
         <Button variant="ghost" size="sm" onClick={() => window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" })}>
           Revisar sessão
         </Button>
-        <Button variant="primary" size="sm" onClick={() => navigate("/treinar?mode=leaks&from=leak")}>
-          Treinar leaks da sessão
-        </Button>
       </div>
     </Card>
   );

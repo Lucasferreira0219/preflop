@@ -25,8 +25,6 @@ from insights_api import InsightsApi
 from hands_api import HandsApi
 from tournaments_api import TournamentsApi
 from notes_api import NotesApi
-from pke import engine as pke_engine
-from pke_sim_api import PkeSimApi
 from settings_api import SettingsApi
 import api as api_module
 import simulator_engine
@@ -46,7 +44,6 @@ insights_api = InsightsApi()
 hands_api    = HandsApi()
 tour_api     = TournamentsApi()
 notes_api    = NotesApi()
-pke_sim      = PkeSimApi()
 settings_api = SettingsApi()
 
 # Pré-carrega ranges em memória no startup
@@ -98,11 +95,6 @@ async def get_analytics(request: Request):
     args = await _read_args(request)
     return sim_api.get_analytics(*args)
 
-@app.post("/api/get_improvement")
-async def get_improvement(request: Request):
-    args = await _read_args(request)
-    return sim_api.get_improvement(*args)
-
 @app.post("/api/list_villains")
 async def list_villains(request: Request):
     args = await _read_args(request)
@@ -150,20 +142,7 @@ async def all_critical_hands(request: Request):
     limit = int(body.get("limit", 200)) if isinstance(body, dict) else 200
     return hands_api.all_critical_hands(only_errors=only_errors, limit=limit)
 
-# ── Consulta PKE (linguagem natural + contexto) ───────────────────────────────
-@app.post("/api/pke/query")
-async def pke_query(request: Request):
-    try:
-        body = await request.json()
-    except Exception:
-        body = {}
-    if not isinstance(body, dict):
-        body = {}
-    question = body.get("question", "")
-    context = body.get("context") or {}
-    return pke_engine().query(question, context)
-
-# ── Simulador PKE ──────────────────────────────────────────────────────────────
+# ── Configurações / Manutenção PKE ─────────────────────────────────────────────
 async def _read_obj(request: Request) -> dict:
     try:
         b = await request.json()
@@ -171,27 +150,6 @@ async def _read_obj(request: Request) -> dict:
     except Exception:
         return {}
 
-@app.post("/api/pke/sim/new")
-async def pke_sim_new(request: Request):
-    b = await _read_obj(request)
-    return pke_sim.new_spot(b.get("mode", "livre"), b.get("category"))
-
-@app.post("/api/pke/sim/answer")
-async def pke_sim_answer(request: Request):
-    b = await _read_obj(request)
-    if not b.get("spot_id"):
-        raise HTTPException(400, "missing spot_id")
-    return pke_sim.answer(b["spot_id"], b.get("hero_answer", ""))
-
-@app.post("/api/pke/sim/session")
-async def pke_sim_session():
-    return pke_sim.session()
-
-@app.post("/api/pke/sim/reset")
-async def pke_sim_reset():
-    return pke_sim.reset_session()
-
-# ── Configurações / Manutenção PKE ─────────────────────────────────────────────
 @app.get("/api/settings/pke_status")
 async def settings_pke_status():
     return settings_api.pke_status()
@@ -205,11 +163,6 @@ async def settings_reprocess_pke(request: Request):
 @app.post("/api/settings/recalculate_sessions")
 async def settings_recalculate_sessions():
     return settings_api.recalculate_sessions()
-
-@app.post("/api/pke/rule")
-async def pke_rule(request: Request):
-    b = await _read_obj(request)
-    return pke_sim.rule(b.get("id", ""))
 
 # ── Planilha de torneios ──────────────────────────────────────────────────────
 

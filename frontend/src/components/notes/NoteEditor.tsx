@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import {
-  ArrowLeft, Bookmark, Check, Dumbbell, Eye, MoreHorizontal,
+  ArrowLeft, Check, Eye, MoreHorizontal,
   Pencil, Pin, Star, Target, Trash2, Trophy, Archive,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
@@ -10,7 +9,7 @@ import { useApp } from "@/state/AppProvider";
 import { api } from "@/lib/api";
 import {
   NOTE_SNIPPETS, NOTE_TYPE_LABEL, NOTE_TYPE_ORDER, REVIEW_STATUS_LABEL,
-  AUTO_TAGS, fmtAgo, noteTrainMode,
+  AUTO_TAGS, fmtAgo,
 } from "@/lib/notes";
 import type { Note, NoteType, ReviewStatus } from "@/lib/types";
 import { cn } from "@/lib/cn";
@@ -27,8 +26,7 @@ export function NoteEditor({ note, onChange, onClose, onArchive }: {
   onClose: () => void;             // voltar (mobile)
   onArchive: (id: string) => void; // arquivar/remover
 }) {
-  const navigate = useNavigate();
-  const { openTournament, openRule } = useApp();
+  const { openTournament } = useApp();
   const [title, setTitle] = useState(note.title);
   const [type, setType] = useState<NoteType>(note.type);
   const [content, setContent] = useState(note.content);
@@ -93,7 +91,6 @@ export function NoteEditor({ note, onChange, onClose, onArchive }: {
     setContent(next); touch();
   }
 
-  const trainMode = noteTrainMode(note);
   const suggestions = AUTO_TAGS.filter((t) => !tags.includes(t)
     && (!tagInput || t.includes(tagInput.toLowerCase()))).slice(0, 6);
 
@@ -152,17 +149,9 @@ export function NoteEditor({ note, onChange, onClose, onArchive }: {
         </div>
 
         {/* links/contexto da nota */}
-        {(note.tournament_id || note.pke_rule_id || trainMode || note.hand_id) && (
+        {note.tournament_id && (
           <div className="mt-3 flex flex-wrap gap-1.5">
-            {note.tournament_id && (
-              <LinkBtn onClick={() => openTournament(note.tournament_id!)}><Trophy className="h-3.5 w-3.5" /> Abrir torneio</LinkBtn>
-            )}
-            {note.pke_rule_id && (
-              <LinkBtn onClick={() => openRule(note.pke_rule_id!)}><Bookmark className="h-3.5 w-3.5" /> Ver regra</LinkBtn>
-            )}
-            {trainMode && (
-              <LinkBtn onClick={() => navigate(`/treinar?mode=${trainMode}&from=leak`)}><Dumbbell className="h-3.5 w-3.5" /> Treinar este spot</LinkBtn>
-            )}
+            <LinkBtn onClick={() => openTournament(note.tournament_id!)}><Trophy className="h-3.5 w-3.5" /> Abrir torneio</LinkBtn>
           </div>
         )}
 

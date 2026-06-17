@@ -1707,9 +1707,6 @@ function SessionRow({ s, currency, active, onPickDay }: {
         <Button size="sm" variant="ghost" className="flex-1" onClick={() => onPickDay(s.day)}>
           Revisar sessão
         </Button>
-        <Button size="sm" variant="primary" className="flex-1" onClick={() => navigate("/treinar?mode=leaks&from=leak")}>
-          Treinar leaks
-        </Button>
       </div>
     </div>
   );

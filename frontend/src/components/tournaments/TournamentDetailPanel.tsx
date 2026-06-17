@@ -1,17 +1,16 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { useNavigate } from "react-router-dom";
-import { BookOpen, Download, Dumbbell, Eye, Loader2, MoreHorizontal, NotebookPen, RefreshCw, X } from "lucide-react";
-import { HandList, Leaks, Summary, Treino } from "@/components/tournaments/PkeReport";
-import { PkeBadge } from "@/components/PkeBadge";
+import { BookOpen, Download, Eye, Loader2, MoreHorizontal, NotebookPen, RefreshCw, X } from "lucide-react";
+import { HandList, Leaks, Summary } from "@/components/tournaments/PkeReport";
 import { Button } from "@/components/ui/Button";
 import { api } from "@/lib/api";
 import { useApp } from "@/state/AppProvider";
-import { leakLabel, ruleIdOf } from "@/lib/pke";
+import { leakLabel } from "@/lib/pke";
 import type { Note, ReportHand, ReportLeak, Tournament, TournamentReport } from "@/lib/types";
 import { cn } from "@/lib/cn";
 
-type DetailTab = "resumo" | "leaks" | "maos" | "treino";
+type DetailTab = "resumo" | "leaks" | "maos";
 
 function money(cents: number | null | undefined, currency = "USD"): string {
   if (cents == null) return "—";
@@ -20,7 +19,7 @@ function money(cents: number | null | undefined, currency = "USD"): string {
 }
 
 export function TournamentDetailPanel() {
-  const { tournamentDetailId, closeTournament, openRule } = useApp();
+  const { tournamentDetailId, closeTournament } = useApp();
   const navigate = useNavigate();
   const [report, setReport] = useState<TournamentReport | null>(null);
   const [tour, setTour] = useState<Tournament | null>(null);
@@ -55,14 +54,6 @@ export function TournamentDetailPanel() {
     load();
   }, [tid, load]);
 
-  function goTrainLeaks() {
-    closeTournament();
-    navigate("/treinar?mode=leaks&from=leak");
-  }
-  function goTrainLeak(mode: string) {
-    closeTournament();
-    navigate(`/treinar?mode=${mode}&from=leak`);
-  }
   function seeCriticalHands() {
     setTab("maos");
     scrollRef.current?.scrollTo({ top: 0, behavior: "smooth" });
@@ -77,10 +68,6 @@ export function TournamentDetailPanel() {
     a.download = `review-torneio-${tid}.md`;
     a.click();
     URL.revokeObjectURL(url);
-  }
-  function openMainRule() {
-    const rule = ruleIdOf(report?.leaks[0]?.regra_violada ?? "");
-    if (rule) openRule(rule);
   }
 
   // ── Exportar para Anotações ───────────────────────────────────────────────
@@ -134,7 +121,6 @@ export function TournamentDetailPanel() {
     { key: "resumo", label: "Resumo" },
     { key: "leaks", label: "Leaks" },
     { key: "maos", label: "Mãos críticas" },
-    { key: "treino", label: "Treino sugerido" },
   ];
 
   return (
@@ -146,7 +132,6 @@ export function TournamentDetailPanel() {
             <div className="min-w-0">
               <Dialog.Title className="flex min-w-0 items-center gap-2 text-sm font-semibold text-ink">
                 <span className="truncate">{tour?.tournament_name || `Torneio #${tid}`}</span>
-                {report && <PkeBadge variant="analisado" />}
               </Dialog.Title>
               <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-2xs text-ink-faint">
                 {tour?.played_at && <span>{tour.played_at}</span>}
@@ -167,9 +152,6 @@ export function TournamentDetailPanel() {
           </div>
 
           <div className="flex items-center gap-1.5 overflow-x-auto border-b border-border px-4 py-2.5 sm:px-5">
-            <Button variant="primary" size="sm" className="shrink-0" onClick={goTrainLeaks} disabled={!report?.leaks.length}>
-              <Dumbbell className="h-4 w-4" /> Treinar leaks
-            </Button>
             <Button variant="ghost" size="sm" className="shrink-0" onClick={seeCriticalHands} disabled={!report}>
               <Eye className="h-4 w-4" /> Ver mãos críticas
             </Button>
@@ -189,9 +171,6 @@ export function TournamentDetailPanel() {
                   <button className="flex w-full items-center gap-2 rounded-ctl px-3 py-2 text-left text-sm text-ink-dim hover:bg-surface-2 hover:text-ink" onClick={() => { setMenuOpen(false); exportReview(); }} disabled={!report}>
                     <Download className="h-4 w-4" /> Exportar review (.md)
                   </button>
-                  <button className="flex w-full items-center gap-2 rounded-ctl px-3 py-2 text-left text-sm text-ink-dim hover:bg-surface-2 hover:text-ink" onClick={() => { setMenuOpen(false); openMainRule(); }} disabled={!report?.leaks[0]?.regra_violada}>
-                    <BookOpen className="h-4 w-4" /> Ver regra principal
-                  </button>
                 </div>
               )}
             </div>
@@ -200,11 +179,11 @@ export function TournamentDetailPanel() {
           <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 pb-8 sm:px-5">
             {loading && (
               <div className="flex items-center justify-center gap-2 py-12 text-sm text-ink-dim">
-                <Loader2 className="h-4 w-4 animate-spin" /> Analisando torneio com o PKE…
+                <Loader2 className="h-4 w-4 animate-spin" /> Analisando torneio…
               </div>
             )}
             {!loading && !report && (
-              <p className="py-12 text-center text-sm text-ink-faint">Nenhuma mão deste torneio para o PKE analisar.</p>
+              <p className="py-12 text-center text-sm text-ink-faint">Nenhuma mão deste torneio para analisar.</p>
             )}
             {!loading && report && (
               <div className="flex flex-col gap-4 py-4">
@@ -216,16 +195,8 @@ export function TournamentDetailPanel() {
                   ))}
                 </div>
                 {tab === "resumo" && <Summary report={report} />}
-                {tab === "leaks" && <Leaks leaks={report.leaks} onTrainLeak={goTrainLeak} onOpenRule={openRule} onFilterSpot={() => setTab("maos")} onExportLeak={goExportLeak} />}
-                {tab === "maos" && <HandList report={report} onTrainLeak={goTrainLeak} onOpenRule={openRule} onExportHand={goExportHand} />}
-                {tab === "treino" && (
-                  <div className="flex flex-col gap-3">
-                    <Treino drills={report.treino_sugerido} onTrainLeak={goTrainLeak} />
-                    <Button variant="primary" onClick={goTrainLeaks} disabled={!report.leaks.length}>
-                      <Dumbbell className="h-4 w-4" /> Treinar leaks deste torneio
-                    </Button>
-                  </div>
-                )}
+                {tab === "leaks" && <Leaks leaks={report.leaks} onFilterSpot={() => setTab("maos")} onExportLeak={goExportLeak} />}
+                {tab === "maos" && <HandList report={report} onExportHand={goExportHand} />}
               </div>
             )}
           </div>
@@ -245,7 +216,7 @@ function buildMarkdown(r: TournamentReport, t: Tournament | null): string {
     if (t.profit_cents != null) L.push(`Lucro: ${money(t.profit_cents, t.currency)}`);
   }
   L.push("");
-  L.push(`## Resumo PKE`);
+  L.push(`## Resumo`);
   L.push(`- Nota média: ${r.media_notas ?? "—"}`);
   L.push(`- Mãos críticas: ${r.maos_criticas}`);
   L.push(`- Erros graves: ${r.erros_graves}`);
@@ -253,7 +224,7 @@ function buildMarkdown(r: TournamentReport, t: Tournament | null): string {
   if (r.leaks.length) {
     L.push("");
     L.push(`## Leaks detectados`);
-    for (const l of r.leaks) L.push(`- **${leakLabel(l.id) ?? l.label}** (${l.gravidade}, ${l.frequencia_hits}×) — ${l.como_corrigir}${l.regra_violada ? ` [${l.regra_violada}]` : ""}`);
+    for (const l of r.leaks) L.push(`- **${leakLabel(l.id) ?? l.label}** (${l.gravidade}, ${l.frequencia_hits}×) — ${l.como_corrigir}`);
   }
   if (r.piores_decisoes.length) {
     L.push("");

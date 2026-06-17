@@ -1,6 +1,5 @@
 // Linguagem e helpers do Caderno de Estudo (anotações). Só apresentação/navegação.
-import type { Note, NoteType, ReviewStatus } from "./types";
-import { trainModeFor } from "./pke";
+import type { NoteType, ReviewStatus } from "./types";
 
 export const NOTE_TYPE_LABEL: Record<NoteType, string> = {
   free: "Nota livre",
@@ -35,29 +34,22 @@ export const REVIEW_STATUS_CLS: Record<ReviewStatus, string> = {
   mastered: "bg-action-blue/15 text-action-blue",
 };
 
-// Atalhos do editor (§5) — inserem um bloco markdown no conteúdo.
+// Atalhos do editor — inserem um bloco markdown no conteúdo.
 export const NOTE_SNIPPETS: { label: string; insert: string }[] = [
   { label: "Minha leitura", insert: "\n## Minha leitura\n" },
   { label: "O que pensei na hora", insert: "\n**O que eu pensei na hora:** " },
-  { label: "PKE recomendou", insert: "\n**O que o PKE recomendou:** " },
   { label: "Erro", insert: "\n**Erro:** " },
   { label: "Correção", insert: "\n**Correção:** " },
   { label: "Regra prática", insert: "\n## Regra prática\n- " },
   { label: "Revisar depois", insert: "\n- [ ] Revisar depois\n" },
-  { label: "Treino sugerido", insert: "\n**Treino sugerido:** " },
   { label: "Checklist", insert: "\n- [ ] " },
 ];
 
-// Tags automáticas sugeridas no editor (§11) além das manuais.
+// Tags automáticas sugeridas no editor além das manuais.
 export const AUTO_TAGS = [
   "push/fold", "resteal", "bolha", "ICM", "HU", "BB defense", "call shove",
   "limp punish", "RFI", "vs open", "short stack", "erro grave", "revisar", "importante",
 ];
-
-/** Modo de treino para a nota (via leak_key ou spot). null se não houver. */
-export function noteTrainMode(note: Note): string | null {
-  return trainModeFor(note.leak_key) ?? trainModeFor(note.spot) ?? null;
-}
 
 /** "editado há…" — rótulo relativo simples a partir de epoch (segundos). */
 export function fmtAgo(epoch: number, nowMs = Date.now()): string {

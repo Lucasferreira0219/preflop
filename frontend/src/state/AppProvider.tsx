@@ -24,9 +24,6 @@ interface AppCtx {
   setDrawerActions: (a: DrawerAction[]) => void;
   glossaryOpen: boolean;
   setGlossaryOpen: (v: boolean) => void;
-  ruleId: string | null;
-  openRule: (id: string | null) => void;
-  closeRule: () => void;
   tournamentDetailId: string | null;
   openTournament: (id: string | null) => void;
   closeTournament: () => void;
@@ -41,11 +38,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [drawerActions, setDrawerActions] = useState<DrawerAction[]>([]);
   const [glossaryOpen, setGlossaryOpen] = useState(false);
-  const [ruleId, setRuleId] = useState<string | null>(null);
   const [studyMode, setStudyModeState] = useState<boolean>(() => lsGet<boolean>(STUDY_KEY, true));
 
-  const openRule = useCallback((id: string | null) => setRuleId(id), []);
-  const closeRule = useCallback(() => setRuleId(null), []);
   const [tournamentDetailId, setTournamentDetailId] = useState<string | null>(null);
   const openTournament = useCallback((id: string | null) => setTournamentDetailId(id), []);
   const closeTournament = useCallback(() => setTournamentDetailId(null), []);
@@ -66,11 +60,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       drawerOpen, setDrawerOpen,
       drawerActions, setDrawerActions,
       glossaryOpen, setGlossaryOpen,
-      ruleId, openRule, closeRule,
       tournamentDetailId, openTournament, closeTournament,
       studyMode, setStudyMode,
     }),
-    [mode, setMode, drawerOpen, drawerActions, glossaryOpen, ruleId, openRule, closeRule,
+    [mode, setMode, drawerOpen, drawerActions, glossaryOpen,
      tournamentDetailId, openTournament, closeTournament, studyMode, setStudyMode],
   );
 

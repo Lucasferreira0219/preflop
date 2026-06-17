@@ -3,16 +3,13 @@ import { AppProvider } from "@/state/AppProvider";
 import { TooltipProvider } from "@/components/ui/Tooltip";
 import { SettingsDrawer } from "@/components/SettingsDrawer";
 import { GlossaryDialog } from "@/components/GlossaryDialog";
-import { RuleDialog } from "@/components/RuleDialog";
 import { TournamentDetailPanel } from "@/components/tournaments/TournamentDetailPanel";
 import { InstallPrompt } from "@/components/InstallPrompt";
 import { LauncherPage } from "@/pages/LauncherPage";
 import { TournamentsPage } from "@/pages/TournamentsPage";
 import { TournamentTypesPage } from "@/pages/TournamentTypesPage";
 import { SessionsPage } from "@/pages/SessionsPage";
-import { TrainPage } from "@/pages/TrainPage";
 import { SettingsPage } from "@/pages/SettingsPage";
-import { CriticalHandsPage } from "@/pages/CriticalHandsPage";
 import { NotesPage } from "@/pages/NotesPage";
 import { BASE } from "@/lib/api";
 
@@ -26,19 +23,15 @@ export function App() {
                 segue acessível em /home como "Painel de estudo" opcional no menu. */}
             <Route path="/" element={<Navigate to="/tournaments" replace />} />
             <Route path="/home" element={<LauncherPage />} />
-            <Route path="/sim" element={<Navigate to="/treinar" replace />} />
             <Route path="/import" element={<Navigate to="/tournaments" replace />} />
             <Route path="/tournaments" element={<TournamentsPage />} />
             <Route path="/tournament-types" element={<TournamentTypesPage />} />
             <Route path="/sessions" element={<SessionsPage />} />
-            <Route path="/treinar" element={<TrainPage />} />
             <Route path="/settings" element={<SettingsPage />} />
-            <Route path="/erros-criticos" element={<CriticalHandsPage />} />
             <Route path="/notes" element={<NotesPage />} />
           </Routes>
           <SettingsDrawer />
           <GlossaryDialog />
-          <RuleDialog />
           <TournamentDetailPanel />
           <InstallPrompt />
         </TooltipProvider>
