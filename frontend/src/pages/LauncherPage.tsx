@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  ArrowRight, BookOpen, Dumbbell, Grid3x3, LineChart, Loader2,
+  ArrowRight, BookOpen, Dumbbell, LineChart, Loader2,
   MessageCircleQuestion, RotateCcw, Settings, Target, Upload,
 } from "lucide-react";
 import { MenuButton } from "@/components/layout/MenuButton";
@@ -171,12 +171,6 @@ export function LauncherPage() {
           title="Treinar"
           desc="Pratique spots e seus leaks. O motor corrige e cita a regra."
           onClick={() => navigate("/treinar")}
-        />
-        <LaunchCard
-          icon={<Grid3x3 className="h-5 w-5" />}
-          title="Ranges e Regras"
-          desc="Veja ranges completos por posição, cenário e profundidade."
-          onClick={() => navigate("/consulta")}
         />
         <LaunchCard
           icon={<MessageCircleQuestion className="h-5 w-5" />}

@@ -1,6 +1,6 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import {
-  AlertTriangle, BookOpen, CalendarClock, Dumbbell, Grid3x3, LineChart,
+  AlertTriangle, BookOpen, CalendarClock, Dumbbell, LineChart,
   MessageCircleQuestion, Settings, Target, Trophy,
 } from "lucide-react";
 import { Drawer, DrawerItem } from "@/components/ui/Drawer";
@@ -24,7 +24,6 @@ const NAV_GROUPS: NavGroup[] = [
   {
     title: "Estudo",
     items: [
-      { to: "/consulta", label: "Ranges e Regras", icon: <Grid3x3 className="h-4 w-4" /> },
       { to: "/perguntar", label: "Perguntar ao PKE", icon: <MessageCircleQuestion className="h-4 w-4" /> },
       { to: "/home", label: "Painel de estudo", icon: <Target className="h-4 w-4" /> },
     ],

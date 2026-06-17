@@ -103,13 +103,6 @@ async def get_improvement(request: Request):
     args = await _read_args(request)
     return sim_api.get_improvement(*args)
 
-@app.post("/api/get_range")
-async def get_range(request: Request):
-    args = await _read_args(request)
-    if len(args) < 3:
-        raise HTTPException(400, "pos, scenario, stack_bb required")
-    return main_api.get_range(*args)
-
 @app.post("/api/list_villains")
 async def list_villains(request: Request):
     args = await _read_args(request)

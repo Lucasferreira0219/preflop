@@ -90,14 +90,6 @@ export const api = {
 
   getImprovement: (windowDays = 7) => call<Improvement>("get_improvement", [windowDays]),
 
-  getRange: (
-    pos: string,
-    scenario: Scenario,
-    stackBb: number,
-    mode: Mode = "mtt",
-    villain: string | null = null,
-  ) => call<RangeResponse>("get_range", [pos, scenario, stackBb, mode, villain]),
-
   listVillains: (pos: string, stackBb: number, mode: Mode = "mtt") =>
     call<Record<string, Scenario>>("list_villains", [pos, stackBb, mode]),
 

@@ -7,7 +7,6 @@ import { RuleDialog } from "@/components/RuleDialog";
 import { TournamentDetailPanel } from "@/components/tournaments/TournamentDetailPanel";
 import { InstallPrompt } from "@/components/InstallPrompt";
 import { LauncherPage } from "@/pages/LauncherPage";
-import { ConsultaPage } from "@/pages/ConsultaPage";
 import { TournamentsPage } from "@/pages/TournamentsPage";
 import { TournamentTypesPage } from "@/pages/TournamentTypesPage";
 import { SessionsPage } from "@/pages/SessionsPage";
@@ -29,7 +28,6 @@ export function App() {
             <Route path="/" element={<Navigate to="/tournaments" replace />} />
             <Route path="/home" element={<LauncherPage />} />
             <Route path="/sim" element={<Navigate to="/treinar" replace />} />
-            <Route path="/consulta" element={<ConsultaPage />} />
             <Route path="/import" element={<Navigate to="/tournaments" replace />} />
             <Route path="/tournaments" element={<TournamentsPage />} />
             <Route path="/tournament-types" element={<TournamentTypesPage />} />
