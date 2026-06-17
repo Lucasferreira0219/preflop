@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  ArrowLeft, Bookmark, Check, Dumbbell, Eye, MessageCircleQuestion, MoreHorizontal,
+  ArrowLeft, Bookmark, Check, Dumbbell, Eye, MoreHorizontal,
   Pencil, Pin, Star, Target, Trash2, Trophy, Archive,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
@@ -10,7 +10,7 @@ import { useApp } from "@/state/AppProvider";
 import { api } from "@/lib/api";
 import {
   NOTE_SNIPPETS, NOTE_TYPE_LABEL, NOTE_TYPE_ORDER, REVIEW_STATUS_LABEL,
-  AUTO_TAGS, fmtAgo, noteAskUrl, noteTrainMode,
+  AUTO_TAGS, fmtAgo, noteTrainMode,
 } from "@/lib/notes";
 import type { Note, NoteType, ReviewStatus } from "@/lib/types";
 import { cn } from "@/lib/cn";
@@ -163,7 +163,6 @@ export function NoteEditor({ note, onChange, onClose, onArchive }: {
             {trainMode && (
               <LinkBtn onClick={() => navigate(`/treinar?mode=${trainMode}&from=leak`)}><Dumbbell className="h-3.5 w-3.5" /> Treinar este spot</LinkBtn>
             )}
-            <LinkBtn onClick={() => navigate(noteAskUrl(note))}><MessageCircleQuestion className="h-3.5 w-3.5" /> Perguntar ao PKE</LinkBtn>
           </div>
         )}
 

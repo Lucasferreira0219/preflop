@@ -59,20 +59,6 @@ export function noteTrainMode(note: Note): string | null {
   return trainModeFor(note.leak_key) ?? trainModeFor(note.spot) ?? null;
 }
 
-/** Caminho /perguntar?... com o contexto da anotação. */
-export function noteAskUrl(note: Note): string {
-  const p = new URLSearchParams();
-  const q = note.pke_recommendation && note.hero_action && note.pke_recommendation !== note.hero_action
-    ? `Por que ${note.pke_recommendation} é melhor que ${note.hero_action} nessa mão?`
-    : (note.title || "Tenho uma dúvida sobre esta anotação.");
-  p.set("q", q);
-  if (note.hero_cards) p.set("cards", note.hero_cards);
-  if (note.position) p.set("pos", note.position);
-  if (note.effective_stack_bb != null) p.set("stack", String(Math.round(note.effective_stack_bb)));
-  if (note.phase) p.set("phase", note.phase);
-  return `/perguntar?${p.toString()}`;
-}
-
 /** "editado há…" — rótulo relativo simples a partir de epoch (segundos). */
 export function fmtAgo(epoch: number, nowMs = Date.now()): string {
   const s = Math.max(0, Math.floor(nowMs / 1000) - epoch);

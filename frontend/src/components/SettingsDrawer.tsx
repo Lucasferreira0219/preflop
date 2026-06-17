@@ -24,7 +24,6 @@ const NAV_GROUPS: NavGroup[] = [
   {
     title: "Estudo",
     items: [
-      { to: "/perguntar", label: "Perguntar ao PKE", icon: <MessageCircleQuestion className="h-4 w-4" /> },
       { to: "/home", label: "Painel de estudo", icon: <Target className="h-4 w-4" /> },
     ],
   },

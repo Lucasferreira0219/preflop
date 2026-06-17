@@ -7,7 +7,6 @@ import { PkeBadge } from "@/components/PkeBadge";
 import { Button } from "@/components/ui/Button";
 import { api } from "@/lib/api";
 import { useApp } from "@/state/AppProvider";
-import { askHandUrl } from "@/lib/askLink";
 import { leakLabel, ruleIdOf } from "@/lib/pke";
 import type { Note, ReportHand, ReportLeak, Tournament, TournamentReport } from "@/lib/types";
 import { cn } from "@/lib/cn";
@@ -63,10 +62,6 @@ export function TournamentDetailPanel() {
   function goTrainLeak(mode: string) {
     closeTournament();
     navigate(`/treinar?mode=${mode}&from=leak`);
-  }
-  function goAsk(m: ReportHand) {
-    closeTournament();
-    navigate(askHandUrl(m));
   }
   function seeCriticalHands() {
     setTab("maos");
@@ -222,7 +217,7 @@ export function TournamentDetailPanel() {
                 </div>
                 {tab === "resumo" && <Summary report={report} />}
                 {tab === "leaks" && <Leaks leaks={report.leaks} onTrainLeak={goTrainLeak} onOpenRule={openRule} onFilterSpot={() => setTab("maos")} onExportLeak={goExportLeak} />}
-                {tab === "maos" && <HandList report={report} onTrainLeak={goTrainLeak} onOpenRule={openRule} onAskHand={goAsk} onExportHand={goExportHand} />}
+                {tab === "maos" && <HandList report={report} onTrainLeak={goTrainLeak} onOpenRule={openRule} onExportHand={goExportHand} />}
                 {tab === "treino" && (
                   <div className="flex flex-col gap-3">
                     <Treino drills={report.treino_sugerido} onTrainLeak={goTrainLeak} />

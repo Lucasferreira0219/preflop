@@ -10,7 +10,6 @@ import { LauncherPage } from "@/pages/LauncherPage";
 import { TournamentsPage } from "@/pages/TournamentsPage";
 import { TournamentTypesPage } from "@/pages/TournamentTypesPage";
 import { SessionsPage } from "@/pages/SessionsPage";
-import { AskPage } from "@/pages/AskPage";
 import { TrainPage } from "@/pages/TrainPage";
 import { SettingsPage } from "@/pages/SettingsPage";
 import { CriticalHandsPage } from "@/pages/CriticalHandsPage";
@@ -32,7 +31,6 @@ export function App() {
             <Route path="/tournaments" element={<TournamentsPage />} />
             <Route path="/tournament-types" element={<TournamentTypesPage />} />
             <Route path="/sessions" element={<SessionsPage />} />
-            <Route path="/perguntar" element={<AskPage />} />
             <Route path="/treinar" element={<TrainPage />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/erros-criticos" element={<CriticalHandsPage />} />

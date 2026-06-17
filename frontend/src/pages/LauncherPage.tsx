@@ -173,12 +173,6 @@ export function LauncherPage() {
           onClick={() => navigate("/treinar")}
         />
         <LaunchCard
-          icon={<MessageCircleQuestion className="h-5 w-5" />}
-          title="Perguntar ao PKE"
-          desc="Tire dúvidas de estratégia. Resposta pelo Guia de Bolso, com regra citada."
-          onClick={() => navigate("/perguntar")}
-        />
-        <LaunchCard
           icon={<BookOpen className="h-5 w-5" />}
           title="Anotações"
           desc="Caderno de estudo. Salve mãos, leaks, dúvidas e planos — ligados ao PKE."
