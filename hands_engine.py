@@ -347,6 +347,47 @@ def leak_weights(tournament_id=None):
     return weights
 
 
+def tournament_all_hands(tournament_id: str) -> dict:
+    """Todas as mãos de um torneio específico, incluindo não críticas."""
+    with _conn() as c:
+        rows = c.execute(
+            "SELECT hand_id, hero_pos, hero_cards, stack_bb, scenario, hero_action, "
+            "course_action, is_correct, is_critical, pke_outcome, raw_text, played_at "
+            "FROM imported_hands WHERE tournament_id = ? ORDER BY played_at ASC",
+            (tournament_id,),
+        ).fetchall()
+
+    maos = []
+    for r in rows:
+        if r["raw_text"]:
+            try:
+                parsed = parse_text(r["raw_text"])
+                if parsed:
+                    res = ta.screen_and_analyze(parsed[0])
+                    if res:
+                        view = ta._hand_view(res)
+                        view["played_at"] = r["played_at"]
+                        maos.append(view)
+                        continue
+            except Exception:
+                pass
+        outcome = r["pke_outcome"] or ("acerto" if r["is_correct"] else "erro" if r["is_correct"] is not None else "insuficiente")
+        maos.append({
+            "hand_id": r["hand_id"],
+            "fase": None, "spot": r["scenario"],
+            "cards": r["hero_cards"], "pos": r["hero_pos"], "eff_bb": r["stack_bb"],
+            "linha": r["hero_action"], "recomendado": r["course_action"],
+            "outcome": outcome, "gravidade": None, "erro": None,
+            "regra": [], "explicacao": None, "resumo": None,
+            "ajuste_exploratorio": None, "motivos_criticos": [],
+            "insuficiente": False, "falta_info": [],
+            "shown_label": "Acerto" if r["is_correct"] else ("Erro" if r["is_correct"] is not None else "—"),
+            "played_at": r["played_at"],
+        })
+
+    return {"maos": maos, "total": len(maos)}
+
+
 def all_critical_hands(limit: int = 200, only_errors: bool = True) -> dict:
     """Todas as mãos críticas já analisadas, ordenadas das piores para as melhores.
 

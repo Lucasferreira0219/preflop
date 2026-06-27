@@ -26,6 +26,7 @@ from hands_api import HandsApi
 from tournaments_api import TournamentsApi
 from notes_api import NotesApi
 from settings_api import SettingsApi
+from pke_sim_api import PkeSimApi
 import api as api_module
 import simulator_engine
 import insights_api as insights_module
@@ -45,6 +46,7 @@ hands_api    = HandsApi()
 tour_api     = TournamentsApi()
 notes_api    = NotesApi()
 settings_api = SettingsApi()
+pke_sim      = PkeSimApi()
 
 # Pré-carrega ranges em memória no startup
 @app.on_event("startup")
@@ -131,6 +133,18 @@ async def analyze_tournament(request: Request):
 @app.post("/api/study_overview")
 async def study_overview():
     return hands_api.study_overview()
+
+@app.post("/api/tournament_all_hands")
+async def tournament_all_hands(request: Request):
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+    tournament_id = body.get("tournament_id") if isinstance(body, dict) else None
+    if not tournament_id:
+        raise HTTPException(400, "missing tournament_id")
+    import hands_engine as he
+    return he.tournament_all_hands(tournament_id)
 
 @app.post("/api/all_critical_hands")
 async def all_critical_hands(request: Request):
@@ -340,6 +354,26 @@ async def delete_tournament_payout(request: Request):
 async def reparse_tournaments():
     return tour_api.reparse_missing()
 
+
+
+# ── Simulador PKE ──────────────────────────────────────────────────────────────
+@app.post("/api/pke/sim/new")
+async def pke_sim_new(request: Request):
+    b = await _read_obj(request)
+    return pke_sim.new_spot(b.get("mode", "livre"), b.get("category"))
+
+@app.post("/api/pke/sim/answer")
+async def pke_sim_answer(request: Request):
+    b = await _read_obj(request)
+    return pke_sim.answer(b["spot_id"], b.get("hero_answer", ""))
+
+@app.post("/api/pke/sim/session")
+async def pke_sim_session():
+    return pke_sim.session()
+
+@app.post("/api/pke/sim/reset")
+async def pke_sim_reset():
+    return pke_sim.reset_session()
 
 # ── Static files (ranges + assets do SPA) ────────────────────────────────────
 # Mounts antes do catch-all do SPA.

@@ -26,6 +26,9 @@ export function TournamentDetailPanel() {
   const [loading, setLoading] = useState(false);
   const [tab, setTab] = useState<DetailTab>("resumo");
   const [menuOpen, setMenuOpen] = useState(false);
+  const [showAllHands, setShowAllHands] = useState(false);
+  const [allHands, setAllHands] = useState<import("@/lib/types").ReportHand[]>([]);
+  const [loadingAll, setLoadingAll] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const tid = tournamentDetailId;
 
@@ -53,6 +56,19 @@ export function TournamentDetailPanel() {
     setTab("resumo");
     load();
   }, [tid, load]);
+
+  async function loadAllHands() {
+    if (!tid) return;
+    setLoadingAll(true);
+    try {
+      const r = await api.tournamentAllHands(tid);
+      setAllHands(r.maos);
+    } catch {
+      setAllHands([]);
+    } finally {
+      setLoadingAll(false);
+    }
+  }
 
   function seeCriticalHands() {
     setTab("maos");
@@ -120,7 +136,7 @@ export function TournamentDetailPanel() {
   const tabs: { key: DetailTab; label: string }[] = [
     { key: "resumo", label: "Resumo" },
     { key: "leaks", label: "Leaks" },
-    { key: "maos", label: "Mãos críticas" },
+    { key: "maos", label: "Mãos" },
   ];
 
   return (
@@ -196,7 +212,26 @@ export function TournamentDetailPanel() {
                 </div>
                 {tab === "resumo" && <Summary report={report} />}
                 {tab === "leaks" && <Leaks leaks={report.leaks} onFilterSpot={() => setTab("maos")} onExportLeak={goExportLeak} />}
-                {tab === "maos" && <HandList report={report} onExportHand={goExportHand} />}
+{tab === "maos" && (
+                  <div>
+                    <div className="mb-3 flex items-center gap-2">
+                      <button
+                        className={cn("rounded-full border px-3 py-1 text-2xs font-semibold transition-colors", !showAllHands ? "border-gold/50 bg-gold/15 text-gold" : "border-border bg-surface-1 text-ink-dim hover:text-ink")}
+                        onClick={() => setShowAllHands(false)}
+                      >Críticas</button>
+                      <button
+                        className={cn("rounded-full border px-3 py-1 text-2xs font-semibold transition-colors", showAllHands ? "border-gold/50 bg-gold/15 text-gold" : "border-border bg-surface-1 text-ink-dim hover:text-ink")}
+                        onClick={async () => { setShowAllHands(true); if (allHands.length === 0) await loadAllHands(); }}
+                      >{loadingAll ? "Carregando…" : "Todas"}</button>
+                    </div>
+                    {showAllHands
+                      ? allHands.length === 0
+                        ? <p className="py-8 text-center text-sm text-ink-faint">Nenhuma mão encontrada.</p>
+                        : <div className="flex flex-col gap-2">{allHands.map((m) => <div key={m.hand_id} className="rounded-card border border-border bg-surface-1 p-3 text-sm"><div className="flex flex-wrap items-center gap-1.5"><span className="font-semibold text-ink">{m.cards}</span><span className="text-ink-dim">{m.pos}</span>{m.eff_bb != null && <span className="text-2xs text-ink-faint">{m.eff_bb}bb</span>}</div><div className="mt-1 text-2xs text-ink-faint">{m.linha && <span>Jogado: <span className="text-ink-dim">{m.linha}</span></span>}{m.recomendado && m.recomendado !== m.linha && <span className="ml-2">Correto: <span className="text-ink-dim">{m.recomendado}</span></span>}{m.shown_label && <span className="ml-2 font-medium">{m.shown_label}</span>}</div></div>)}</div>
+                      : <HandList report={report} onExportHand={goExportHand} />
+                    }
+                  </div>
+                )}
               </div>
             )}
           </div>
