@@ -347,41 +347,185 @@ def leak_weights(tournament_id=None):
     return weights
 
 
+# ── Análise RFI (aba "Todas") ─────────────────────────────────────────────────
+
+def _action_before_hero_text(h: dict) -> str:
+    """Texto descritivo das ações ANTES do herói."""
+    scenario = h.get("scenario", "outro")
+    opener_pos = h.get("opener_pos")
+    villain_action = h.get("villain_action")
+    n_limpers = h.get("n_limpers") or 0
+    opener_size_bb = h.get("opener_size_bb")
+
+    if scenario == "RFI":
+        return "Todos foldaram"
+    if scenario == "vs_RFI":
+        if opener_pos:
+            size_str = f" {opener_size_bb}bb" if opener_size_bb else ""
+            act_str = "shovou" if villain_action == "shove" else "abriu"
+            return f"{opener_pos} {act_str}{size_str}"
+        return "Alguém abriu antes"
+    if scenario == "vs_3bet":
+        return "Raise e 3-bet antes"
+    if n_limpers > 0:
+        pos_str = f" ({opener_pos})" if opener_pos and n_limpers == 1 else ""
+        return f"{n_limpers} limp{'s' if n_limpers > 1 else ''}{pos_str}"
+    return "—"
+
+
+def _hero_action_display(h: dict) -> str:
+    """Texto display formatado da ação do herói."""
+    action = h.get("hero_action")
+    all_in = h.get("hero_all_in", False)
+    size_bb = h.get("hero_action_size_bb")
+    if action is None:
+        return "—"
+    if action == "fold":
+        return "fold"
+    if action == "call":
+        return f"call {size_bb}bb" if size_bb else "call"
+    if action == "raise":
+        if all_in:
+            return "shove (all-in)"
+        return f"raise {size_bb}bb" if size_bb else "raise"
+    return action
+
+
+def _classify_spot(h: dict) -> tuple:
+    """Retorna (is_rfi_spot, spot_type)."""
+    scenario = h.get("scenario", "outro")
+    hero_pos = h.get("hero_pos")
+    n_limpers = h.get("n_limpers") or 0
+
+    if scenario == "RFI":
+        if hero_pos == "SB":
+            return True, "sb_first_in"
+        return True, "RFI"
+    if scenario == "vs_RFI":
+        if hero_pos == "BB":
+            return False, "bb_defense"
+        return False, "vs_raise"
+    if scenario == "vs_3bet":
+        return False, "vs_raise"
+    if n_limpers > 0:
+        return False, "vs_limp"
+    if h.get("hero_action") is None:
+        return False, "postflop_only"
+    return False, "unknown"
+
+
+def _rfi_evaluate(h: dict) -> tuple:
+    """Para spot RFI, retorna (recommended, verdict, severity, reason)."""
+    pos = h.get("hero_pos")
+    stack_bb = h.get("stack_bb")
+    hero_cards = h.get("hero_cards")
+    hero_action = h.get("hero_action")
+    hero_all_in = h.get("hero_all_in", False)
+
+    if not pos or not hero_cards or stack_bb is None or hero_action is None:
+        return None, "not_evaluated", None, "Dados insuficientes para avaliar."
+
+    buckets = se._get_buckets(pos, "RFI", stack_bb, GRADE_MODE)
+    if not buckets:
+        return None, "not_evaluated", None, f"Sem material do curso para {pos} RFI com {stack_bb}bb."
+
+    recommended = se._correct_action(hero_cards, buckets)
+    if recommended is None:
+        return None, "not_evaluated", None, "Mão não mapeada no material do curso."
+
+    is_push_fold = stack_bb <= 10
+    is_short = stack_bb <= 15
+
+    if hero_action == "fold":
+        hero_mapped = "fold"
+    elif hero_action in ("raise", "call"):
+        hero_mapped = "shove" if hero_all_in else "raise"
+    else:
+        return recommended, "not_evaluated", None, "Ação não reconhecida."
+
+    if recommended == "raise":
+        if hero_mapped == "raise":
+            return recommended, "correct", "none", f"{hero_cards} está no range de abertura de {pos} com {stack_bb}bb."
+        if hero_mapped == "shove":
+            if is_push_fold:
+                return recommended, "correct", "none", f"Com {stack_bb}bb (zona push/fold), open shove equivale a raise. Correto."
+            if is_short:
+                return recommended, "minor_error", "minor", f"Com {stack_bb}bb, raise pequeno (2bb) é preferível ao open shove."
+            return recommended, "minor_error", "minor", f"Com {stack_bb}bb, prefira raise 2–2.5bb ao invés de open shove."
+        # hero_mapped == "fold"
+        return recommended, "minor_error", "minor", f"{hero_cards} está no range de abertura de {pos} com {stack_bb}bb. Foldar foi apertado demais."
+
+    if recommended == "fold":
+        if hero_mapped == "fold":
+            return recommended, "correct", "none", f"{hero_cards} é fold de {pos} com {stack_bb}bb. Correto."
+        return recommended, "major_error", "major", f"{hero_cards} não está no range de abertura de {pos} com {stack_bb}bb. Abertura muito ampla."
+
+    if recommended == "shove":
+        if hero_mapped == "shove":
+            return recommended, "correct", "none", f"Open shove correto com {hero_cards} em {pos} com {stack_bb}bb."
+        if hero_mapped == "raise":
+            return recommended, "minor_error", "minor", f"Com {stack_bb}bb, a ação correta é open shove. Raise pequeno cria spots difíceis."
+        return recommended, "major_error", "major", f"{hero_cards} é mão de open shove em {pos} com {stack_bb}bb. Foldar perde EV significativo."
+
+    return recommended, "not_evaluated", None, None
+
+
+_NON_RFI_REASON = {
+    "bb_defense": "Defesa de Big Blind — não é spot RFI.",
+    "vs_raise": "Havia raise antes do herói — não é spot RFI.",
+    "vs_limp": "Havia limp(s) antes — spot de iso-raise, não RFI puro.",
+    "postflop_only": "Herói não tomou decisão pré-flop voluntária.",
+    "unknown": "Spot não classificado.",
+}
+
+
 def tournament_all_hands(tournament_id: str) -> dict:
-    """Todas as mãos de um torneio específico, incluindo não críticas."""
+    """Todas as mãos do torneio com análise de range RFI (foco pré-flop)."""
     with _conn() as c:
         rows = c.execute(
-            "SELECT hand_id, hero_pos, hero_cards, stack_bb, scenario, hero_action, "
-            "course_action, is_correct, is_critical, pke_outcome, raw_text, played_at "
-            "FROM imported_hands WHERE tournament_id = ? ORDER BY played_at ASC",
+            "SELECT hand_id, raw_text, played_at FROM imported_hands "
+            "WHERE tournament_id = ? AND raw_text IS NOT NULL ORDER BY played_at ASC",
             (tournament_id,),
         ).fetchall()
 
     maos = []
-    for r in rows:
-        if r["raw_text"]:
-            try:
-                parsed = parse_text(r["raw_text"])
-                if parsed:
-                    res = ta.screen_and_analyze(parsed[0])
-                    if res:
-                        view = ta._hand_view(res)
-                        view["played_at"] = r["played_at"]
-                        maos.append(view)
-                        continue
-            except Exception:
-                pass
-        outcome = r["pke_outcome"] or ("acerto" if r["is_correct"] else "erro" if r["is_correct"] is not None else "insuficiente")
+    for i, r in enumerate(rows, 1):
+        try:
+            parsed_list = parse_text(r["raw_text"])
+            if not parsed_list:
+                continue
+            h = parsed_list[0]
+        except Exception:
+            continue
+
+        is_rfi, spot_type = _classify_spot(h)
+
+        if is_rfi:
+            recommended, verdict, severity, reason = _rfi_evaluate(h)
+        else:
+            recommended = None
+            verdict = "not_evaluated"
+            severity = None
+            reason = _NON_RFI_REASON.get(spot_type, "Não é spot RFI.")
+
         maos.append({
             "hand_id": r["hand_id"],
-            "fase": None, "spot": r["scenario"],
-            "cards": r["hero_cards"], "pos": r["hero_pos"], "eff_bb": r["stack_bb"],
-            "linha": r["hero_action"], "recomendado": r["course_action"],
-            "outcome": outcome, "gravidade": None, "erro": None,
-            "regra": [], "explicacao": None, "resumo": None,
-            "ajuste_exploratorio": None, "motivos_criticos": [],
-            "insuficiente": False, "falta_info": [],
-            "shown_label": "Acerto" if r["is_correct"] else ("Erro" if r["is_correct"] is not None else "—"),
+            "hand_number": i,
+            "blinds": h.get("blinds"),
+            "ante": None,
+            "players_count": h.get("n_players"),
+            "hero_position": h.get("hero_pos"),
+            "hero_cards": h.get("hero_cards"),
+            "hero_stack_bb": h.get("stack_bb"),
+            "effective_stack_bb": h.get("effective_stack_bb"),
+            "action_before_hero": _action_before_hero_text(h),
+            "hero_preflop_action": _hero_action_display(h),
+            "is_rfi_spot": is_rfi,
+            "spot_type": spot_type,
+            "recommended_action": recommended,
+            "verdict": verdict,
+            "severity": severity,
+            "reason": reason,
             "played_at": r["played_at"],
         })
 

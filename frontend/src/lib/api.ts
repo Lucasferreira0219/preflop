@@ -121,7 +121,7 @@ export const api = {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ tournament_id: tournamentId }),
-    }).then((r) => r.json()) as Promise<{ maos: import("./types").ReportHand[]; total: number }>,
+    }).then((r) => r.json()) as Promise<{ maos: import("./types").RfiHand[]; total: number }>,
 
   // Consulta PKE: body é um objeto {question, context} (não o array padrão).
   pkeQuery: async (question: string, context: PkeQueryContext) => {

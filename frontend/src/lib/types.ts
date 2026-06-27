@@ -165,6 +165,34 @@ export interface Improvement {
   by_stack: Record<string, DeltaEntry>;
 }
 
+// ── Análise RFI (aba "Todas" do torneio) ─────────────────────────────────────
+
+export type RfiVerdict = "correct" | "minor_error" | "major_error" | "not_evaluated";
+export type RfiSpotType =
+  | "RFI" | "sb_first_in" | "bb_defense" | "vs_raise" | "vs_limp"
+  | "postflop_only" | "unknown";
+
+export interface RfiHand {
+  hand_id: string;
+  hand_number: number | null;
+  blinds: string | null;
+  ante: number | null;
+  players_count: number | null;
+  hero_position: string | null;
+  hero_cards: string | null;
+  hero_stack_bb: number | null;
+  effective_stack_bb: number | null;
+  action_before_hero: string | null;
+  hero_preflop_action: string | null;
+  is_rfi_spot: boolean;
+  spot_type: RfiSpotType;
+  recommended_action: string | null;
+  verdict: RfiVerdict;
+  severity: "none" | "minor" | "major" | null;
+  reason: string | null;
+  played_at: string | null;
+}
+
 // ── Mãos importadas do PokerStars ──────────────────────────────────────────────
 
 export interface ImportedHand {

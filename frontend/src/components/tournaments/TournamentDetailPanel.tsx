@@ -3,11 +3,12 @@ import * as Dialog from "@radix-ui/react-dialog";
 import { useNavigate } from "react-router-dom";
 import { BookOpen, Download, Eye, Loader2, MoreHorizontal, NotebookPen, RefreshCw, X } from "lucide-react";
 import { HandList, Leaks, Summary } from "@/components/tournaments/PkeReport";
+import { AllHandsView } from "@/components/tournaments/AllHandsView";
 import { Button } from "@/components/ui/Button";
 import { api } from "@/lib/api";
 import { useApp } from "@/state/AppProvider";
 import { leakLabel } from "@/lib/pke";
-import type { Note, ReportHand, ReportLeak, Tournament, TournamentReport } from "@/lib/types";
+import type { Note, RfiHand, ReportHand, ReportLeak, Tournament, TournamentReport } from "@/lib/types";
 import { cn } from "@/lib/cn";
 
 type DetailTab = "resumo" | "leaks" | "maos";
@@ -27,7 +28,7 @@ export function TournamentDetailPanel() {
   const [tab, setTab] = useState<DetailTab>("resumo");
   const [menuOpen, setMenuOpen] = useState(false);
   const [showAllHands, setShowAllHands] = useState(false);
-  const [allHands, setAllHands] = useState<import("@/lib/types").ReportHand[]>([]);
+  const [allHands, setAllHands] = useState<RfiHand[]>([]);
   const [loadingAll, setLoadingAll] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const tid = tournamentDetailId;
@@ -225,9 +226,11 @@ export function TournamentDetailPanel() {
                       >{loadingAll ? "Carregando…" : "Todas"}</button>
                     </div>
                     {showAllHands
-                      ? allHands.length === 0
-                        ? <p className="py-8 text-center text-sm text-ink-faint">Nenhuma mão encontrada.</p>
-                        : <div className="flex flex-col gap-2">{allHands.map((m) => <div key={m.hand_id} className="rounded-card border border-border bg-surface-1 p-3 text-sm"><div className="flex flex-wrap items-center gap-1.5"><span className="font-semibold text-ink">{m.cards}</span><span className="text-ink-dim">{m.pos}</span>{m.eff_bb != null && <span className="text-2xs text-ink-faint">{m.eff_bb}bb</span>}</div><div className="mt-1 text-2xs text-ink-faint">{m.linha && <span>Jogado: <span className="text-ink-dim">{m.linha}</span></span>}{m.recomendado && m.recomendado !== m.linha && <span className="ml-2">Correto: <span className="text-ink-dim">{m.recomendado}</span></span>}{m.shown_label && <span className="ml-2 font-medium">{m.shown_label}</span>}</div></div>)}</div>
+                      ? loadingAll
+                        ? <div className="flex items-center justify-center gap-2 py-8 text-sm text-ink-dim"><Loader2 className="h-4 w-4 animate-spin" /> Carregando mãos…</div>
+                        : allHands.length === 0
+                          ? <p className="py-8 text-center text-sm text-ink-faint">Nenhuma mão encontrada.</p>
+                          : <AllHandsView hands={allHands} />
                       : <HandList report={report} onExportHand={goExportHand} />
                     }
                   </div>
