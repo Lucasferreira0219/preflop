@@ -14,21 +14,29 @@ import re
 
 # ── Regexes compartilhados ────────────────────────────────────────────────────
 
+# Aceita cliente PT-BR e EN lado a lado (mesmo torneio pode ser exportado em qualquer um).
 _RE_HH_HEADER = re.compile(
-    r"M[ãa]o PokerStars\s+#(\d+):\s*Torneio\s*#(\d+),\s*"
-    r"(.+?)\s+-\s+N[íi]vel"
+    r"(?:M[ãa]o PokerStars|PokerStars Hand)\s+#(\d+):\s*(?:Torneio|Tournament)\s*#(\d+),\s*"
+    r"(.+?)\s+-\s+(?:N[íi]vel|Level)"
 )
-_RE_HH_DATE   = re.compile(r"(\d{4}/\d{2}/\d{2}\s+\d{1,2}:\d{2}:\d{2})\s+BRT")
-_RE_HERO      = re.compile(r"^(.+?)\s+recebe\s+\[\w\w\s+\w\w\]")
-# Eliminação fora do dinheiro: "X terminou o torneio em Nº lugar"
-_RE_BUST      = re.compile(r"^(.+?)\s+terminou o torneio em\s+(\d+)[ºo°]?\s+lugar")
-# ITM (ficou no dinheiro): "X Acabou o torneio em Nº lugar e recebeu $ Y.YY"
+_RE_HH_DATE   = re.compile(r"(\d{4}/\d{2}/\d{2}\s+\d{1,2}:\d{2}:\d{2})\s+[A-Z]{2,5}\b")
+# PT: "Fulano recebe [..]" / EN: "Dealt to Fulano [..]" — nome muda de lado, 2 grupos alternativos.
+_RE_HERO      = re.compile(r"^(?:(.+?)\s+recebe|Dealt to\s+(.+?))\s+\[\w\w\s+\w\w\]")
+# Eliminação fora do dinheiro: PT "X terminou o torneio em Nº lugar" / EN "X finished the tournament in Nth place"
+_RE_BUST      = re.compile(
+    r"^(.+?)\s+(?:terminou o torneio em|finished the tournament in)\s+"
+    r"(\d+)(?:[ºo°]|\w*)\s+(?:lugar|place)"
+)
+# ITM: PT "X Acabou o torneio em Nº lugar e recebeu $ Y.YY" / EN "X finished the tournament in Nth place and received $ Y.YY"
 _RE_ITM       = re.compile(
-    r"^(.+?)\s+[Aa]cabou o torneio em\s+(\d+)[ºo°]?\s+lugar\s+e recebeu\s+\$\s*(\d+[.,]\d{2})"
+    r"^(.+?)\s+(?:[Aa]cabou o torneio em|finished the tournament in)\s+"
+    r"(\d+)(?:[ºo°]|\w*)\s+(?:lugar\s+e recebeu|place and received)"
+    r"\s+\$\s*(\d+[.,]\d{2})"
 )
-# Cravada: "X ganhou o torneio e recebeu $ Y.YY"
+# Cravada: PT "X ganhou o torneio e recebeu $ Y.YY" / EN "X wins the tournament and receives $ Y.YY"
 _RE_WIN       = re.compile(
-    r"^(.+?)\s+ganhou o torneio e recebeu\s+\$\s*(\d+[.,]\d{2})"
+    r"^(.+?)\s+(?:ganhou o torneio e recebeu|wins the tournament and receives)"
+    r"\s+\$\s*(\d+[.,]\d{2})"
 )
 
 _RE_SUM_HEADER = re.compile(
@@ -181,8 +189,9 @@ def _parse_hand_history(text: str) -> dict:
         if current_tid not in hero_per_tid:
             mh = _RE_HERO.match(line)
             if mh:
-                hero_per_tid[current_tid] = mh.group(1).strip()
-                by_tid[current_tid]["hero"] = mh.group(1).strip()
+                hero_name = (mh.group(1) or mh.group(2)).strip()
+                hero_per_tid[current_tid] = hero_name
+                by_tid[current_tid]["hero"] = hero_name
 
         hero = hero_per_tid.get(current_tid)
 

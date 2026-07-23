@@ -27,23 +27,25 @@ _SEAT_ORDER = {
 }
 
 # Cabeçalho: "Mão PokerStars #260946547381: Torneio #4003782626, ... (10/20) - 2026/05/27 13:40:59 BRT ..."
-_RE_HEADER  = re.compile(r"#(\d+):\s*Torneio\s*#(\d+)")
+# Aceita cliente PT-BR e EN lado a lado (mesmo torneio pode ser exportado em qualquer um).
+_RE_HEADER  = re.compile(r"#(\d+):\s*(?:Torneio|Tournament)\s*#(\d+)")
 _RE_BLINDS  = re.compile(r"\((\d+)/(\d+)\)")
-_RE_DATE    = re.compile(r"(\d{4}/\d{2}/\d{2}\s+\d{1,2}:\d{2}:\d{2})\s+BRT")
-_RE_TABLE   = re.compile(r"-max\s+Lugar\s*#(\d+)")
+_RE_DATE    = re.compile(r"(\d{4}/\d{2}/\d{2}\s+\d{1,2}:\d{2}:\d{2})\s+[A-Z]{2,5}\b")
+_RE_TABLE   = re.compile(r"-max\s+(?:Lugar|Seat)\s*#(\d+)")
 _RE_MAX     = re.compile(r"(\d+)-max")
-_RE_SEAT    = re.compile(r"^Lugar\s+(\d+):\s+(.+?)\s+\((\d+)\s+em fichas\)")
-_RE_SB      = re.compile(r"^(.+?):\s+paga o small blind\s+(\d+)")
-_RE_BB      = re.compile(r"^(.+?):\s+paga o big blind\s+(\d+)")
-_RE_HERO    = re.compile(r"^(.+?)\s+recebe\s+\[(\w\w)\s+(\w\w)\]")
-_RE_FOLD    = re.compile(r"^(.+?):\s+desiste")
-_RE_CALL    = re.compile(r"^(.+?):\s+iguala\s+(\d+)")
-_RE_RAISE   = re.compile(r"^(.+?):\s+aumenta\s+(\d+)\s+para\s+(\d+)")
+_RE_SEAT    = re.compile(r"^(?:Lugar|Seat)\s+(\d+):\s+(.+?)\s+\((\d+)\s+(?:em fichas|in chips)\)")
+_RE_SB      = re.compile(r"^(.+?):\s+(?:paga o|posts)\s+small blind\s+(\d+)")
+_RE_BB      = re.compile(r"^(.+?):\s+(?:paga o|posts)\s+big blind\s+(\d+)")
+# PT: "Fulano recebe [Kd Ks]" / EN: "Dealt to Fulano [Kd Ks]" — nome muda de lado, 2 grupos alternativos.
+_RE_HERO    = re.compile(r"^(?:(.+?)\s+recebe|Dealt to\s+(.+?))\s+\[(\w\w)\s+(\w\w)\]")
+_RE_FOLD    = re.compile(r"^(.+?):\s+(?:desiste|folds)")
+_RE_CALL    = re.compile(r"^(.+?):\s+(?:iguala|calls)\s+(\d+)")
+_RE_RAISE   = re.compile(r"^(.+?):\s+(?:aumenta|raises)\s+(\d+)\s+(?:para|to)\s+(\d+)")
 # Resultado da mão (seção resumo/showdown)
-_RE_POT      = re.compile(r"Total pote\s+(\d+)")
+_RE_POT      = re.compile(r"Total (?:pote|pot)\s+(\d+)")
 _RE_SHOWDOWN = re.compile(r"\*\*\*\s*SHOW\s*DOWN")
-_RE_SHOW     = re.compile(r"^(.+?):\s+mostra\s+\[(\w\w)\s+(\w\w)\]")
-_RE_BOARD    = re.compile(r"Mesa\s+\[([2-9TJQKAtjqka][cdhs](?:\s+[2-9TJQKAtjqka][cdhs])*)\]")
+_RE_SHOW     = re.compile(r"^(.+?):\s+(?:mostra|shows)\s+\[(\w\w)\s+(\w\w)\]")
+_RE_BOARD    = re.compile(r"(?:Mesa|Board)\s+\[([2-9TJQKAtjqka][cdhs](?:\s+[2-9TJQKAtjqka][cdhs])*)\]")
 
 
 def canonical_hand(c1, c2):
@@ -146,11 +148,12 @@ def parse_text(text):
                 seats[ms.group(2)] = int(ms.group(3))
                 continue
 
-            if line.startswith('*** CARTAS DA MÃO ***'):
+            if line.startswith('*** CARTAS DA MÃO ***') or line.startswith('*** HOLE CARDS ***'):
                 section = 'cartas'
                 continue
             if line.startswith('*** FLOP') or line.startswith('*** RESUMO') \
-               or line.startswith('*** SUMÁRIO') or line.startswith('*** SHOW'):
+               or line.startswith('*** SUMÁRIO') or line.startswith('*** SUMMARY') \
+               or line.startswith('*** SHOW'):
                 section = 'post'
                 continue
 
@@ -168,8 +171,8 @@ def parse_text(text):
             if section == 'cartas':
                 mh = _RE_HERO.match(line)
                 if mh:
-                    hero = mh.group(1)
-                    hero_cards = canonical_hand(mh.group(2), mh.group(3))
+                    hero = mh.group(1) or mh.group(2)
+                    hero_cards = canonical_hand(mh.group(3), mh.group(4))
                     continue
 
             if section in ('cartas',):
@@ -350,11 +353,12 @@ def _parse_result(block, hero):
             break
     if hero:
         h = re.escape(hero)
-        if re.search(rf"{h}\b.*?\bganhou\b", text) or re.search(rf"{h}\s+recebeu\s+\d+\s+do pote", text):
+        if re.search(rf"{h}\b.*?\b(?:ganhou|won)\b", text) or \
+           re.search(rf"{h}\s+(?:recebeu\s+\d+\s+do pote|collected\s+\d+\s+from pot)", text):
             hero_won = True
-        elif re.search(rf"{h}\b.*?\bperdeu\b", text):
+        elif re.search(rf"{h}\b.*?\b(?:perdeu|lost)\b", text):
             hero_won = False
-        busted = bool(re.search(rf"{h}\s+terminou o torneio", text))
+        busted = bool(re.search(rf"{h}\s+(?:terminou o torneio|finished the tournament)", text))
     return {"went_to_showdown": showdown, "hero_won": hero_won, "pot_total": pot,
             "hero_busted": busted, "board": board, "villain_cards": villain_cards}
 
