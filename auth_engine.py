@@ -1,7 +1,7 @@
 """Auth: users table + JWT."""
 import os, sqlite3, time
 from contextlib import contextmanager
-from passlib.context import CryptContext
+import bcrypt
 from jose import JWTError, jwt
 
 _BASE    = os.path.dirname(os.path.abspath(__file__))
@@ -10,7 +10,14 @@ SECRET   = "preflop_jwt_secret_change_me_in_prod"
 ALGO     = "HS256"
 TTL_SECS = 30 * 24 * 3600  # 30 days
 
-_crypt = CryptContext(schemes=["bcrypt"], deprecated="auto")
+def _hash_pw(password: str) -> str:
+    return bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
+
+def _verify_pw(password: str, hashed: str) -> bool:
+    try:
+        return bcrypt.checkpw(password.encode(), hashed.encode())
+    except Exception:
+        return False
 
 @contextmanager
 def _conn():
@@ -42,7 +49,7 @@ def init_schema():
             c.execute(f"UPDATE {tbl} SET user_id = 1 WHERE user_id IS NULL")
 
 def create_user(username: str, password: str) -> dict:
-    hashed = _crypt.hash(password)
+    hashed = _hash_pw(password)
     with _conn() as c:
         try:
             c.execute("INSERT INTO users (username, password, created_at) VALUES (?,?,?)",
@@ -55,7 +62,7 @@ def create_user(username: str, password: str) -> dict:
 def authenticate(username: str, password: str):
     with _conn() as c:
         row = c.execute("SELECT * FROM users WHERE username=?", (username,)).fetchone()
-    if not row or not _crypt.verify(password, row["password"]):
+    if not row or not _verify_pw(password, row["password"]):
         return None
     return {"id": row["id"], "username": row["username"]}
 
