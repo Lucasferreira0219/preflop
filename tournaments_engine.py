@@ -194,7 +194,7 @@ def _type_key(name: str | None, buy_in_cents: int | None, fee_cents: int | None)
 
 # ── Importação ────────────────────────────────────────────────────────────────
 
-def import_text(text: str) -> dict:
+def import_text(text: str, user_id: int = 1) -> dict:
     """Recebe texto de 1+ arquivos do PS (HH e/ou summary, concatenados),
     consolida e insere na tabela. Torneios já cadastrados são ignorados.
     Devolve resumo da operação."""
@@ -231,8 +231,8 @@ def import_text(text: str) -> dict:
                   (tournament_id, ps_tournament_id, played_at, hero, tournament_name,
                    game_type, format, buy_in_cents, fee_cents, currency, n_entries,
                    prize_pool_cents, finish_pos, prize_cents, prize_known, room,
-                   origin, notes, raw_text, imported_ts, updated_ts)
-                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                   origin, notes, raw_text, imported_ts, updated_ts, user_id)
+                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
             """, (
                 tid, t.get("ps_tournament_id") or tid, t.get("played_at"), t.get("hero"),
                 t.get("tournament_name"), t.get("game_type"), t.get("format"),
@@ -240,7 +240,7 @@ def import_text(text: str) -> dict:
                 t.get("n_entries"), t.get("prize_pool_cents"),
                 t.get("finish_pos"), prize_cents, prize_known,
                 t.get("room") or "PokerStars", "import",
-                None, t.get("raw_text"), ts, ts,
+                None, t.get("raw_text"), ts, ts, user_id,
             ))
             summary["new"] += 1
             final_row = dict(t)
@@ -275,7 +275,7 @@ def list_rooms() -> list[str]:
     return out
 
 
-def add_manual(data: dict) -> dict:
+def add_manual(data: dict, user_id: int = 1) -> dict:
     """Cadastra um torneio manualmente (sem arquivo .txt).
 
     Complementa — nunca substitui — o fluxo de importação. Recebe um dict com:
@@ -320,13 +320,13 @@ def add_manual(data: dict) -> dict:
               (tournament_id, played_at, hero, tournament_name, game_type, format,
                buy_in_cents, fee_cents, currency, n_entries, prize_pool_cents,
                finish_pos, prize_cents, prize_known, room, origin, notes, raw_text,
-               imported_ts, updated_ts)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+               imported_ts, updated_ts, user_id)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         """, (
             tid, played_at, None, name, None, fmt,
             buy_in, fee, currency, n_entries, None,
             finish_pos, prize, prize_known, room, "manual",
-            (d.get("notes") or None), None, ts, ts,
+            (d.get("notes") or None), None, ts, ts, user_id,
         ))
         row = c.execute(
             "SELECT * FROM tournaments WHERE tournament_id = ?", (tid,)
@@ -341,27 +341,27 @@ def _local_day(ts: int) -> str:
     return time.strftime("%Y/%m/%d", time.localtime(ts))
 
 
-def grind_active() -> dict | None:
+def grind_active(user_id: int = 1) -> dict | None:
     """Bloco de grind em andamento (ended_ts NULL), se houver."""
     with _conn() as c:
         r = c.execute(
-            "SELECT * FROM grind_blocks WHERE ended_ts IS NULL "
-            "ORDER BY started_ts DESC LIMIT 1"
+            "SELECT * FROM grind_blocks WHERE ended_ts IS NULL AND user_id = ? "
+            "ORDER BY started_ts DESC LIMIT 1", (user_id,)
         ).fetchone()
     return dict(r) if r else None
 
 
-def grind_start() -> dict:
+def grind_start(user_id: int = 1) -> dict:
     """Inicia o cronômetro. Se já houver um bloco rodando, devolve ele
     (evita dois cronômetros simultâneos)."""
-    act = grind_active()
+    act = grind_active(user_id=user_id)
     if act:
         return act
     ts = int(time.time())
     with _conn() as c:
         cur = c.execute(
-            "INSERT INTO grind_blocks (day, started_ts, ended_ts) VALUES (?,?,NULL)",
-            (_local_day(ts), ts),
+            "INSERT INTO grind_blocks (day, started_ts, ended_ts, user_id) VALUES (?,?,NULL,?)",
+            (_local_day(ts), ts, user_id),
         )
         r = c.execute(
             "SELECT * FROM grind_blocks WHERE id = ?", (cur.lastrowid,)
@@ -369,14 +369,14 @@ def grind_start() -> dict:
     return dict(r)
 
 
-def grind_stop() -> dict:
+def grind_stop(user_id: int = 1) -> dict:
     """Para o cronômetro em andamento. Devolve o bloco fechado (ou {} se nada
     estava rodando)."""
     ts = int(time.time())
     with _conn() as c:
         act = c.execute(
-            "SELECT * FROM grind_blocks WHERE ended_ts IS NULL "
-            "ORDER BY started_ts DESC LIMIT 1"
+            "SELECT * FROM grind_blocks WHERE ended_ts IS NULL AND user_id = ? "
+            "ORDER BY started_ts DESC LIMIT 1", (user_id,)
         ).fetchone()
         if not act:
             return {}
@@ -385,20 +385,20 @@ def grind_stop() -> dict:
     return dict(r)
 
 
-def grind_by_day() -> dict[str, int]:
+def grind_by_day(user_id: int = 1) -> dict[str, int]:
     """{dia: segundos} somando blocos JÁ FECHADOS de cada dia."""
     with _conn() as c:
         rows = c.execute(
             "SELECT day, SUM(ended_ts - started_ts) AS secs FROM grind_blocks "
-            "WHERE ended_ts IS NOT NULL GROUP BY day"
+            "WHERE ended_ts IS NOT NULL AND user_id = ? GROUP BY day", (user_id,)
         ).fetchall()
     return {r["day"]: int(r["secs"] or 0) for r in rows}
 
 
-def grind_blocks_for_day(day: str) -> list[dict]:
+def grind_blocks_for_day(day: str, user_id: int = 1) -> list[dict]:
     with _conn() as c:
         rows = c.execute(
-            "SELECT * FROM grind_blocks WHERE day = ? ORDER BY started_ts ASC", (day,)
+            "SELECT * FROM grind_blocks WHERE day = ? AND user_id = ? ORDER BY started_ts ASC", (day, user_id)
         ).fetchall()
     return [dict(r) for r in rows]
 
@@ -433,7 +433,7 @@ def _apply_payout(d: dict, payouts_by_key: dict[str, list[int]]) -> dict:
     return d
 
 
-def list_tournaments(filters: dict | None = None) -> list[dict]:
+def list_tournaments(filters: dict | None = None, user_id: int = 1) -> list[dict]:
     """Lista torneios com filtros opcionais.
 
     Período/sala/buy-in/formato + filtros avançados de PKE e resultado:
@@ -446,7 +446,7 @@ def list_tournaments(filters: dict | None = None) -> list[dict]:
     se propaga automaticamente — KPIs/gráficos/lista ficam consistentes.
     """
     f = filters or {}
-    where, params = ["1=1"], []
+    where, params = ["user_id = ?"], [user_id]
     if f.get("from_date"):
         where.append("played_at >= ?")
         params.append(f["from_date"])
@@ -574,13 +574,13 @@ def _match_financial(pub: dict, kind: str) -> bool:
     return True
 
 
-def overview(filters: dict | None = None) -> dict:
+def overview(filters: dict | None = None, user_id: int = 1) -> dict:
     """Métricas agregadas + série de banca cumulativa pro gráfico.
 
     Considera como "conhecido" tudo que tem prize_source != None — ou seja,
     edição manual OU prêmio derivado da tabela de payouts cadastrada.
     """
-    tournaments = list_tournaments(filters)
+    tournaments = list_tournaments(filters, user_id=user_id)
     n = len(tournaments)
     cost_total = 0
     prize_total = 0
@@ -665,14 +665,14 @@ def overview(filters: dict | None = None) -> dict:
     }
 
 
-def sessions(filters: dict | None = None) -> list[dict]:
+def sessions(filters: dict | None = None, user_id: int = 1) -> list[dict]:
     """Agrupa torneios por DIA (sessão), com KPIs e janela de início/fim.
 
     Retorna lista ordenada do dia mais recente pro mais antigo. Cada item:
       day (YYYY/MM/DD), start_at, end_at, n, cost_cents, prize_cents,
       profit_cents, roi_pct, itm_pct, cashed, pending.
     """
-    tournaments = list_tournaments(filters)
+    tournaments = list_tournaments(filters, user_id=user_id)
     by_day: dict[str, dict] = {}
 
     def _blank_day(day, pa=None):
@@ -721,7 +721,7 @@ def sessions(filters: dict | None = None) -> list[dict]:
     hands_by_tid = _hands_by_tournament(tids)
     hand_grind = _grind_seconds_by_day(tournaments, hands_by_tid)
     # Fallback: cronômetro manual (grind_blocks) p/ dias sem mãos importadas.
-    manual_grind = grind_by_day()
+    manual_grind = grind_by_day(user_id=user_id)
     for day in manual_grind:
         by_day.setdefault(day, _blank_day(day))
 
@@ -889,10 +889,10 @@ def _iso_week(day):
     return f"{y}-W{w}", time.strftime("%Y/%m/%d", time.localtime(start_ep))
 
 
-def tournaments_analytics(filters: dict | None = None) -> dict:
+def tournaments_analytics(filters: dict | None = None, user_id: int = 1) -> dict:
     """Séries agregadas p/ a central de análise. Um list_tournaments + um scan de
     imported_hands; constrói blocos de grind uma vez e dobra em todas as séries."""
-    tournaments = list_tournaments(filters)
+    tournaments = list_tournaments(filters, user_id=user_id)
     tids = [t["tournament_id"] for t in tournaments]
     hands_by_tid = _hands_by_tournament(tids)
     intervals, blocks = _blocks_for_tournaments(tournaments, hands_by_tid)

@@ -1,4 +1,5 @@
 // Cliente da API REST do FastAPI. Mantém o padrão _BASE (deploy atrás de /preflop).
+import { getToken } from "./auth";
 import type {
   Analytics,
   AnalyticsPayload,
@@ -37,10 +38,16 @@ import type {
 
 export const BASE = /^\/preflop(?=\/|$)/.test(location.pathname) ? "/preflop" : "";
 
+function _authHeaders(): Record<string, string> {
+  const token = getToken();
+  return token ? { "Content-Type": "application/json", "Authorization": `Bearer ${token}` }
+               : { "Content-Type": "application/json" };
+}
+
 async function call<T>(method: string, args: unknown[] = []): Promise<T> {
   const res = await fetch(`${BASE}/api/${method}`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: _authHeaders(),
     body: JSON.stringify(args),
   });
   if (!res.ok) throw new Error(`API ${method} HTTP ${res.status}`);
@@ -51,7 +58,7 @@ async function call<T>(method: string, args: unknown[] = []): Promise<T> {
 async function _postObj<T>(path: string, body: unknown): Promise<T> {
   const res = await fetch(`${BASE}${path}`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: _authHeaders(),
     body: JSON.stringify(body),
   });
   if (!res.ok) throw new Error(`API ${path} HTTP ${res.status}`);
@@ -59,12 +66,23 @@ async function _postObj<T>(path: string, body: unknown): Promise<T> {
 }
 
 async function _getJson<T>(path: string): Promise<T> {
-  const res = await fetch(`${BASE}${path}`, { method: "GET" });
+  const res = await fetch(`${BASE}${path}`, { method: "GET", headers: _authHeaders() });
   if (!res.ok) throw new Error(`API ${path} HTTP ${res.status}`);
   return (await res.json()) as T;
 }
 
 export const api = {
+  // ── Auth ─────────────────────────────────────────────────────────────────
+  authLogin: async (username: string, password: string) => {
+    const res = await fetch(`${BASE}/auth/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, password }),
+    });
+    if (!res.ok) throw new Error("Usuário ou senha inválidos");
+    return res.json() as Promise<{ access_token: string; user: { id: number; username: string } }>;
+  },
+
   newQuestion: (
     playerCount = 9,
     stackBb: number | null = null,
@@ -112,14 +130,14 @@ export const api = {
   allCriticalHands: (onlyErrors = true, limit = 200) =>
     fetch(`${BASE}/api/all_critical_hands`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: _authHeaders(),
       body: JSON.stringify({ only_errors: onlyErrors, limit }),
     }).then((r) => r.json()) as Promise<{ maos: import("./types").ReportHand[]; total: number }>,
 
   tournamentAllHands: (tournamentId: string) =>
     fetch(`${BASE}/api/tournament_all_hands`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: _authHeaders(),
       body: JSON.stringify({ tournament_id: tournamentId }),
     }).then((r) => r.json()) as Promise<{ maos: import("./types").RfiHand[]; total: number }>,
 

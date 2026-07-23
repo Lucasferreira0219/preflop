@@ -4,27 +4,21 @@ import hands_engine as he
 
 
 class TournamentsApi:
-    def import_tournaments(self, text: str):
+    def import_tournaments(self, text: str, user_id: int = 1):
         if not text or not isinstance(text, str):
             return {"error": "Arquivo vazio ou inválido."}
-        return te.import_text(text)
+        return te.import_text(text, user_id=user_id)
 
-    def import_files(self, text: str):
-        """Import unificado: financeiro (tournaments) + mãos (PKE) + análise.
-
-        Reaproveita os dois parsers existentes, roda o PKE automaticamente e
-        persiste o resumo na linha do torneio. Seguro para qualquer .txt.
-        """
+    def import_files(self, text: str, user_id: int = 1):
+        """Import unificado: financeiro (tournaments) + mãos (PKE) + análise."""
         if not text or not isinstance(text, str):
             return {"error": "Arquivo vazio ou inválido."}
-        fin = te.import_text(text)                 # financeiro (cria/atualiza tournaments)
-        hands = he.import_text(text)               # mãos + pke_* por mão
+        fin = te.import_text(text, user_id=user_id)
+        hands = he.import_text(text, user_id=user_id)
 
-        # tids dos registros novos
         tids = {t.get("tournament_id") for t in fin.get("tournaments", []) if t.get("tournament_id")}
         tids |= {h.get("tournament_id") for h in hands.get("hands", []) if h.get("tournament_id")}
 
-        # Se tids ainda vazio mas o arquivo foi parseado (duplicatas), extrai direto do parser
         if not tids and (fin.get("parsed", 0) > 0 or fin.get("duplicates", 0) > 0):
             from tournament_parser import parse_text as _tp
             from hand_history_parser import parse_text as _hh
@@ -37,10 +31,10 @@ class TournamentsApi:
 
         for tid in tids:
             try:
-                he.analyze_tournament(tid)         # persiste resumo PKE no torneio
+                he.analyze_tournament(tid, user_id=user_id)
             except Exception:
                 pass
-        tournaments = [t for t in te.list_tournaments() if t["tournament_id"] in tids]
+        tournaments = [t for t in te.list_tournaments(user_id=user_id) if t["tournament_id"] in tids]
         return {
             "tournaments": tournaments,
             "hands": hands,
@@ -48,21 +42,22 @@ class TournamentsApi:
             "tids": sorted(tids),
         }
 
-    def list_tournaments(self, filters: dict | None = None):
-        return te.list_tournaments(filters or {})
+    def list_tournaments(self, filters: dict | None = None, user_id: int = 1):
+        return te.list_tournaments(filters or {}, user_id=user_id)
 
-    def tournaments_overview(self, filters: dict | None = None):
-        return te.overview(filters or {})
+    def tournaments_overview(self, filters: dict | None = None, user_id: int = 1):
+        return te.overview(filters or {}, user_id=user_id)
 
     def update_tournament(self, tournament_id: str,
                           prize_cents: int | None = None,
                           finish_pos: int | None = None,
-                          notes: str | None = None):
+                          notes: str | None = None,
+                          user_id: int = 1):
         if not tournament_id:
             return {"error": "tournament_id obrigatório."}
         return te.set_prize(tournament_id, prize_cents, finish_pos, notes)
 
-    def delete_tournament(self, tournament_id: str):
+    def delete_tournament(self, tournament_id: str, user_id: int = 1):
         if not tournament_id:
             return {"error": "tournament_id obrigatório."}
         return te.delete_tournament(tournament_id)
@@ -76,31 +71,31 @@ class TournamentsApi:
     def list_leaks(self):
         return te.list_leaks()
 
-    def add_tournament(self, data: dict):
+    def add_tournament(self, data: dict, user_id: int = 1):
         if not isinstance(data, dict):
             return {"error": "Dados inválidos."}
-        return te.add_manual(data)
+        return te.add_manual(data, user_id=user_id)
 
-    def tournaments_sessions(self, filters: dict | None = None):
-        return te.sessions(filters or {})
+    def tournaments_sessions(self, filters: dict | None = None, user_id: int = 1):
+        return te.sessions(filters or {}, user_id=user_id)
 
-    def tournaments_analytics(self, filters: dict | None = None):
-        return te.tournaments_analytics(filters or {})
+    def tournaments_analytics(self, filters: dict | None = None, user_id: int = 1):
+        return te.tournaments_analytics(filters or {}, user_id=user_id)
 
     # ── Cronômetro de grind ───────────────────────────────────────────────────
-    def grind_active(self):
-        return te.grind_active()
+    def grind_active(self, user_id: int = 1):
+        return te.grind_active(user_id=user_id)
 
-    def grind_start(self):
-        return te.grind_start()
+    def grind_start(self, user_id: int = 1):
+        return te.grind_start(user_id=user_id)
 
-    def grind_stop(self):
-        return te.grind_stop()
+    def grind_stop(self, user_id: int = 1):
+        return te.grind_stop(user_id=user_id)
 
-    def grind_blocks_for_day(self, day: str):
+    def grind_blocks_for_day(self, day: str, user_id: int = 1):
         if not day:
             return []
-        return te.grind_blocks_for_day(day)
+        return te.grind_blocks_for_day(day, user_id=user_id)
 
     def delete_grind_block(self, block_id: int):
         return te.delete_grind_block(block_id)

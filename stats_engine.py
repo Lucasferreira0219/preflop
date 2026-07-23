@@ -85,15 +85,15 @@ _migrate_legacy()
 
 # ── Escrita ──────────────────────────────────────────────────────────────────
 
-def record(question, result):
+def record(question, result, user_id: int = 1):
     """Insere um attempt e atualiza best_streak se necessário."""
     ts = int(time.time())
     is_correct = 1 if result.get('result') == 'correct' else 0
     with _conn() as c:
         c.execute("""
             INSERT INTO attempts
-                (ts, hand, pos, scenario, stack, villain_pos, answered, correct, is_correct)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                (ts, hand, pos, scenario, stack, villain_pos, answered, correct, is_correct, user_id)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             ts,
             question.get('hand', ''),
@@ -104,29 +104,33 @@ def record(question, result):
             question.get('user_action', '?'),
             result.get('correct', '?'),
             is_correct,
+            user_id,
         ))
         # Atualiza best_streak
-        streak = _current_streak(c)
-        row = c.execute("SELECT value FROM meta WHERE key='best_streak'").fetchone()
+        streak = _current_streak(c, user_id)
+        row = c.execute("SELECT value FROM meta WHERE key=?", (f'best_streak_{user_id}',)).fetchone()
         best = int(row['value']) if row else 0
         if streak > best:
-            c.execute("INSERT OR REPLACE INTO meta(key, value) VALUES('best_streak', ?)",
-                      (str(streak),))
+            c.execute("INSERT OR REPLACE INTO meta(key, value) VALUES(?, ?)",
+                      (f'best_streak_{user_id}', str(streak)))
 
 
-def reset():
-    """Limpa toda a base (zera attempts e meta)."""
+def reset(user_id: int = 1):
+    """Limpa attempts do usuário."""
     with _conn() as c:
-        c.execute("DELETE FROM attempts")
-        c.execute("DELETE FROM meta")
+        c.execute("DELETE FROM attempts WHERE user_id = ?", (user_id,))
+        c.execute("DELETE FROM meta WHERE key = ?", (f'best_streak_{user_id}',))
 
 
 # ── Leitura ──────────────────────────────────────────────────────────────────
 
-def _current_streak(c):
+def _current_streak(c, user_id: int = 1):
     """Conta acertos consecutivos a partir do attempt mais recente."""
     streak = 0
-    for r in c.execute("SELECT is_correct FROM attempts ORDER BY ts DESC, id DESC LIMIT 1000"):
+    for r in c.execute(
+        "SELECT is_correct FROM attempts WHERE user_id = ? ORDER BY ts DESC, id DESC LIMIT 1000",
+        (user_id,)
+    ):
         if r['is_correct'] == 1:
             streak += 1
         else:
@@ -134,13 +138,19 @@ def _current_streak(c):
     return streak
 
 
-def _best_streak(c):
-    row = c.execute("SELECT value FROM meta WHERE key='best_streak'").fetchone()
-    return int(row['value']) if row else 0
+def _best_streak(c, user_id: int = 1):
+    row = c.execute("SELECT value FROM meta WHERE key=?", (f'best_streak_{user_id}',)).fetchone()
+    if row:
+        return int(row['value'])
+    # fallback: global key (migração de dados antigos de user 1)
+    if user_id == 1:
+        row2 = c.execute("SELECT value FROM meta WHERE key='best_streak'").fetchone()
+        return int(row2['value']) if row2 else 0
+    return 0
 
 
-def _where_clause(from_ts, to_ts):
-    parts, params = ["1=1"], []
+def _where_clause(from_ts, to_ts, user_id: int = 1):
+    parts, params = [f"user_id = {user_id}"], []
     if from_ts is not None:
         parts.append("ts >= ?"); params.append(int(from_ts))
     if to_ts is not None:
@@ -148,9 +158,9 @@ def _where_clause(from_ts, to_ts):
     return " AND ".join(parts), params
 
 
-def summary(from_ts=None, to_ts=None):
+def summary(from_ts=None, to_ts=None, user_id: int = 1):
     """Estatísticas completas, opcionalmente filtradas por janela de tempo."""
-    where, params = _where_clause(from_ts, to_ts)
+    where, params = _where_clause(from_ts, to_ts, user_id)
     out = {
         'from_ts':         from_ts,
         'to_ts':           to_ts,
@@ -179,8 +189,8 @@ def summary(from_ts=None, to_ts=None):
         out['correct'] = correct
         out['wrong']   = total - correct
         out['pct']     = round(correct / total * 100) if total > 0 else 0
-        out['streak']      = _current_streak(c)
-        out['best_streak'] = _best_streak(c)
+        out['streak']      = _current_streak(c, user_id)
+        out['best_streak'] = _best_streak(c, user_id)
 
         if total == 0:
             return out
@@ -242,15 +252,15 @@ def summary(from_ts=None, to_ts=None):
     return out
 
 
-def improvement(window_days=7):
+def improvement(window_days=7, user_id: int = 1):
     """Compara janela recente vs janela anterior (mesma duração)."""
     now = int(time.time())
     win = int(window_days) * 86400
     recent_from, recent_to = now - win, now
     prev_from, prev_to     = now - 2 * win, recent_from
 
-    recent = summary(recent_from, recent_to)
-    prev   = summary(prev_from,   prev_to)
+    recent = summary(recent_from, recent_to, user_id=user_id)
+    prev   = summary(prev_from,   prev_to,   user_id=user_id)
 
     def delta_by(group):
         result = {}

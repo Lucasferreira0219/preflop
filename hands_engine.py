@@ -144,7 +144,7 @@ def grade(h, mode=GRADE_MODE):
 
 # ── Importação ────────────────────────────────────────────────────────────────
 
-def import_text(text, mode=GRADE_MODE):
+def import_text(text, mode=GRADE_MODE, user_id=1):
     """Lê o conteúdo de um .txt, avalia e salva o que for novo.
 
     Retorna um resumo: total lido, novas, duplicadas, com nota, acertos/erros,
@@ -174,14 +174,15 @@ def import_text(text, mode=GRADE_MODE):
                 INSERT OR IGNORE INTO imported_hands
                     (hand_id, tournament_id, ps_tournament_id, played_at, imported_ts, hero,
                      hero_pos, hero_cards, stack_bb, scenario, hero_action,
-                     course_action, is_correct, gradeable, source, motivo, raw_text)
-                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                     course_action, is_correct, gradeable, source, motivo, raw_text, user_id)
+                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
             """, (
                 h['hand_id'], h['tournament_id'], h.get('ps_tournament_id'),
                 h['played_at'], ts, h['hero'],
                 h['hero_pos'], h['hero_cards'], h['stack_bb'], h['scenario'],
                 h['hero_action'], course, is_correct,
                 1 if h['gradeable'] else 0, source, h['motivo'], h['raw'],
+                user_id,
             ))
 
             if cur.rowcount == 0:
@@ -227,7 +228,7 @@ def last_analyzed_tid():
     return _LAST_TID
 
 
-def analyze_tournament(tournament_id):
+def analyze_tournament(tournament_id, user_id=1):
     """Relatório PKE do torneio: re-parseia o raw_text das mãos, filtra críticas,
     avalia no PKE e agrega (médias, piores/melhores, leaks, fase, treino).
 
@@ -237,8 +238,8 @@ def analyze_tournament(tournament_id):
     with _conn() as c:
         rows = c.execute(
             "SELECT hand_id, raw_text FROM imported_hands "
-            "WHERE tournament_id = ? AND raw_text IS NOT NULL ORDER BY played_at ASC",
-            (tournament_id,),
+            "WHERE tournament_id = ? AND user_id = ? AND raw_text IS NOT NULL ORDER BY played_at ASC",
+            (tournament_id, user_id),
         ).fetchall()
 
     analyzed = []
@@ -281,25 +282,25 @@ def _persist_pke_summary(tournament_id, report):
             import traceback; traceback.print_exc()
 
 
-def latest_tid_with_hands():
+def latest_tid_with_hands(user_id=1):
     """Torneio mais recente que tem mãos importadas (fallback da Home quando o
     processo ainda não analisou nada nesta sessão)."""
     with _conn() as c:
         row = c.execute(
             "SELECT tournament_id FROM imported_hands "
-            "WHERE tournament_id IS NOT NULL AND raw_text IS NOT NULL "
-            "ORDER BY imported_ts DESC, played_at DESC LIMIT 1").fetchone()
+            "WHERE tournament_id IS NOT NULL AND raw_text IS NOT NULL AND user_id = ? "
+            "ORDER BY imported_ts DESC, played_at DESC LIMIT 1", (user_id,)).fetchone()
     return row["tournament_id"] if row else None
 
 
-def study_overview():
+def study_overview(user_id=1):
     """Resumo leve para a Home: último torneio analisado + leaks + média.
     Reaproveita analyze_tournament (que também fixa o _LAST_TID p/ "Meus leaks")."""
-    tid = _LAST_TID or latest_tid_with_hands()
+    tid = _LAST_TID or latest_tid_with_hands(user_id=user_id)
     if not tid:
         return {"tem_torneio": False, "last_tid": None, "media_notas": None,
                 "erros_graves": 0, "leaks": [], "tem_revisao": False}
-    rep = analyze_tournament(tid)
+    rep = analyze_tournament(tid, user_id=user_id)
     return {
         "tem_torneio": True,
         "last_tid": tid,
@@ -310,16 +311,16 @@ def study_overview():
     }
 
 
-def tids_with_hands():
+def tids_with_hands(user_id=1):
     """tournament_ids distintos que têm hand history salva (imported_hands)."""
     with _conn() as c:
         rows = c.execute(
             "SELECT DISTINCT tournament_id FROM imported_hands "
-            "WHERE tournament_id IS NOT NULL").fetchall()
+            "WHERE tournament_id IS NOT NULL AND user_id = ?", (user_id,)).fetchall()
     return [r["tournament_id"] for r in rows]
 
 
-def leak_weights(tournament_id=None):
+def leak_weights(tournament_id=None, user_id=1):
     """Pesos de treino derivados dos leaks. Por padrão usa o ÚLTIMO torneio
     analisado (modo "Meus leaks"); sem isso, agrega todas as mãos importadas.
     Mapeia leak.exercicio -> peso (mais leaks = mais treino). {} se não houver."""
@@ -328,10 +329,10 @@ def leak_weights(tournament_id=None):
         if tid:
             rows = c.execute(
                 "SELECT raw_text FROM imported_hands "
-                "WHERE tournament_id = ? AND raw_text IS NOT NULL", (tid,)).fetchall()
+                "WHERE tournament_id = ? AND user_id = ? AND raw_text IS NOT NULL", (tid, user_id)).fetchall()
         else:
             rows = c.execute(
-                "SELECT raw_text FROM imported_hands WHERE raw_text IS NOT NULL").fetchall()
+                "SELECT raw_text FROM imported_hands WHERE raw_text IS NOT NULL AND user_id = ?", (user_id,)).fetchall()
     analyzed = []
     for r in rows:
         parsed = parse_text(r["raw_text"])
@@ -479,13 +480,13 @@ _NON_RFI_REASON = {
 }
 
 
-def tournament_all_hands(tournament_id: str) -> dict:
+def tournament_all_hands(tournament_id: str, user_id: int = 1) -> dict:
     """Todas as mãos do torneio com análise de range RFI (foco pré-flop)."""
     with _conn() as c:
         rows = c.execute(
             "SELECT hand_id, raw_text, played_at FROM imported_hands "
-            "WHERE tournament_id = ? AND raw_text IS NOT NULL ORDER BY played_at ASC",
-            (tournament_id,),
+            "WHERE tournament_id = ? AND user_id = ? AND raw_text IS NOT NULL ORDER BY played_at ASC",
+            (tournament_id, user_id),
         ).fetchall()
 
     maos = []
@@ -532,7 +533,7 @@ def tournament_all_hands(tournament_id: str) -> dict:
     return {"maos": maos, "total": len(maos)}
 
 
-def all_critical_hands(limit: int = 200, only_errors: bool = True) -> dict:
+def all_critical_hands(limit: int = 200, only_errors: bool = True, user_id: int = 1) -> dict:
     """Todas as mãos críticas já analisadas, ordenadas das piores para as melhores.
 
     only_errors=True retorna só erros (pke_outcome='erro');
@@ -542,14 +543,14 @@ def all_critical_hands(limit: int = 200, only_errors: bool = True) -> dict:
         if only_errors:
             rows = c.execute(
                 "SELECT raw_text, tournament_id, played_at FROM imported_hands "
-                "WHERE is_critical = 1 AND pke_outcome = 'erro' AND raw_text IS NOT NULL "
-                "ORDER BY pke_score ASC, played_at DESC LIMIT ?", (limit,)
+                "WHERE is_critical = 1 AND pke_outcome = 'erro' AND raw_text IS NOT NULL AND user_id = ? "
+                "ORDER BY pke_score ASC, played_at DESC LIMIT ?", (user_id, limit)
             ).fetchall()
         else:
             rows = c.execute(
                 "SELECT raw_text, tournament_id, played_at FROM imported_hands "
-                "WHERE is_critical = 1 AND raw_text IS NOT NULL "
-                "ORDER BY pke_score ASC, played_at DESC LIMIT ?", (limit,)
+                "WHERE is_critical = 1 AND raw_text IS NOT NULL AND user_id = ? "
+                "ORDER BY pke_score ASC, played_at DESC LIMIT ?", (user_id, limit)
             ).fetchall()
 
     maos = []
@@ -571,11 +572,12 @@ def all_critical_hands(limit: int = 200, only_errors: bool = True) -> dict:
     return {"maos": maos, "total": len(maos)}
 
 
-def summary(tournament_id=None):
+def summary(tournament_id=None, user_id=1):
     """Estatísticas agregadas das mãos importadas (pro agente / tela de stats)."""
-    where, params = "1=1", []
+    where, params = "user_id = ?", [user_id]
     if tournament_id:
-        where, params = "tournament_id = ?", [tournament_id]
+        where += " AND tournament_id = ?"
+        params.append(tournament_id)
     out = {'total': 0, 'graded': 0, 'correct': 0, 'wrong': 0,
            'not_modeled': 0, 'by_position': {}}
     with _conn() as c:

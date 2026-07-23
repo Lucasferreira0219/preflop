@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { AppProvider } from "@/state/AppProvider";
 import { TooltipProvider } from "@/components/ui/Tooltip";
@@ -11,16 +12,22 @@ import { TournamentTypesPage } from "@/pages/TournamentTypesPage";
 import { SessionsPage } from "@/pages/SessionsPage";
 import { SettingsPage } from "@/pages/SettingsPage";
 import { NotesPage } from "@/pages/NotesPage";
+import { LoginPage } from "@/pages/LoginPage";
 import { BASE } from "@/lib/api";
+import { isAuthenticated } from "@/lib/auth";
 
 export function App() {
+  const [authed, setAuthed] = useState(isAuthenticated);
+
+  if (!authed) {
+    return <LoginPage onLogin={() => setAuthed(true)} />;
+  }
+
   return (
     <BrowserRouter basename={BASE || undefined}>
       <AppProvider>
         <TooltipProvider>
           <Routes>
-            {/* Meus Torneios é a tela inicial do app. A home antiga (LauncherPage)
-                segue acessível em /home como "Painel de estudo" opcional no menu. */}
             <Route path="/" element={<Navigate to="/tournaments" replace />} />
             <Route path="/home" element={<LauncherPage />} />
             <Route path="/import" element={<Navigate to="/tournaments" replace />} />

@@ -178,12 +178,12 @@ def _auto_tags(spot=None, phase=None, decision_label=None, leak_key=None,
 
 # ── CRUD ─────────────────────────────────────────────────────────────────────────
 
-def _insert(c, data: dict) -> str:
+def _insert(c, data: dict, user_id: int = 1) -> str:
     nid = data.get("note_id") or uuid.uuid4().hex
     ts = _now()
     cols = ["note_id", "title", "type", "content", "tags_json", "pinned",
             "archived", "favorite", "review_status", "source", *_POKER_COLS,
-            "created_at", "updated_at"]
+            "created_at", "updated_at", "user_id"]
     vals = {
         "note_id": nid,
         "title": (data.get("title") or "").strip() or "Sem título",
@@ -196,6 +196,7 @@ def _insert(c, data: dict) -> str:
         "review_status": data.get("review_status") if data.get("review_status") in REVIEW_STATUSES else "not_reviewed",
         "source": data.get("source") if data.get("source") in SOURCES else "manual",
         "created_at": ts, "updated_at": ts,
+        "user_id": user_id,
     }
     for k in _POKER_COLS:
         vals[k] = data.get(k)
@@ -205,9 +206,9 @@ def _insert(c, data: dict) -> str:
     return nid
 
 
-def create_note(data: dict) -> dict:
+def create_note(data: dict, user_id: int = 1) -> dict:
     with _conn() as c:
-        nid = _insert(c, data or {})
+        nid = _insert(c, data or {}, user_id=user_id)
         for lk in (data or {}).get("links") or []:
             c.execute(
                 "INSERT INTO note_links (note_id, entity_type, entity_id, label) VALUES (?,?,?,?)",
@@ -217,11 +218,11 @@ def create_note(data: dict) -> dict:
         return _row_to_public(row, _links_for(c, nid))
 
 
-def get_note(note_id: str) -> dict | None:
+def get_note(note_id: str, user_id: int = 1) -> dict | None:
     if not note_id:
         return None
     with _conn() as c:
-        row = c.execute("SELECT * FROM notes WHERE note_id = ?", (note_id,)).fetchone()
+        row = c.execute("SELECT * FROM notes WHERE note_id = ? AND user_id = ?", (note_id, user_id)).fetchone()
         if not row:
             return None
         return _row_to_public(row, _links_for(c, note_id))
@@ -231,7 +232,7 @@ _EDITABLE = {"title", "type", "content", "review_status"}
 _FLAGS = {"pinned", "archived", "favorite"}
 
 
-def update_note(note_id: str, patch: dict) -> dict | None:
+def update_note(note_id: str, patch: dict, user_id: int = 1) -> dict | None:
     if not note_id:
         return None
     patch = patch or {}
@@ -252,28 +253,29 @@ def update_note(note_id: str, patch: dict) -> dict | None:
             sets.append(f"{k} = ?")
             params.append(patch[k])
     if not sets:
-        return get_note(note_id)
+        return get_note(note_id, user_id=user_id)
     sets.append("updated_at = ?")
     params.append(_now())
+    params.append(user_id)
     params.append(note_id)
     with _conn() as c:
-        c.execute(f"UPDATE notes SET {', '.join(sets)} WHERE note_id = ?", params)
-        row = c.execute("SELECT * FROM notes WHERE note_id = ?", (note_id,)).fetchone()
+        c.execute(f"UPDATE notes SET {', '.join(sets)} WHERE user_id = ? AND note_id = ?", params)
+        row = c.execute("SELECT * FROM notes WHERE note_id = ? AND user_id = ?", (note_id, user_id)).fetchone()
         if not row:
             return None
         return _row_to_public(row, _links_for(c, note_id))
 
 
-def delete_note(note_id: str, hard: bool = False) -> dict:
+def delete_note(note_id: str, hard: bool = False, user_id: int = 1) -> dict:
     if not note_id:
         return {"error": "note_id obrigatório."}
     with _conn() as c:
         if hard:
             c.execute("DELETE FROM note_links WHERE note_id = ?", (note_id,))
-            cur = c.execute("DELETE FROM notes WHERE note_id = ?", (note_id,))
+            cur = c.execute("DELETE FROM notes WHERE note_id = ? AND user_id = ?", (note_id, user_id))
             return {"deleted": cur.rowcount, "hard": True}
-        c.execute("UPDATE notes SET archived = 1, updated_at = ? WHERE note_id = ?",
-                  (_now(), note_id))
+        c.execute("UPDATE notes SET archived = 1, updated_at = ? WHERE note_id = ? AND user_id = ?",
+                  (_now(), note_id, user_id))
         return {"archived": 1}
 
 
@@ -288,9 +290,9 @@ _SORTS = {
 }
 
 
-def list_notes(filters: dict | None = None) -> list:
+def list_notes(filters: dict | None = None, user_id: int = 1) -> list:
     f = filters or {}
-    where, params = ["1=1"], []
+    where, params = [f"user_id = {user_id}"], []
     # arquivadas: por padrão escondidas, a não ser que peça archived=True
     if f.get("archived"):
         where.append("archived = 1")
@@ -337,18 +339,18 @@ def list_notes(filters: dict | None = None) -> list:
         return [_row_to_public(r) for r in rows]
 
 
-def notes_stats() -> dict:
+def notes_stats(user_id: int = 1) -> dict:
     with _conn() as c:
         def n(sql, p=()):
             return c.execute(sql, p).fetchone()[0]
-        total = n("SELECT COUNT(*) FROM notes WHERE archived = 0")
-        pinned = n("SELECT COUNT(*) FROM notes WHERE archived = 0 AND pinned = 1")
-        favorite = n("SELECT COUNT(*) FROM notes WHERE archived = 0 AND favorite = 1")
-        hands = n("SELECT COUNT(*) FROM notes WHERE archived = 0 AND source = 'exported_from_hand'")
-        leaks = n("SELECT COUNT(*) FROM notes WHERE archived = 0 AND type = 'leak'")
-        archived = n("SELECT COUNT(*) FROM notes WHERE archived = 1")
-        pending = n("SELECT COUNT(*) FROM notes WHERE archived = 0 AND "
-                    "review_status IN ('not_reviewed','needs_work') AND source = 'exported_from_hand'")
+        total = n(f"SELECT COUNT(*) FROM notes WHERE archived = 0 AND user_id = {user_id}")
+        pinned = n(f"SELECT COUNT(*) FROM notes WHERE archived = 0 AND pinned = 1 AND user_id = {user_id}")
+        favorite = n(f"SELECT COUNT(*) FROM notes WHERE archived = 0 AND favorite = 1 AND user_id = {user_id}")
+        hands = n(f"SELECT COUNT(*) FROM notes WHERE archived = 0 AND source = 'exported_from_hand' AND user_id = {user_id}")
+        leaks = n(f"SELECT COUNT(*) FROM notes WHERE archived = 0 AND type = 'leak' AND user_id = {user_id}")
+        archived = n(f"SELECT COUNT(*) FROM notes WHERE archived = 1 AND user_id = {user_id}")
+        pending = n(f"SELECT COUNT(*) FROM notes WHERE archived = 0 AND "
+                    f"review_status IN ('not_reviewed','needs_work') AND source = 'exported_from_hand' AND user_id = {user_id}")
     return {
         "total": total, "pinned": pinned, "favorite": favorite,
         "hands_saved": hands, "leaks_noted": leaks, "archived": archived,
@@ -362,7 +364,7 @@ def _line(label, value):
     return f"{label}: {value if value not in (None, '') else '—'}"
 
 
-def note_from_hand(payload: dict, force: bool = False) -> dict:
+def note_from_hand(payload: dict, force: bool = False, user_id: int = 1) -> dict:
     """Cria anotação 'análise de mão' a partir do ReportHand (+ tournament_id).
     Dedup: se já há nota não-arquivada com esse hand_id e not force, devolve a
     existente em {'existing': <note>}."""
@@ -371,8 +373,8 @@ def note_from_hand(payload: dict, force: bool = False) -> dict:
     if hand_id and not force:
         with _conn() as c:
             row = c.execute(
-                "SELECT * FROM notes WHERE hand_id = ? AND archived = 0 "
-                "ORDER BY updated_at DESC LIMIT 1", (hand_id,)).fetchone()
+                "SELECT * FROM notes WHERE hand_id = ? AND archived = 0 AND user_id = ? "
+                "ORDER BY updated_at DESC LIMIT 1", (hand_id, user_id)).fetchone()
             if row:
                 return {"existing": _row_to_public(row, _links_for(c, row["note_id"]))}
 
@@ -446,10 +448,10 @@ def note_from_hand(payload: dict, force: bool = False) -> dict:
         "pke_rule_id": rule_id, "pke_recommendation": p.get("recomendado"),
         "hero_action": p.get("linha"),
     }
-    return create_note(data)
+    return create_note(data, user_id=user_id)
 
 
-def note_from_tournament(payload: dict) -> dict:
+def note_from_tournament(payload: dict, user_id: int = 1) -> dict:
     """Cria anotação 'review de torneio' a partir do resumo do relatório."""
     p = payload or {}
     title = " · ".join(x for x in [
@@ -489,10 +491,10 @@ def note_from_tournament(payload: dict) -> dict:
                  + ([{"entity_type": "tournament", "entity_id": p.get("tournament_id"),
                       "label": "Torneio"}] if p.get("tournament_id") else []),
     }
-    return create_note(data)
+    return create_note(data, user_id=user_id)
 
 
-def note_from_leak(payload: dict) -> dict:
+def note_from_leak(payload: dict, user_id: int = 1) -> dict:
     """Cria anotação 'leak' a partir do ReportLeak."""
     p = payload or {}
     label = p.get("label") or "Leak"
@@ -527,4 +529,4 @@ def note_from_leak(payload: dict) -> dict:
         "spot": p.get("spot"), "phase": p.get("fase_predominante"),
         "leak_key": p.get("exercicio") or p.get("id"), "pke_rule_id": rule_id,
     }
-    return create_note(data)
+    return create_note(data, user_id=user_id)
