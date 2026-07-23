@@ -83,6 +83,17 @@ export const api = {
     return res.json() as Promise<{ access_token: string; user: { id: number; username: string } }>;
   },
 
+  authRegister: async (username: string, password: string) => {
+    const res = await fetch(`${BASE}/auth/register`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, password }),
+    });
+    if (res.status === 409) throw new Error("Nome de usuario ja em uso");
+    if (!res.ok) throw new Error("Erro ao criar conta");
+    return res.json() as Promise<{ access_token: string; user: { id: number; username: string } }>;
+  },
+
   newQuestion: (
     playerCount = 9,
     stackBb: number | null = null,
